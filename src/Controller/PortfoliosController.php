@@ -50,18 +50,23 @@ class PortfoliosController extends AppController
     public function add()
     {
         $portfolio = $this->Portfolios->newEmptyEntity();
+    
         if ($this->request->is('post')) {
             $portfolio = $this->Portfolios->patchEntity($portfolio, $this->request->getData());
+    
+            // 👇 ログインユーザーの user_id を自動でセット
+            $portfolio->user_id = $this->request->getAttribute('identity')->get('id');
+    
             if ($this->Portfolios->save($portfolio)) {
-                $this->Flash->success(__('The portfolio has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
+                $this->Flash->success('投稿が完了しました！');
+                return $this->redirect(['controller' => 'Top', 'action' => 'index']);
             }
-            $this->Flash->error(__('The portfolio could not be saved. Please, try again.'));
+            $this->Flash->error('投稿に失敗しました。もう一度お試しください。');
         }
-        $users = $this->Portfolios->Users->find('list', ['limit' => 200])->all();
-        $this->set(compact('portfolio', 'users'));
+    
+        $this->set(compact('portfolio'));
     }
+    
 
     /**
      * Edit method

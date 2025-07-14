@@ -7,6 +7,7 @@ use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use Cake\ORM\Behavior\TimestampBehavior;
 
 /**
  * Portfolios Model
@@ -42,6 +43,9 @@ class PortfoliosTable extends Table
         $this->setTable('portfolios');
         $this->setDisplayField('title');
         $this->setPrimaryKey('id');
+
+        // ✅ これを追加することで created/modified を自動セットしてくれる
+        $this->addBehavior('Timestamp');
 
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',

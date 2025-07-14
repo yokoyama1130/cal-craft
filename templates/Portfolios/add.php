@@ -1,31 +1,42 @@
-<?php
-/**
- * @var \App\View\AppView $this
- * @var \App\Model\Entity\Portfolio $portfolio
- * @var \Cake\Collection\CollectionInterface|string[] $users
- */
-?>
-<div class="row">
-    <aside class="column">
-        <div class="side-nav">
-            <h4 class="heading"><?= __('Actions') ?></h4>
-            <?= $this->Html->link(__('List Portfolios'), ['action' => 'index'], ['class' => 'side-nav-item']) ?>
-        </div>
-    </aside>
-    <div class="column-responsive column-80">
-        <div class="portfolios form content">
-            <?= $this->Form->create($portfolio) ?>
-            <fieldset>
-                <legend><?= __('Add Portfolio') ?></legend>
-                <?php
-                    echo $this->Form->control('user_id', ['options' => $users]);
-                    echo $this->Form->control('title');
-                    echo $this->Form->control('description');
-                    echo $this->Form->control('thumbnail');
-                ?>
-            </fieldset>
-            <?= $this->Form->button(__('Submit')) ?>
-            <?= $this->Form->end() ?>
-        </div>
+<div class="container mt-5" style="max-width: 600px;">
+  <h2 class="mb-4 text-center">ポートフォリオを投稿</h2>
+
+  <?= $this->Form->create($portfolio) ?>
+
+    <div class="mb-3">
+      <?= $this->Form->control('title', [
+          'label' => 'タイトル',
+          'class' => 'form-control'
+      ]) ?>
     </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('description', [
+          'label' => '説明',
+          'type' => 'textarea',
+          'rows' => 5,
+          'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('thumbnail', [
+          'label' => 'サムネイル画像URL',
+          'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+        <?= $this->Form->control('link', [
+            'label' => '関連リンク（任意）',
+            'class' => 'form-control',
+            'empty' => true
+        ]) ?>
+    </div>
+
+    <div class="d-grid">
+      <?= $this->Form->button('投稿する', ['class' => 'btn btn-success btn-lg']) ?>
+    </div>
+
+  <?= $this->Form->end() ?>
 </div>
