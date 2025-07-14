@@ -1,9 +1,9 @@
 <div class="container mt-4">
     <form action="/portfolios/search" method="get" class="mb-4">
-        <input type="text" name="q" class="form-control form-control-lg" placeholder="ポートフォリオを検索...">
+        <input type="text" name="q" class="form-control form-control-lg" placeholder="検索...">
     </form>
 
-    <h2 class="mb-4">おすすめポートフォリオ</h2>
+    <h2 class="mb-4">ホーム画面</h2>
 
     <div class="row row-cols-1 row-cols-md-3 g-4">
         <?php foreach ($portfolios as $p): ?>
