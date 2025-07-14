@@ -86,12 +86,13 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
   </div>
   <div class="offcanvas-body">
     <ul class="list-unstyled">
-      <li><a href="/users/profile">プロフィール</a></li>
-      <li><a href="/portfolios/search">検索</a></li>
-      <li><a href="/favorites">お気に入り</a></li>
-      <li><a href="/portfolios/add">投稿</a></li>
-      <li><a href="/messages">メッセージ</a></li>
-      <li><a href="/notifications">通知</a></li>
+        <li><a href="<?= $this->Url->build('/') ?>">ホーム</a></li>
+        <li><a href="/users/profile">プロフィール</a></li>
+        <li><a href="/portfolios/search">検索</a></li>
+        <li><a href="/favorites">お気に入り</a></li>
+        <li><a href="/portfolios/add">投稿</a></li>
+        <li><a href="/messages">メッセージ</a></li>
+        <li><a href="/notifications">通知</a></li>
     </ul>
   </div>
 </div>
