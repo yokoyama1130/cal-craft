@@ -4,6 +4,38 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- Airbnb風フォント -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap CSS（すでにあるならOK） -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: #f9f9f9;
+    }
+
+    .navbar {
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .card:hover {
+        transform: translateY(-4px);
+    }
+
+    .btn-primary, .btn-success {
+        border-radius: 8px;
+    }
+    </style>
+
     <?= $this->Html->charset() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $this->fetch('title') ?: $cakeDescription ?></title>
@@ -23,6 +55,14 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
     <span class="navbar-toggler-icon"></span>
   </button>
   <a class="navbar-brand ms-3" href="<?= $this->Url->build('/') ?>">Calcraft</a>
+
+  <?php if ($this->Identity->isLoggedIn()): ?>
+    ようこそ <?= h($this->Identity->get('name')) ?> さん
+    <?php else: ?>
+    <a href="/users/login">ログイン</a>
+    <a href="/users/register">新規登録</a>
+    <?php endif; ?>
+
 </nav>
 
 <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu">
