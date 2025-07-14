@@ -87,7 +87,13 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
   <div class="offcanvas-body">
     <ul class="list-unstyled">
         <li><a href="<?= $this->Url->build('/') ?>">ホーム</a></li>
-        <li><a href="/users/profile">プロフィール</a></li>
+        <?php if ($this->Identity->isLoggedIn()): ?>
+          <li>
+            <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile']) ?>">
+              プロフィール
+            </a>
+          </li>
+        <?php endif; ?>
         <li><a href="/portfolios/search">検索</a></li>
         <li><a href="/favorites">お気に入り</a></li>
         <li><a href="/portfolios/add">＋ 投稿する</a></li>

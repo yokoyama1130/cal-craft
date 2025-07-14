@@ -75,23 +75,27 @@ class PortfoliosController extends AppController
      * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
-    public function edit($id = null)
+    public function edit($id)
     {
-        $portfolio = $this->Portfolios->get($id, [
-            'contain' => [],
-        ]);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $portfolio = $this->Portfolios->patchEntity($portfolio, $this->request->getData());
-            if ($this->Portfolios->save($portfolio)) {
-                $this->Flash->success(__('The portfolio has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The portfolio could not be saved. Please, try again.'));
+        $portfolio = $this->Portfolios->get($id);
+    
+        // 自分の投稿のみ編集可
+        if ($portfolio->user_id !== $this->request->getAttribute('identity')->get('id')) {
+            throw new ForbiddenException();
         }
-        $users = $this->Portfolios->Users->find('list', ['limit' => 200])->all();
-        $this->set(compact('portfolio', 'users'));
+    
+        if ($this->request->is(['post', 'put'])) {
+            $this->Portfolios->patchEntity($portfolio, $this->request->getData());
+            if ($this->Portfolios->save($portfolio)) {
+                $this->Flash->success('更新しました');
+                return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
+            }
+            $this->Flash->error('更新に失敗しました');
+        }
+    
+        $this->set(compact('portfolio'));
     }
+    
 
     /**
      * Delete method
@@ -100,16 +104,37 @@ class PortfoliosController extends AppController
      * @return \Cake\Http\Response|null|void Redirects to index.
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
-    public function delete($id = null)
+    public function delete($id)
     {
-        $this->request->allowMethod(['post', 'delete']);
         $portfolio = $this->Portfolios->get($id);
+        if ($portfolio->user_id !== $this->request->getAttribute('identity')->get('id')) {
+            throw new ForbiddenException();
+        }
+    
+        $this->request->allowMethod(['post']);
         if ($this->Portfolios->delete($portfolio)) {
-            $this->Flash->success(__('The portfolio has been deleted.'));
+            $this->Flash->success('削除しました');
         } else {
-            $this->Flash->error(__('The portfolio could not be deleted. Please, try again.'));
+            $this->Flash->error('削除できませんでした');
+        }
+    
+        return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
+    }
+
+    /**
+     * 公開・非公開アクション
+     */
+    public function togglePublic($id)
+    {
+        $portfolio = $this->Portfolios->get($id);
+        if ($portfolio->user_id !== $this->request->getAttribute('identity')->get('id')) {
+            throw new ForbiddenException();
         }
 
-        return $this->redirect(['action' => 'index']);
+        $portfolio->is_public = !$portfolio->is_public;
+        $this->Portfolios->save($portfolio);
+
+        return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
     }
+
 }

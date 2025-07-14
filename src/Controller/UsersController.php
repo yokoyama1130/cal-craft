@@ -64,6 +64,19 @@ class UsersController extends AppController
         $this->set(compact('user'));
     }
 
+    public function profile()
+    {
+        $userId = $this->request->getAttribute('identity')->get('id');
+
+        $this->loadModel('Portfolios');
+        $portfolios = $this->Portfolios
+            ->find()
+            ->where(['user_id' => $userId])
+            ->order(['created' => 'DESC'])
+            ->all();
+
+        $this->set(compact('portfolios'));
+    }
 
     /**
      * Index method
