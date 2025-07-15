@@ -10,9 +10,14 @@
 
         <div class="d-flex">
           <a href="/portfolios/edit/<?= $p->id ?>" class="btn btn-outline-primary btn-sm me-2">編集</a>
-          <form action="/portfolios/delete/<?= $p->id ?>" method="post" style="display:inline;">
-            <button class="btn btn-outline-danger btn-sm" onclick="return confirm('本当に削除しますか？')">削除</button>
-          </form>
+        <?= $this->Form->postLink(
+            '削除',
+            ['controller' => 'Portfolios', 'action' => 'delete', $p->id],
+            [
+                'class' => 'btn btn-outline-danger btn-sm',
+                'confirm' => '本当にこの投稿を削除しますか？'
+            ]
+        ) ?>
           <form action="/portfolios/toggle-public/<?= $p->id ?>" method="post" class="ms-2">
             <button class="btn btn-outline-secondary btn-sm">
               <?= $p->is_public ? '非公開にする' : '公開にする' ?>

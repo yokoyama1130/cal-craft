@@ -107,19 +107,25 @@ class PortfoliosController extends AppController
     public function delete($id)
     {
         $portfolio = $this->Portfolios->get($id);
-        if ($portfolio->user_id !== $this->request->getAttribute('identity')->get('id')) {
-            throw new ForbiddenException();
+        $userId = $this->request->getAttribute('identity')->get('id');
+    
+        // 他人の投稿は削除させない
+        if ($portfolio->user_id !== $userId) {
+            throw new \Cake\Http\Exception\ForbiddenException('この投稿を削除する権限がありません');
         }
     
-        $this->request->allowMethod(['post']);
+        // POSTメソッドのみ許可
+        $this->request->allowMethod(['post', 'delete']);
+    
         if ($this->Portfolios->delete($portfolio)) {
-            $this->Flash->success('削除しました');
+            $this->Flash->success('投稿を削除しました');
         } else {
-            $this->Flash->error('削除できませんでした');
+            $this->Flash->error('投稿の削除に失敗しました');
         }
     
         return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
     }
+    
 
     /**
      * 公開・非公開アクション
