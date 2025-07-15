@@ -10,6 +10,10 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
+    <!-- Font Awesome を Bootstrap より後ろに追加 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+
     <style>
     body {
         font-family: 'Inter', sans-serif;
@@ -36,6 +40,16 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
 
     .btn-primary, .btn-success, .btn-outline-primary {
         border-radius: 8px;
+    }
+
+    i.fa-heart {
+        transition: color 0.3s ease;
+    }
+    i.fa-heart.liked {
+        color: hotpink !important;
+    }
+    i.fa-heart.not-liked {
+        color: #ccc !important;
     }
     </style>
 
@@ -112,5 +126,6 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
 <!-- Bootstrap JS & Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <?= $this->fetch('script') ?>
+<?= $this->Html->css('style') ?>
 </body>
 </html>

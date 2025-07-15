@@ -1,0 +1,10 @@
+/* ハートアイコンアニメーション */
+i.fa-heart {
+    transition: color 0.3s ease;
+}
+i.fa-heart.liked {
+    color: hotpink !important;
+}
+i.fa-heart.not-liked {
+    color: #ccc !important;
+}

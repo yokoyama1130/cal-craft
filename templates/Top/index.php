@@ -1,7 +1,7 @@
 <?php
 use Cake\Utility\Text;
 ?>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <div class="container mt-4">
     <!-- 検索フォーム -->
     <form action="/portfolios/search" method="get" class="mb-4">
@@ -25,12 +25,20 @@ use Cake\Utility\Text;
                         </h5>
                         <p class="card-text"><?= h(Text::truncate($p->description, 100)) ?></p>
                     </div>
-                    <div class="card-footer">
+                    <div class="card-footer text-center">
                         <?= $this->Form->create(null, ['url' => ['controller' => 'Likes', 'action' => 'add'], 'type' => 'post']) ?>
                         <?= $this->Form->hidden('portfolio_id', ['value' => $p->id]) ?>
-                        <?= $this->Form->button('👍 いいね (' . ($p->like_count ?? 0) . ')', ['class' => 'btn btn-sm btn-outline-primary']) ?>
+
+                        <button class="btn border-0 bg-white">
+                            <i class="fa-heart fa-2x <?= $p->liked_by_me ? 'fas liked' : 'far not-liked' ?>"></i>
+                        </button>
+
                         <?= $this->Form->end() ?>
+                        <div class="small text-muted mt-1">
+                            👍 <?= h($p->like_count) ?>件のいいね
+                        </div>
                     </div>
+
                 </div>
             </div>
         <?php endforeach; ?>

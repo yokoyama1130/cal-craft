@@ -23,21 +23,35 @@ class PortfoliosController extends AppController
     public function index()
     {
         $this->loadModel('Likes');
-
-        $portfolios = $this->Portfolios->find('all', [
-            'contain' => ['Users']
-        ])->toArray();
-
-        // 各ポートフォリオにいいね数を追加
+        $this->loadModel('Portfolios');
+    
+        $identity = $this->request->getAttribute('identity');
+        $userId = $identity ? $identity->get('id') : null;
+    
+        $portfolios = $this->Portfolios->find()
+            ->where(['is_public' => true])
+            ->order(['created' => 'DESC'])
+            ->limit(10)
+            ->toArray();
+    
         foreach ($portfolios as $p) {
             $p->like_count = $this->Likes->find()
                 ->where(['portfolio_id' => $p->id])
                 ->count();
+    
+            // ✅ 自分がいいねしてるかチェック
+            $p->liked_by_me = false;
+            if ($userId !== null) {
+                $p->liked_by_me = $this->Likes->exists([
+                    'user_id' => $userId,
+                    'portfolio_id' => $p->id
+                ]);
+            }
         }
-
+    
         $this->set(compact('portfolios'));
     }
-
+    
 
     /**
      * View method

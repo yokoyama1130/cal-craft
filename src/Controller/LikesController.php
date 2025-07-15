@@ -19,22 +19,37 @@ class LikesController extends AppController
     public function add()
     {
         $this->request->allowMethod(['post']);
-    
+
         $user = $this->Authentication->getIdentity();
-    
+        $portfolioId = $this->request->getData('portfolio_id');
+
+        // 👇 すでに同じ user_id × portfolio_id のレコードがあるか確認
+        $existingLike = $this->Likes->find()
+            ->where([
+                'user_id' => $user->get('id'),
+                'portfolio_id' => $portfolioId
+            ])
+            ->first();
+
+        if ($existingLike) {
+            $this->Flash->error('すでにいいねしています');
+            return $this->redirect($this->referer());
+        }
+
+        // 新しいいいねを作成
         $like = $this->Likes->newEmptyEntity();
         $like = $this->Likes->patchEntity($like, [
             'user_id' => $user->get('id'),
-            'portfolio_id' => $this->request->getData('portfolio_id')
+            'portfolio_id' => $portfolioId
         ]);
-    
+
         if ($this->Likes->save($like)) {
-            // 成功時にTop/indexへリダイレクト（または $this->referer() でもOK）
-            return $this->redirect(['controller' => 'Top', 'action' => 'index']);
+            return $this->redirect($this->referer());
         }
-    
+
         $this->Flash->error('いいねできませんでした');
-        return $this->redirect(['controller' => 'Top', 'action' => 'index']);
+        return $this->redirect($this->referer());
     }
+
     
 }
