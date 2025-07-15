@@ -50,6 +50,23 @@ class LikesController extends AppController
     
         $this->Flash->error('いいねできませんでした');
         return $this->redirect($this->referer());
+
+        // いいね成功後に通知
+        if ($this->Likes->save($like)) {
+            // 通知を作成（自分自身へのいいねは除外）
+            if ($user->get('id') !== $portfolio->user_id) {
+                $this->loadModel('Notifications');
+                $notification = $this->Notifications->newEmptyEntity();
+                $notification->user_id = $portfolio->user_id; // 通知を受け取る人
+                $notification->sender_id = $user->get('id'); // 通知を送った人
+                $notification->portfolio_id = $portfolioId;
+                $notification->type = 'like';
+                $this->Notifications->save($notification);
+            }
+
+            return $this->redirect($this->referer());
+        }
+
     }
 
     public function toggle()

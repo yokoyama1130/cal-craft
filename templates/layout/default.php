@@ -111,9 +111,9 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
         <?php endif; ?>
         <li><a href="/portfolios/search">検索</a></li>
         <li><a href="/favorites">お気に入り</a></li>
-        <li><a href="/portfolios/add">＋ 投稿する</a></li>
+        <li><a href="/portfolios/add">投稿する</a></li>
         <li><a href="/messages">メッセージ</a></li>
-        <li><a href="/notifications">通知</a></li>
+        <a href="/notifications">通知<?= $unreadCount > 0 ? "（{$unreadCount}）" : '' ?></a>
     </ul>
   </div>
 </div>

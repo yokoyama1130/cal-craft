@@ -51,6 +51,8 @@ return function (RouteBuilder $routes): void {
 
     $routes->connect('/likes/toggle', ['controller' => 'Likes', 'action' => 'toggle', '_method' => 'POST']);
 
+    $routes->connect('/notifications', ['controller' => 'Notifications', 'action' => 'index']);
+
     $routes->scope('/', function (RouteBuilder $builder): void {
         /*
          * Here, we are connecting '/' (base path) to a controller called 'Pages',
