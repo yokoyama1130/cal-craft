@@ -75,26 +75,28 @@ class PortfoliosController extends AppController
      * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
-    public function edit($id)
+    public function edit($id = null)
     {
         $portfolio = $this->Portfolios->get($id);
     
-        // 自分の投稿のみ編集可
-        if ($portfolio->user_id !== $this->request->getAttribute('identity')->get('id')) {
-            throw new ForbiddenException();
+        // ログインユーザー以外が編集しようとしたらリダイレクト
+        if ($portfolio->user_id !== $this->request->getAttribute('identity')->getIdentifier()) {
+            $this->Flash->error('この投稿を編集する権限がありません。');
+            return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
         }
     
-        if ($this->request->is(['post', 'put'])) {
-            $this->Portfolios->patchEntity($portfolio, $this->request->getData());
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $portfolio = $this->Portfolios->patchEntity($portfolio, $this->request->getData());
             if ($this->Portfolios->save($portfolio)) {
-                $this->Flash->success('更新しました');
+                $this->Flash->success(__('投稿が更新されました。'));
                 return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
             }
-            $this->Flash->error('更新に失敗しました');
+            $this->Flash->error(__('投稿の更新に失敗しました。'));
         }
     
         $this->set(compact('portfolio'));
     }
+    
     
 
     /**

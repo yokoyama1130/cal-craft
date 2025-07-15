@@ -1,48 +1,29 @@
-<?php
-/**
- * @var \App\View\AppView $this
- * @var iterable<\App\Model\Entity\Portfolio> $portfolios
- */
-?>
-<div class="portfolios index content">
-    <?= $this->Html->link(__('New Portfolio'), ['action' => 'add'], ['class' => 'button float-right']) ?>
-    <h3><?= __('Portfolios') ?></h3>
-    <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th><?= $this->Paginator->sort('id') ?></th>
-                    <th><?= $this->Paginator->sort('user_id') ?></th>
-                    <th><?= $this->Paginator->sort('title') ?></th>
-                    <th><?= $this->Paginator->sort('thumbnail') ?></th>
-                    <th class="actions"><?= __('Actions') ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($portfolios as $portfolio): ?>
-                <tr>
-                    <td><?= $this->Number->format($portfolio->id) ?></td>
-                    <td><?= $portfolio->has('user') ? $this->Html->link($portfolio->user->name, ['controller' => 'Users', 'action' => 'view', $portfolio->user->id]) : '' ?></td>
-                    <td><?= h($portfolio->title) ?></td>
-                    <td><?= h($portfolio->thumbnail) ?></td>
-                    <td class="actions">
-                        <?= $this->Html->link(__('View'), ['action' => 'view', $portfolio->id]) ?>
-                        <?= $this->Html->link(__('Edit'), ['action' => 'edit', $portfolio->id]) ?>
-                        <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $portfolio->id], ['confirm' => __('Are you sure you want to delete # {0}?', $portfolio->id)]) ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <div class="paginator">
-        <ul class="pagination">
-            <?= $this->Paginator->first('<< ' . __('first')) ?>
-            <?= $this->Paginator->prev('< ' . __('previous')) ?>
-            <?= $this->Paginator->numbers() ?>
-            <?= $this->Paginator->next(__('next') . ' >') ?>
-            <?= $this->Paginator->last(__('last') . ' >>') ?>
-        </ul>
-        <p><?= $this->Paginator->counter(__('Page {{page}} of {{pages}}, showing {{current}} record(s) out of {{count}} total')) ?></p>
-    </div>
+<h2 class="mb-4">ポートフォリオ一覧</h2>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+  <?php foreach ($portfolios as $portfolio): ?>
+    <?php if ($portfolio->is_public): ?>
+      <div class="col">
+        <div class="card h-100 shadow-sm">
+          <img src="<?= h($portfolio->thumbnail) ?>" class="card-img-top" alt="<?= h($portfolio->title) ?>">
+          <div class="card-body">
+            <h5 class="card-title"><?= h($portfolio->title) ?></h5>
+            <p class="card-text"><?= h($portfolio->description) ?></p>
+          </div>
+          <div class="card-footer d-flex justify-content-between">
+            <a href="/portfolios/view/<?= $portfolio->id ?>" class="btn btn-outline-primary btn-sm">詳細</a>
+            <?php if ($this->Identity->get('id') === $portfolio->user_id): ?>
+              <div>
+                <a href="/portfolios/edit/<?= $portfolio->id ?>" class="btn btn-outline-secondary btn-sm">編集</a>
+                <?= $this->Form->postLink('削除', ['action' => 'delete', $portfolio->id], [
+                  'confirm' => '削除してよろしいですか？',
+                  'class' => 'btn btn-outline-danger btn-sm'
+                ]) ?>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    <?php endif; ?>
+  <?php endforeach; ?>
 </div>

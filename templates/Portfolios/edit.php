@@ -1,36 +1,30 @@
-<?php
-/**
- * @var \App\View\AppView $this
- * @var \App\Model\Entity\Portfolio $portfolio
- * @var string[]|\Cake\Collection\CollectionInterface $users
- */
-?>
-<div class="row">
-    <aside class="column">
-        <div class="side-nav">
-            <h4 class="heading"><?= __('Actions') ?></h4>
-            <?= $this->Form->postLink(
-                __('Delete'),
-                ['action' => 'delete', $portfolio->id],
-                ['confirm' => __('Are you sure you want to delete # {0}?', $portfolio->id), 'class' => 'side-nav-item']
-            ) ?>
-            <?= $this->Html->link(__('List Portfolios'), ['action' => 'index'], ['class' => 'side-nav-item']) ?>
-        </div>
-    </aside>
-    <div class="column-responsive column-80">
-        <div class="portfolios form content">
-            <?= $this->Form->create($portfolio) ?>
-            <fieldset>
-                <legend><?= __('Edit Portfolio') ?></legend>
-                <?php
-                    echo $this->Form->control('user_id', ['options' => $users]);
-                    echo $this->Form->control('title');
-                    echo $this->Form->control('description');
-                    echo $this->Form->control('thumbnail');
-                ?>
-            </fieldset>
-            <?= $this->Form->button(__('Submit')) ?>
-            <?= $this->Form->end() ?>
-        </div>
+<h2>投稿の編集</h2>
+
+<div class="card p-4 shadow-sm">
+  <?= $this->Form->create($portfolio) ?>
+    <div class="mb-3">
+      <?= $this->Form->control('title', ['label' => 'タイトル', 'class' => 'form-control']) ?>
     </div>
+    <div class="mb-3">
+      <?= $this->Form->control('description', ['label' => '詳細', 'class' => 'form-control']) ?>
+    </div>
+    <div class="mb-3">
+      <?= $this->Form->control('thumbnail', ['label' => 'サムネイル画像URL', 'class' => 'form-control']) ?>
+    </div>
+    <div class="mb-3">
+      <?= $this->Form->control('link', [
+        'label' => '関連リンク（任意）',
+        'class' => 'form-control',
+        'placeholder' => 'https://...'
+      ]) ?>
+    </div>
+    <div class="form-check mb-3">
+      <?= $this->Form->control('is_public', [
+        'type' => 'checkbox',
+        'label' => '公開する',
+        'class' => 'form-check-input',
+      ]) ?>
+    </div>
+    <?= $this->Form->button('更新', ['class' => 'btn btn-primary']) ?>
+  <?= $this->Form->end() ?>
 </div>
