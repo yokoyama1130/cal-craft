@@ -8,15 +8,11 @@ class TopController extends AppController
     public function index()
     {
         $this->loadModel('Portfolios');
-        $portfolios = $this->Portfolios
-            ->find()
-            ->contain(['Users'])
-            // ↓↓↓↓↓↓後でコメントアウト解除する↓↓↓↓↓↓
-            // ->order(['created' => 'DESC']) // or rand()
-            ->limit(6)
-            ->all();
+        $portfolios = $this->Portfolios->find()
+            ->where(['is_public' => true])
+            ->order(['created' => 'DESC'])
+            ->limit(10);
     
         $this->set(compact('portfolios'));
-    }
-    
+    }    
 }

@@ -33,5 +33,6 @@ class Portfolio extends Entity
         'description' => true,
         'thumbnail' => true,
         'user' => true,
+        'is_public' => true,
     ];
 }
