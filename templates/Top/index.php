@@ -29,9 +29,10 @@ use Cake\Utility\Text;
                         <?= $this->Form->create(null, ['url' => ['controller' => 'Likes', 'action' => 'add'], 'type' => 'post']) ?>
                         <?= $this->Form->hidden('portfolio_id', ['value' => $p->id]) ?>
 
-                        <button class="btn border-0 bg-white">
+                        <button class="btn border-0 bg-white like-button" data-portfolio-id="<?= h($p->id) ?>">
                             <i class="fa-heart fa-2x <?= $p->liked_by_me ? 'fas liked' : 'far not-liked' ?>"></i>
                         </button>
+
 
                         <?= $this->Form->end() ?>
                         <div class="small text-muted mt-1">
@@ -44,3 +45,40 @@ use Cake\Utility\Text;
         <?php endforeach; ?>
     </div>
 </div>
+
+<script>
+document.querySelectorAll('.like-button').forEach(button => {
+    button.addEventListener('click', function (e) {
+        e.preventDefault();
+        const portfolioId = this.dataset.portfolioId;
+        const icon = this.querySelector('i');
+        const countElem = this.parentElement.querySelector('.like-count');
+
+        fetch('/likes/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': document.querySelector('meta[name="csrfToken"]').content
+            },
+            body: `portfolio_id=${portfolioId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // アイコン切り替え
+                if (data.liked) {
+                    icon.classList.remove('far', 'not-liked');
+                    icon.classList.add('fas', 'liked');
+                } else {
+                    icon.classList.remove('fas', 'liked');
+                    icon.classList.add('far', 'not-liked');
+                }
+
+                // いいね数更新
+                countElem.textContent = `👍 ${data.likeCount}件のいいね`;
+            }
+        });
+    });
+});
+</script>
+

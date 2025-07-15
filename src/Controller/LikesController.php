@@ -51,7 +51,44 @@ class LikesController extends AppController
         $this->Flash->error('いいねできませんでした');
         return $this->redirect($this->referer());
     }
-    
 
-    
+    public function toggle()
+    {
+        $this->request->allowMethod(['post']);
+        $this->autoRender = false;
+
+        $this->loadModel('Likes');
+        $user = $this->Authentication->getIdentity();
+        $userId = $user->get('id');
+        $portfolioId = $this->request->getData('portfolio_id');
+
+        // 既にいいね済みか確認
+        $existingLike = $this->Likes->find()
+            ->where(['user_id' => $userId, 'portfolio_id' => $portfolioId])
+            ->first();
+
+        if ($existingLike) {
+            $this->Likes->delete($existingLike);
+            $liked = false;
+        } else {
+            $like = $this->Likes->newEntity([
+                'user_id' => $userId,
+                'portfolio_id' => $portfolioId
+            ]);
+            $this->Likes->save($like);
+            $liked = true;
+        }
+
+        $likeCount = $this->Likes->find()
+            ->where(['portfolio_id' => $portfolioId])
+            ->count();
+
+        return $this->response->withType('application/json')
+            ->withStringBody(json_encode([
+                'success' => true,
+                'liked' => $liked,
+                'likeCount' => $likeCount
+            ]));
+    }
+
 }

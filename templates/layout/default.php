@@ -13,6 +13,7 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
     <!-- Font Awesome を Bootstrap より後ろに追加 -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
+    <?= $this->Html->meta('csrfToken', $this->request->getAttribute('csrfToken')) ?>
 
     <style>
     body {
