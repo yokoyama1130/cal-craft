@@ -51,6 +51,9 @@ class PortfoliosTable extends Table
             'foreignKey' => 'user_id',
             'joinType' => 'INNER',
         ]);
+
+        $this->hasMany('Likes');
+
     }
 
     /**

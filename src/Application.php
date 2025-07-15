@@ -52,6 +52,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         // Call parent to load bootstrap from files.
         parent::bootstrap();
 
+        $this->addPlugin('Authentication');
+
         if (PHP_SAPI === 'cli') {
             $this->bootstrapCli();
         } else {
@@ -140,7 +142,10 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
-        $service = new AuthenticationService();
+        $service = new AuthenticationService([
+            'unauthenticatedRedirect' => '/users/login', // ← ここ重要！
+            'queryParam' => 'redirect',
+        ]);
 
         $service->loadIdentifier('Authentication.Password', [
             'fields' => [

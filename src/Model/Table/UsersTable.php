@@ -46,6 +46,9 @@ class UsersTable extends Table
         $this->hasMany('Portfolios', [
             'foreignKey' => 'user_id',
         ]);
+        
+        $this->hasMany('Likes');
+
     }
 
     /**

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Cake\ORM\TableRegistry;
+
 /**
  * Portfolios Controller
  *
@@ -16,15 +18,26 @@ class PortfoliosController extends AppController
      *
      * @return \Cake\Http\Response|null|void Renders view
      */
+    // src/Controller/PortfoliosController.php
+
     public function index()
     {
-        $this->paginate = [
-            'contain' => ['Users'],
-        ];
-        $portfolios = $this->paginate($this->Portfolios);
+        $this->loadModel('Likes');
+
+        $portfolios = $this->Portfolios->find('all', [
+            'contain' => ['Users']
+        ])->toArray();
+
+        // 各ポートフォリオにいいね数を追加
+        foreach ($portfolios as $p) {
+            $p->like_count = $this->Likes->find()
+                ->where(['portfolio_id' => $p->id])
+                ->count();
+        }
 
         $this->set(compact('portfolios'));
     }
+
 
     /**
      * View method
