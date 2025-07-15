@@ -3,25 +3,19 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-/**
- * Users Controller
- *
- * @property \App\Model\Table\UsersTable $Users
- * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
- */
 class UsersController extends AppController
 {
     public function initialize(): void
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
+        $this->loadModel('Follows');
+        $this->loadModel('Portfolios');
     }
 
     public function beforeFilter(\Cake\Event\EventInterface $event)
     {
         parent::beforeFilter($event);
-
-        // ログインなしでアクセスできるアクション
         $this->Authentication->addUnauthenticatedActions(['login', 'register']);
     }
 
@@ -48,7 +42,6 @@ class UsersController extends AppController
         }
         return $this->redirect('/');
     }
-    
 
     public function register()
     {
@@ -66,73 +59,70 @@ class UsersController extends AppController
 
     public function profile($id = null)
     {
-        $this->loadModel('Followers');
-        $this->loadModel('Portfolios');
-    
         $userId = $id ?? $this->request->getAttribute('identity')->get('id');
-    
+        $authId = $this->request->getAttribute('identity')->get('id');
+
         $user = $this->Users->get($userId);
-    
-        $followingCount = $this->Followers->find()
+
+        $followerCount = $this->Follows->find()
+            ->where(['followed_id' => $userId])
+            ->count();
+
+        $followingCount = $this->Follows->find()
             ->where(['follower_id' => $userId])
             ->count();
-    
-        $followerCount = $this->Followers->find()
-            ->where(['followee_id' => $userId])
-            ->count();
-    
-        $authId = $this->request->getAttribute('identity')->get('id');
+
         $isFollowing = false;
         if ($authId && $authId != $userId) {
-            $isFollowing = $this->Followers->exists([
+            $isFollowing = $this->Follows->exists([
                 'follower_id' => $authId,
-                'followee_id' => $userId
+                'followed_id' => $userId
             ]);
         }
-    
-        // 🔽 投稿一覧を取得
+
         $portfolios = $this->Portfolios->find()
             ->where(['user_id' => $userId])
             ->order(['created' => 'DESC'])
             ->toArray();
-    
-        $this->set(compact('user', 'followingCount', 'followerCount', 'isFollowing', 'portfolios'));
-    }
-    
 
-    /**
-     * Index method
-     *
-     * @return \Cake\Http\Response|null|void Renders view
-     */
+        $this->set(compact('user', 'followerCount', 'followingCount', 'isFollowing', 'portfolios'));
+    }
+
+    public function view($id)
+    {
+        $authId = $this->request->getAttribute('identity')->get('id');
+
+        $user = $this->Users->get($id);
+        $followerCount = $this->Follows->find()
+            ->where(['followed_id' => $id])
+            ->count();
+
+        $followingCount = $this->Follows->find()
+            ->where(['follower_id' => $id])
+            ->count();
+
+        $isFollowing = false;
+        if ($authId && $authId != $id) {
+            $isFollowing = $this->Follows->exists([
+                'follower_id' => $authId,
+                'followed_id' => $id
+            ]);
+        }
+
+        $portfolios = $this->Portfolios->find()
+            ->where(['user_id' => $id])
+            ->order(['created' => 'DESC'])
+            ->toArray();
+
+        $this->set(compact('user', 'followerCount', 'followingCount', 'isFollowing', 'portfolios'));
+    }
+
     public function index()
     {
         $users = $this->paginate($this->Users);
-
         $this->set(compact('users'));
     }
 
-    /**
-     * View method
-     *
-     * @param string|null $id User id.
-     * @return \Cake\Http\Response|null|void Renders view
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function view($id = null)
-    {
-        $user = $this->Users->get($id, [
-            'contain' => ['Portfolios'],
-        ]);
-
-        $this->set(compact('user'));
-    }
-
-    /**
-     * Add method
-     *
-     * @return \Cake\Http\Response|null|void Redirects on successful add, renders view otherwise.
-     */
     public function add()
     {
         $user = $this->Users->newEmptyEntity();
@@ -140,7 +130,6 @@ class UsersController extends AppController
             $user = $this->Users->patchEntity($user, $this->request->getData());
             if ($this->Users->save($user)) {
                 $this->Flash->success(__('The user has been saved.'));
-
                 return $this->redirect(['action' => 'index']);
             }
             $this->Flash->error(__('The user could not be saved. Please, try again.'));
@@ -148,23 +137,13 @@ class UsersController extends AppController
         $this->set(compact('user'));
     }
 
-    /**
-     * Edit method
-     *
-     * @param string|null $id User id.
-     * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
     public function edit($id = null)
     {
-        $user = $this->Users->get($id, [
-            'contain' => [],
-        ]);
+        $user = $this->Users->get($id);
         if ($this->request->is(['patch', 'post', 'put'])) {
             $user = $this->Users->patchEntity($user, $this->request->getData());
             if ($this->Users->save($user)) {
                 $this->Flash->success(__('The user has been saved.'));
-
                 return $this->redirect(['action' => 'index']);
             }
             $this->Flash->error(__('The user could not be saved. Please, try again.'));
@@ -172,13 +151,6 @@ class UsersController extends AppController
         $this->set(compact('user'));
     }
 
-    /**
-     * Delete method
-     *
-     * @param string|null $id User id.
-     * @return \Cake\Http\Response|null|void Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
     public function delete($id = null)
     {
         $this->request->allowMethod(['post', 'delete']);

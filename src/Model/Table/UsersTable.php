@@ -38,18 +38,28 @@ class UsersTable extends Table
     public function initialize(array $config): void
     {
         parent::initialize($config);
-
+    
         $this->setTable('users');
         $this->setDisplayField('name');
         $this->setPrimaryKey('id');
-
-        $this->hasMany('Portfolios', [
-            'foreignKey' => 'user_id',
-        ]);
-        
+    
+        // 既存のアソシエーション
+        $this->hasMany('Portfolios');
         $this->hasMany('Likes');
-
+    
+        // 👇 フォロワー（自分をフォローしているユーザーたち）
+        $this->hasMany('Followers', [
+            'className' => 'Follows',
+            'foreignKey' => 'followed_id'
+        ]);
+    
+        // 👇 フォロー中（自分がフォローしているユーザーたち）
+        $this->hasMany('Followings', [
+            'className' => 'Follows',
+            'foreignKey' => 'follower_id'
+        ]);
     }
+    
 
     /**
      * Default validation rules.

@@ -1,67 +1,42 @@
-<?php
-/**
- * @var \App\View\AppView $this
- * @var \App\Model\Entity\User $user
- */
-?>
-<div class="row">
-    <aside class="column">
-        <div class="side-nav">
-            <h4 class="heading"><?= __('Actions') ?></h4>
-            <?= $this->Html->link(__('Edit User'), ['action' => 'edit', $user->id], ['class' => 'side-nav-item']) ?>
-            <?= $this->Form->postLink(__('Delete User'), ['action' => 'delete', $user->id], ['confirm' => __('Are you sure you want to delete # {0}?', $user->id), 'class' => 'side-nav-item']) ?>
-            <?= $this->Html->link(__('List Users'), ['action' => 'index'], ['class' => 'side-nav-item']) ?>
-            <?= $this->Html->link(__('New User'), ['action' => 'add'], ['class' => 'side-nav-item']) ?>
+<div class="container mt-5">
+
+<h2><?= h($user->name) ?>さんのプロフィール</h2>
+
+<div class="mb-3">
+    <span><strong><?= $followerCount ?></strong> フォロワー</span> ／
+    <span><strong><?= $followingCount ?></strong> フォロー中</span>
+</div>
+
+<?php if ($this->request->getAttribute('identity')->get('id') !== $user->id): ?>
+    <?php if ($isFollowing): ?>
+        <?= $this->Form->postLink('フォロー解除', ['controller' => 'Follows', 'action' => 'unfollow', $user->id], ['class' => 'btn btn-outline-secondary']) ?>
+    <?php else: ?>
+        <?= $this->Form->postLink('フォロー', ['controller' => 'Follows', 'action' => 'follow', $user->id], ['class' => 'btn btn-primary']) ?>
+    <?php endif; ?>
+<?php endif; ?>
+
+
+  <h2 class="mb-4">あなたの投稿一覧</h2>
+
+  <?php foreach ($portfolios as $p): ?>
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5><?= h($p->title) ?></h5>
+        <p><?= h($p->description) ?></p>
+        <p class="text-muted">公開状態：<?= $p->is_public ? '公開' : '非公開' ?></p>
+
+        <div class="d-flex">
+          <a href="/portfolios/edit/<?= $p->id ?>" class="btn btn-outline-primary btn-sm me-2">編集</a>
+        <?= $this->Form->postLink(
+            '削除',
+            ['controller' => 'Portfolios', 'action' => 'delete', $p->id],
+            [
+                'class' => 'btn btn-outline-danger btn-sm',
+                'confirm' => '本当にこの投稿を削除しますか？'
+            ]
+        ) ?>
         </div>
-    </aside>
-    <div class="column-responsive column-80">
-        <div class="users view content">
-            <h3><?= h($user->name) ?></h3>
-            <table>
-                <tr>
-                    <th><?= __('Name') ?></th>
-                    <td><?= h($user->name) ?></td>
-                </tr>
-                <tr>
-                    <th><?= __('Email') ?></th>
-                    <td><?= h($user->email) ?></td>
-                </tr>
-                <tr>
-                    <th><?= __('Id') ?></th>
-                    <td><?= $this->Number->format($user->id) ?></td>
-                </tr>
-            </table>
-            <div class="related">
-                <h4><?= __('Related Portfolios') ?></h4>
-                <?php if (!empty($user->portfolios)) : ?>
-                <div class="table-responsive">
-                    <table>
-                        <tr>
-                            <th><?= __('Id') ?></th>
-                            <th><?= __('User Id') ?></th>
-                            <th><?= __('Title') ?></th>
-                            <th><?= __('Description') ?></th>
-                            <th><?= __('Thumbnail') ?></th>
-                            <th class="actions"><?= __('Actions') ?></th>
-                        </tr>
-                        <?php foreach ($user->portfolios as $portfolios) : ?>
-                        <tr>
-                            <td><?= h($portfolios->id) ?></td>
-                            <td><?= h($portfolios->user_id) ?></td>
-                            <td><?= h($portfolios->title) ?></td>
-                            <td><?= h($portfolios->description) ?></td>
-                            <td><?= h($portfolios->thumbnail) ?></td>
-                            <td class="actions">
-                                <?= $this->Html->link(__('View'), ['controller' => 'Portfolios', 'action' => 'view', $portfolios->id]) ?>
-                                <?= $this->Html->link(__('Edit'), ['controller' => 'Portfolios', 'action' => 'edit', $portfolios->id]) ?>
-                                <?= $this->Form->postLink(__('Delete'), ['controller' => 'Portfolios', 'action' => 'delete', $portfolios->id], ['confirm' => __('Are you sure you want to delete # {0}?', $portfolios->id)]) ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </table>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
+      </div>
     </div>
+  <?php endforeach; ?>
 </div>
