@@ -72,40 +72,55 @@ class LikesController extends AppController
     public function toggle()
     {
         $this->request->allowMethod(['post']);
-        $this->autoRender = false;
-
         $this->loadModel('Likes');
-        $user = $this->Authentication->getIdentity();
-        $userId = $user->get('id');
+        $this->loadModel('Notifications');
+        $this->loadModel('Portfolios');
+    
+        $userId = $this->request->getAttribute('identity')->get('id');
         $portfolioId = $this->request->getData('portfolio_id');
-
-        // 既にいいね済みか確認
-        $existingLike = $this->Likes->find()
+    
+        $existing = $this->Likes->find()
             ->where(['user_id' => $userId, 'portfolio_id' => $portfolioId])
             ->first();
-
-        if ($existingLike) {
-            $this->Likes->delete($existingLike);
-            $liked = false;
+    
+        $liked = false;
+    
+        if ($existing) {
+            // いいね解除
+            $this->Likes->delete($existing);
         } else {
+            // いいね登録
             $like = $this->Likes->newEntity([
                 'user_id' => $userId,
-                'portfolio_id' => $portfolioId
+                'portfolio_id' => $portfolioId,
             ]);
             $this->Likes->save($like);
             $liked = true;
+    
+            // 通知を送る（自分以外にのみ）
+            $portfolio = $this->Portfolios->get($portfolioId);
+            if ($portfolio->user_id !== $userId) {
+                $notification = $this->Notifications->newEntity([
+                    'user_id' => $portfolio->user_id,   // 通知を受け取る人
+                    'sender_id' => $userId,             // 通知を送った人
+                    'portfolio_id' => $portfolio->id,
+                    'type' => 'like',
+                    'is_read' => false,
+                ]);
+                $this->Notifications->save($notification);
+            }
         }
-
+    
+        // 最新のいいね数
         $likeCount = $this->Likes->find()
             ->where(['portfolio_id' => $portfolioId])
             ->count();
-
-        return $this->response->withType('application/json')
-            ->withStringBody(json_encode([
-                'success' => true,
-                'liked' => $liked,
-                'likeCount' => $likeCount
-            ]));
+    
+        return $this->response->withType('application/json')->withStringBody(json_encode([
+            'success' => true,
+            'liked' => $liked,
+            'likeCount' => $likeCount,
+        ]));
     }
-
+    
 }
