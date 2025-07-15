@@ -64,19 +64,41 @@ class UsersController extends AppController
         $this->set(compact('user'));
     }
 
-    public function profile()
+    public function profile($id = null)
     {
-        $userId = $this->request->getAttribute('identity')->get('id');
-
+        $this->loadModel('Followers');
         $this->loadModel('Portfolios');
-        $portfolios = $this->Portfolios
-            ->find()
+    
+        $userId = $id ?? $this->request->getAttribute('identity')->get('id');
+    
+        $user = $this->Users->get($userId);
+    
+        $followingCount = $this->Followers->find()
+            ->where(['follower_id' => $userId])
+            ->count();
+    
+        $followerCount = $this->Followers->find()
+            ->where(['followee_id' => $userId])
+            ->count();
+    
+        $authId = $this->request->getAttribute('identity')->get('id');
+        $isFollowing = false;
+        if ($authId && $authId != $userId) {
+            $isFollowing = $this->Followers->exists([
+                'follower_id' => $authId,
+                'followee_id' => $userId
+            ]);
+        }
+    
+        // 🔽 投稿一覧を取得
+        $portfolios = $this->Portfolios->find()
             ->where(['user_id' => $userId])
             ->order(['created' => 'DESC'])
-            ->all();
-
-        $this->set(compact('portfolios'));
+            ->toArray();
+    
+        $this->set(compact('user', 'followingCount', 'followerCount', 'isFollowing', 'portfolios'));
     }
+    
 
     /**
      * Index method

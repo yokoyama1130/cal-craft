@@ -1,4 +1,21 @@
 <div class="container mt-5">
+
+<h2><?= h($user->name) ?>さんのプロフィール</h2>
+
+<div class="mb-3">
+    <span><strong><?= $followerCount ?></strong> フォロワー</span> ／
+    <span><strong><?= $followingCount ?></strong> フォロー中</span>
+</div>
+
+<?php if ($this->request->getAttribute('identity')->get('id') !== $user->id): ?>
+    <?php if ($isFollowing): ?>
+        <?= $this->Form->postLink('フォロー解除', ['controller' => 'Follows', 'action' => 'unfollow', $user->id], ['class' => 'btn btn-outline-secondary']) ?>
+    <?php else: ?>
+        <?= $this->Form->postLink('フォロー', ['controller' => 'Follows', 'action' => 'follow', $user->id], ['class' => 'btn btn-primary']) ?>
+    <?php endif; ?>
+<?php endif; ?>
+
+
   <h2 class="mb-4">あなたの投稿一覧</h2>
 
   <?php foreach ($portfolios as $p): ?>
