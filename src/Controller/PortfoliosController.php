@@ -39,6 +39,12 @@ class PortfoliosController extends AppController
             'contain' => ['Users'],
         ]);
 
+        // 非公開の投稿は本人以外見れない
+        if (!$portfolio->is_public && $portfolio->user_id !== $this->request->getAttribute('identity')->get('id')) {
+            $this->Flash->error('この投稿にはアクセスできません。');
+            return $this->redirect(['action' => 'index']);
+        }
+
         $this->set(compact('portfolio'));
     }
 
