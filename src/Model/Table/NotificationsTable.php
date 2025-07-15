@@ -41,21 +41,29 @@ class NotificationsTable extends Table
     public function initialize(array $config): void
     {
         parent::initialize($config);
-
+    
         $this->setTable('notifications');
         $this->setDisplayField('id');
         $this->setPrimaryKey('id');
-
-        $this->addBehavior('Timestamp');
-
+    
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
+            'joinType' => 'INNER',
         ]);
+    
         $this->belongsTo('Portfolios', [
             'foreignKey' => 'portfolio_id',
+            'joinType' => 'LEFT',
+        ]);
+    
+        // 👇追加
+        $this->belongsTo('SenderUsers', [
+            'className' => 'Users',
+            'foreignKey' => 'sender_id',
+            'joinType' => 'LEFT'
         ]);
     }
-
+    
     /**
      * Default validation rules.
      *
