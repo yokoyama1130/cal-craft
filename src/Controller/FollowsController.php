@@ -1,57 +1,57 @@
 <?php
 declare(strict_types=1);
 
-// src/Controller/FollowsController.php
 namespace App\Controller;
 
 class FollowsController extends AppController
 {
-    public function follow($id)
+    public function initialize(): void
     {
-        $this->request->allowMethod(['post']);
-        $this->loadModel('Followers');
+        parent::initialize();
+        $this->loadComponent('Authentication.Authentication');
+    }
 
+    // フォロー処理
+    public function follow($userId)
+    {
         $followerId = $this->request->getAttribute('identity')->get('id');
-        $followeeId = (int)$id;
 
-        if ($followerId === $followeeId) {
-            $this->Flash->error('自分自身をフォローできません。');
+        if ($followerId == $userId) {
             return $this->redirect($this->referer());
         }
 
-        $exists = $this->Followers->exists([
+        $this->loadModel('Follows');
+        $exists = $this->Follows->exists([
             'follower_id' => $followerId,
-            'followee_id' => $followeeId
+            'followed_id' => $userId // ✅ 修正ポイント
         ]);
 
         if (!$exists) {
-            $f = $this->Followers->newEntity([
+            $follow = $this->Follows->newEntity([
                 'follower_id' => $followerId,
-                'followee_id' => $followeeId
+                'followed_id' => $userId // ✅ 修正ポイント
             ]);
-            $this->Followers->save($f);
+            $this->Follows->save($follow);
         }
 
         return $this->redirect($this->referer());
     }
 
-    public function unfollow($id)
+    // フォロー解除処理
+    public function unfollow($userId)
     {
-        $this->request->allowMethod(['post']);
-        $this->loadModel('Followers');
-
         $followerId = $this->request->getAttribute('identity')->get('id');
-        $followeeId = (int)$id;
 
-        $entity = $this->Followers->find()
+        $this->loadModel('Follows');
+        $follow = $this->Follows->find()
             ->where([
                 'follower_id' => $followerId,
-                'followee_id' => $followeeId
+                'followed_id' => $userId // ✅ 修正ポイント
             ])
             ->first();
 
-        if ($entity) {
-            $this->Followers->delete($entity);
+        if ($follow) {
+            $this->Follows->delete($follow);
         }
 
         return $this->redirect($this->referer());

@@ -48,10 +48,12 @@ return function (RouteBuilder $routes): void {
      * `{action}` markers.
      */
     $routes->setRouteClass(DashedRoute::class);
-
     $routes->connect('/likes/toggle', ['controller' => 'Likes', 'action' => 'toggle', '_method' => 'POST']);
-
     $routes->connect('/notifications', ['controller' => 'Notifications', 'action' => 'index']);
+    // config/routes.php
+    $routes->connect('/follows/follow/:id', ['controller' => 'Follows', 'action' => 'follow'], ['pass' => ['id']]);
+    $routes->connect('/follows/unfollow/:id', ['controller' => 'Follows', 'action' => 'unfollow'], ['pass' => ['id']]);
+
 
     $routes->scope('/', function (RouteBuilder $builder): void {
         /*
