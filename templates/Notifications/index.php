@@ -33,7 +33,7 @@
                     <?php endif; ?>
 
                     <div class="small text-muted mt-1">
-                        <?= $n->created->nice() ?>
+                        <?= $n->created ? $n->created->nice() : '日時不明' ?>
                     </div>
                 </div>
 
