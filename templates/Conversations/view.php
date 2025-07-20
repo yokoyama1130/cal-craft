@@ -4,7 +4,13 @@
     <?php foreach ($messages as $m): ?>
         <?php $isMine = $m->sender_id === $userId; ?>
         <div class="d-flex <?= $isMine ? 'justify-content-end' : 'justify-content-start' ?> mb-2">
-            <div class="<?= $isMine ? 'bg-primary text-white' : 'bg-light' ?> rounded px-3 py-2" style="max-width: 70%;">
+            <div style="
+                max-width: 70%;
+                background-color: <?= $isMine ? '#60a9ff' : '#f1f1f1' ?>;
+                color: <?= $isMine ? '#fff' : '#000' ?>;
+                border-radius: 12px;
+                padding: 10px;
+            ">
                 <div class="small fw-bold"><?= h($m->sender->name) ?></div>
                 <div><?= nl2br(h($m->content)) ?></div>
                 <div class="text-muted small text-end"><?= $m->created->nice() ?></div>
