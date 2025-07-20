@@ -6,34 +6,40 @@
     <div class="list-group">
         <?php foreach ($notifications as $n): ?>
             <?php
-                $senderName = $n->sender ? h($n->sender->name) : '不明なユーザー';
+                $sender = $n->sender_user ?? null;
+                $senderName = $sender ? h($sender->name) : '不明なユーザー';
                 $message = '';
+                $link = null;
 
                 switch ($n->type) {
                     case 'like':
                         $message = "{$senderName} さんがあなたの投稿にいいねしました。";
+                        $link = ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id];
                         break;
                     case 'comment':
                         $message = "{$senderName} さんがあなたの投稿にコメントしました。";
+                        $link = ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id];
                         break;
                     case 'follow':
                         $message = "{$senderName} さんがあなたをフォローしました。";
+                        $link = ['controller' => 'Users', 'action' => 'profile', $sender->id];
                         break;
                     default:
                         $message = "{$senderName} さんから通知があります。";
+                        break;
                 }
             ?>
 
             <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start <?= $n->is_read ? '' : 'bg-light' ?>">
                 <div class="ms-2 me-auto">
-                    <?php if (!empty($n->portfolio_id)): ?>
-                        <?= $this->Html->link($message, ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id], ['class' => 'text-decoration-none fw-semibold text-dark']) ?>
+                    <?php if ($link): ?>
+                        <?= $this->Html->link($message, $link, ['class' => 'text-decoration-none fw-semibold text-dark']) ?>
                     <?php else: ?>
                         <span class="fw-semibold"><?= h($message) ?></span>
                     <?php endif; ?>
 
                     <div class="small text-muted mt-1">
-                        <?= $n->created ? $n->created->nice() : '日時不明' ?>
+                        <?= $n->created?->nice() ?? '' ?>
                     </div>
                 </div>
 

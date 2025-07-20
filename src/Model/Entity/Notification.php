@@ -41,5 +41,6 @@ class Notification extends Entity
         'modified' => true,
         'user' => true,
         'portfolio' => true,
+        'sender_user' => true,
     ];
 }
