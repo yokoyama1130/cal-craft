@@ -48,6 +48,14 @@
     <?php endif; ?>
 </div>
 
+<?php if ($this->request->getAttribute('identity')->get('id') !== $user->id): ?>
+    <!-- フォローボタンなどのあとに追加 -->
+    <?= $this->Html->link('チャットを開始する 💬', 
+        ['controller' => 'Conversations', 'action' => 'start', $user->id], 
+        ['class' => 'btn btn-outline-success mt-2']
+    ) ?>
+<?php endif; ?>
+
 <!-- 投稿一覧 -->
 <h2 class="mb-4">あなたの投稿一覧</h2>
 
