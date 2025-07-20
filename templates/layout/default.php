@@ -109,7 +109,7 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
             </a>
           </li>
         <?php endif; ?>
-        <li><a href="/portfolios/search">検索</a></li>
+        <li><a href="/users/search">ユーザー検索</a></li>
         <li><a href="/favorites">お気に入り</a></li>
         <li><a href="/portfolios/add">投稿する</a></li>
         <li><a href="/conversations">メッセージ</a></li>

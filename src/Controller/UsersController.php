@@ -226,4 +226,21 @@ class UsersController extends AppController
 
         $this->set(compact('followers'));
     }
+
+    public function search()
+    {
+        $this->request->allowMethod(['get']);
+        $keyword = $this->request->getQuery('q');
+
+        $users = [];
+        if (!empty($keyword)) {
+            $users = $this->Users->find()
+                ->where(['Users.name LIKE' => '%' . $keyword . '%'])
+                ->limit(50)
+                ->toArray();
+        }
+
+        $this->set(compact('users', 'keyword'));
+    }
+
 }
