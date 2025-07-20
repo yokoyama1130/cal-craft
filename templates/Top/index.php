@@ -3,9 +3,11 @@ use Cake\Utility\Text;
 ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <div class="container mt-4">
-    <!-- 検索フォーム -->
+
     <form action="/portfolios/search" method="get" class="mb-4">
-        <input type="text" name="q" class="form-control form-control-lg" placeholder="検索...">
+        <input type="text" name="q" class="form-control form-control-lg"
+            placeholder="検索..."
+            value="<?= h($keyword ?? '') ?>">
     </form>
 
     <h2 class="mb-4">ホーム画面</h2>
@@ -32,12 +34,10 @@ use Cake\Utility\Text;
                         <button class="btn border-0 bg-white like-button" data-portfolio-id="<?= h($p->id) ?>">
                             <i class="fa-heart fa-2x <?= $p->liked_by_me ? 'fas liked' : 'far not-liked' ?>"></i>
                         </button>
-
-
-                        <?= $this->Form->end() ?>
-                        <div class="small text-muted mt-1">
+                        <div class="small text-muted mt-1 like-count">
                             👍 <?= h($p->like_count) ?>件のいいね
                         </div>
+                        <?= $this->Form->end() ?>
                     </div>
 
                 </div>

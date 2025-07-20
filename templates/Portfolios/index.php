@@ -1,5 +1,12 @@
-<h2 class="mb-4">ポートフォリオ一覧</h2>
-
+<form action="/portfolios/search" method="get" class="mb-4">
+    <input type="text" name="q" class="form-control form-control-lg"
+        placeholder="検索..."
+        value="<?= h($keyword ?? '') ?>">
+</form>
+<h2 class="mb-4">検索結果一覧</h2>
+<?php if (empty($portfolios)): ?>
+    <p>該当する投稿は見つかりませんでした。</p>
+<?php endif; ?>
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
   <?php foreach ($portfolios as $portfolio): ?>
     <?php if ($portfolio->is_public): ?>

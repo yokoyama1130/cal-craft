@@ -185,4 +185,29 @@ class PortfoliosController extends AppController
         return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
     }
 
+    public function search()
+    {
+        $this->request->allowMethod(['get']);
+        $keyword = $this->request->getQuery('q');
+
+        $query = $this->Portfolios->find()
+            ->contain(['Users']) // 投稿者名なども後で使いたければ
+            ->where(['is_public' => true]);
+
+        if (!empty($keyword)) {
+            $query->andWhere([
+                'OR' => [
+                    'Portfolios.title LIKE' => '%' . $keyword . '%',
+                    'Portfolios.description LIKE' => '%' . $keyword . '%',
+                ]
+            ]);
+        }
+
+        $portfolios = $query->order(['Portfolios.created' => 'DESC'])->toArray();
+
+        $this->set(compact('portfolios', 'keyword'));
+        $this->render('index'); // ← トップページ（index）テンプレートを再利用
+    }
+
+
 }
