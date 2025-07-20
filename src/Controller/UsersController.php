@@ -145,6 +145,21 @@ class UsersController extends AppController
     
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
+
+            if (!empty($data['icon']) && $data['icon']->getError() === UPLOAD_ERR_OK) {
+                $filename = time() . '_' . $data['icon']->getClientFilename();
+                $targetPath = WWW_ROOT . 'img' . DS . 'icons' . DS . $filename;
+            
+                // ディレクトリがなければ作成
+                if (!file_exists(WWW_ROOT . 'img' . DS . 'icons')) {
+                    mkdir(WWW_ROOT . 'img' . DS . 'icons', 0775, true);
+                }
+            
+                $data['icon']->moveTo($targetPath);
+            
+                // DBに保存するパス
+                $data['icon_path'] = 'icons/' . $filename;
+            }
     
             // SNSリンクをJSONに変換
             $sns = [
@@ -169,7 +184,7 @@ class UsersController extends AppController
             $user->youtube = $snsLinks['youtube'] ?? '';
             $user->instagram = $snsLinks['instagram'] ?? '';
         }
-    
+
         $this->set(compact('user'));
     }
 

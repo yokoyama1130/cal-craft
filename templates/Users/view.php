@@ -1,11 +1,13 @@
 <div class="container mt-5">
 
-<h2><?= h($user->name) ?>さんのプロフィール</h2>
-
 <!-- アイコン画像 -->
-<div class="mb-3">
-    <img src="<?= h($user->profile_image ?? '/img/default_icon.png') ?>" alt="プロフィール画像" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
-</div>
+<?php if (!empty($user->icon_path)): ?>
+    <img src="/img/<?= h($user->icon_path) ?>"
+      class="rounded-circle mb-2 shadow-sm border" 
+      style="width: 100px; height: 100px; object-fit: cover;">
+<?php endif; ?>
+
+<h2><?= h($user->name) ?>さんのプロフィール</h2>
 
 <!-- 自己紹介文 -->
 <?php if (!empty($user->bio)): ?>

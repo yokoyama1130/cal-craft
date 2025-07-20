@@ -12,6 +12,7 @@ class User extends Entity
         '*' => true,
         'id' => false,
         'sns_links' => true,
+        'icon_path' => true,
     ];
 
     protected $_hidden = ['password'];
