@@ -163,4 +163,30 @@ class UsersController extends AppController
 
         return $this->redirect(['action' => 'index']);
     }
+
+    public function followings($id)
+    {
+        $this->loadModel('Follows');
+        $this->loadModel('Users');
+
+        $followings = $this->Follows->find()
+            ->where(['follower_id' => $id])
+            ->contain(['FollowedUsers']) // alias 定義済みである必要あり
+            ->all();
+
+        $this->set(compact('followings'));
+    }
+
+    public function followers($id)
+    {
+        $this->loadModel('Follows');
+        $this->loadModel('Users');
+
+        $followers = $this->Follows->find()
+            ->where(['followed_id' => $id])
+            ->contain(['Users']) // 'follower' 側の Users
+            ->all();
+
+        $this->set(compact('followers'));
+    }
 }

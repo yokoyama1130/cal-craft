@@ -2,9 +2,10 @@
 
 <h2><?= h($user->name) ?>さんのプロフィール</h2>
 
-<div class="mb-3">
-    <span><strong><?= $followerCount ?></strong> フォロワー</span> ／
-    <span><strong><?= $followingCount ?></strong> フォロー中</span>
+<div>
+    <?= $this->Html->link("フォロー {$followingCount}人", ['action' => 'followings', $user->id]) ?>
+    /
+    <?= $this->Html->link("フォロワー {$followerCount}人", ['action' => 'followers', $user->id]) ?>
 </div>
 
 <?php if ($this->request->getAttribute('identity')->get('id') !== $user->id): ?>
@@ -15,8 +16,7 @@
     <?php endif; ?>
 <?php endif; ?>
 
-
-  <h2 class="mb-4">あなたの投稿一覧</h2>
+<h2 class="mb-4">あなたの投稿一覧</h2>
 
   <?php foreach ($portfolios as $p): ?>
     <div class="card mb-3">
