@@ -72,7 +72,14 @@ class PortfoliosController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $this->set(compact('portfolio'));
+        $this->loadModel('Comments');
+        $comments = $this->Comments->find()
+            ->where(['portfolio_id' => $id])
+            ->contain(['Users'])
+            ->order(['created' => 'DESC'])
+            ->toArray();
+
+        $this->set(compact('portfolio', 'comments'));
     }
 
     /**

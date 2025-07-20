@@ -54,6 +54,10 @@ class PortfoliosTable extends Table
 
         $this->hasMany('Likes');
 
+        $this->hasMany('Comments', [
+            'foreignKey' => 'portfolio_id',
+            'dependent' => true,
+        ]);
     }
 
     /**

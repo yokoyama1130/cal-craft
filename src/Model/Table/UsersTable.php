@@ -58,8 +58,12 @@ class UsersTable extends Table
             'className' => 'Follows',
             'foreignKey' => 'follower_id'
         ]);
+
+        $this->hasMany('Comments', [
+            'foreignKey' => 'user_id',
+            'dependent' => true,
+        ]);
     }
-    
 
     /**
      * Default validation rules.

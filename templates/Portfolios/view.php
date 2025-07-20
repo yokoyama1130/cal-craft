@@ -19,3 +19,24 @@
   <?php endif; ?>
 </div>
 
+<h3 class="mt-5">コメント</h3>
+
+<?php if (!empty($comments)): ?>
+    <ul class="list-group mb-4">
+        <?php foreach ($comments as $comment): ?>
+            <li class="list-group-item">
+                <strong><?= h($comment->user->name) ?></strong><br>
+                <?= nl2br(h($comment->content)) ?><br>
+                <small class="text-muted"><?= $comment->created->nice() ?></small>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+<?php else: ?>
+    <p>コメントはまだありません。</p>
+<?php endif; ?>
+
+<?= $this->Form->create(null, ['url' => ['controller' => 'Comments', 'action' => 'add']]) ?>
+<?= $this->Form->hidden('portfolio_id', ['value' => $portfolio->id]) ?>
+<?= $this->Form->control('content', ['label' => false, 'rows' => 3, 'placeholder' => 'コメントを書く']) ?>
+<?= $this->Form->button('投稿', ['class' => 'btn btn-primary mt-2']) ?>
+<?= $this->Form->end() ?>
