@@ -1,34 +1,38 @@
 <?php
-/**
- * @var \App\View\AppView $this
- * @var \App\Model\Entity\User $user
- */
+// templates/Users/edit.php
 ?>
-<div class="row">
-    <aside class="column">
-        <div class="side-nav">
-            <h4 class="heading"><?= __('Actions') ?></h4>
-            <?= $this->Form->postLink(
-                __('Delete'),
-                ['action' => 'delete', $user->id],
-                ['confirm' => __('Are you sure you want to delete # {0}?', $user->id), 'class' => 'side-nav-item']
-            ) ?>
-            <?= $this->Html->link(__('List Users'), ['action' => 'index'], ['class' => 'side-nav-item']) ?>
-        </div>
-    </aside>
-    <div class="column-responsive column-80">
-        <div class="users form content">
-            <?= $this->Form->create($user) ?>
-            <fieldset>
-                <legend><?= __('Edit User') ?></legend>
-                <?php
-                    echo $this->Form->control('name');
-                    echo $this->Form->control('email');
-                    echo $this->Form->control('password');
-                ?>
-            </fieldset>
-            <?= $this->Form->button(__('Submit')) ?>
-            <?= $this->Form->end() ?>
-        </div>
-    </div>
+<h2 class="mb-4">プロフィール編集</h2>
+
+<?= $this->Form->create($user, ['type' => 'file']) ?>
+
+<div class="mb-3">
+    <?= $this->Form->control('name', ['label' => 'ユーザー名']) ?>
 </div>
+
+<div class="mb-3">
+    <?= $this->Form->control('bio', [
+        'label' => '自己紹介',
+        'type' => 'textarea',
+        'rows' => 4,
+        'placeholder' => '自己紹介を入力してください'
+    ]) ?>
+</div>
+
+<h4 class="mt-4">SNSリンク</h4>
+<div class="mb-3">
+    <?= $this->Form->control('twitter', ['label' => 'Twitterリンク']) ?>
+    <?= $this->Form->control('github', ['label' => 'GitHubリンク']) ?>
+    <?= $this->Form->control('youtube', ['label' => 'YouTubeリンク']) ?>
+    <?= $this->Form->control('instagram', ['label' => 'Instagramリンク']) ?>
+</div>
+
+<h4 class="mt-4">アイコン画像</h4>
+<div class="mb-3">
+    <?php if (!empty($user->icon_path)): ?>
+        <img src="<?= h($user->icon_path) ?>" class="rounded-circle mb-2" style="width: 100px; height: 100px; object-fit: cover;">
+    <?php endif; ?>
+    <?= $this->Form->control('icon', ['type' => 'file', 'label' => '画像を選択']) ?>
+</div>
+
+<?= $this->Form->button('更新', ['class' => 'btn btn-primary']) ?>
+<?= $this->Form->end() ?>

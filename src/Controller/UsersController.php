@@ -137,17 +137,39 @@ class UsersController extends AppController
         $this->set(compact('user'));
     }
 
-    public function edit($id = null)
+    public function edit()
     {
-        $user = $this->Users->get($id);
+        // ログイン中のユーザーIDを取得
+        $userId = $this->request->getAttribute('identity')->get('id');
+        $user = $this->Users->get($userId);
+    
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $user = $this->Users->patchEntity($user, $this->request->getData());
+            $data = $this->request->getData();
+    
+            // SNSリンクをJSONに変換
+            $sns = [
+                'twitter' => $data['twitter'] ?? '',
+                'github' => $data['github'] ?? '',
+                'youtube' => $data['youtube'] ?? '',
+                'instagram' => $data['instagram'] ?? ''
+            ];
+            $data['sns_links'] = json_encode($sns);
+    
+            $user = $this->Users->patchEntity($user, $data);
             if ($this->Users->save($user)) {
-                $this->Flash->success(__('The user has been saved.'));
-                return $this->redirect(['action' => 'index']);
+                $this->Flash->success(__('プロフィールを更新しました。'));
+                return $this->redirect(['action' => 'view', $user->id]);
             }
-            $this->Flash->error(__('The user could not be saved. Please, try again.'));
+            $this->Flash->error(__('更新に失敗しました。'));
+        } else {
+            // JSONを配列に変換してViewへ渡す
+            $snsLinks = json_decode($user->sns_links, true) ?? [];
+            $user->twitter = $snsLinks['twitter'] ?? '';
+            $user->github = $snsLinks['github'] ?? '';
+            $user->youtube = $snsLinks['youtube'] ?? '';
+            $user->instagram = $snsLinks['instagram'] ?? '';
         }
+    
         $this->set(compact('user'));
     }
 

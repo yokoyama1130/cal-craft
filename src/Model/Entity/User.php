@@ -11,6 +11,7 @@ class User extends Entity
     protected $_accessible = [
         '*' => true,
         'id' => false,
+        'sns_links' => true,
     ];
 
     protected $_hidden = ['password'];
