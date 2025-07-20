@@ -11,8 +11,13 @@ docker-compose down
 ```
 
 マイグレーション
-
+ドッカーに入って
 ```bash
-docker compose exec app php vendor/bin/phinx migrate -e development
+docker compose exec app bash
+
+```
+マイグレーション実行
+```bash
+bin/cake migrations migrate
 
 ```
