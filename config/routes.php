@@ -55,6 +55,7 @@ return function (RouteBuilder $routes): void {
     $routes->connect('/follows/unfollow/:id', ['controller' => 'Follows', 'action' => 'unfollow'], ['pass' => ['id']]);
     $routes->connect('/users/:id/followings', ['controller' => 'Users', 'action' => 'followings'])->setPass(['id']);
     $routes->connect('/users/:id/followers', ['controller' => 'Users', 'action' => 'followers'])->setPass(['id']);
+    $routes->connect('/favorites', ['controller' => 'Likes', 'action' => 'favorites']);
     $routes->scope('/', function (RouteBuilder $builder): void {
         /*
          * Here, we are connecting '/' (base path) to a controller called 'Pages',

@@ -122,5 +122,39 @@ class LikesController extends AppController
             'likeCount' => $likeCount,
         ]));
     }
-    
+
+    public function favorites()
+    {
+        $userId = $this->request->getAttribute('identity')->get('id');
+
+        $this->loadModel('Likes');
+        $this->loadModel('Portfolios');
+
+        $likedPortfolioIds = $this->Likes->find()
+            ->select(['portfolio_id'])
+            ->where(['user_id' => $userId])
+            ->extract('portfolio_id')
+            ->toArray();
+
+        $portfolios = [];
+
+        if (!empty($likedPortfolioIds)) {
+            $portfolios = $this->Portfolios->find()
+                ->where(['Portfolios.id IN' => $likedPortfolioIds])
+                ->contain(['Users'])
+                ->order(['Portfolios.created' => 'DESC'])
+                ->toArray();
+
+            // liked_by_me / like_count を付加
+            foreach ($portfolios as $p) {
+                $p->liked_by_me = true;
+                $p->like_count = $this->Likes->find()
+                    ->where(['portfolio_id' => $p->id])
+                    ->count();
+            }
+        }
+
+        $this->set(compact('portfolios'));
+    }
+
 }

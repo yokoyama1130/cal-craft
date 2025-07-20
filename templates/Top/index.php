@@ -81,4 +81,3 @@ document.querySelectorAll('.like-button').forEach(button => {
     });
 });
 </script>
-
