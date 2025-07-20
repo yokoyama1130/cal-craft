@@ -1,18 +1,23 @@
-サーバー起動
+# サーバー起動
 
 ```bash
 docker-compose up -d
 ```
 
-サーバー停止
+# サーバー停止
 
 ```bash
 docker-compose down
 ```
 
-マイグレーション
-
+# マイグレーション
+ドッカーに入って
 ```bash
-docker compose exec app php vendor/bin/phinx migrate -e development
+docker compose exec app bash
+
+```
+マイグレーション実行
+```bash
+bin/cake migrations migrate
 
 ```
