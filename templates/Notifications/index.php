@@ -32,8 +32,8 @@
 
             <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start <?= $n->is_read ? '' : 'bg-light' ?>">
                 <div class="ms-2 me-auto">
-                    <?php if ($link): ?>
-                        <?= $this->Html->link($message, $link, ['class' => 'text-decoration-none fw-semibold text-dark']) ?>
+                    <?php if (!empty($n->portfolio_id)): ?>
+                        <?= $this->Html->link($message, ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id], ['class' => 'text-decoration-none fw-semibold text-dark']) ?>
                     <?php else: ?>
                         <span class="fw-semibold"><?= h($message) ?></span>
                     <?php endif; ?>

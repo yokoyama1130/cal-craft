@@ -52,17 +52,33 @@ class CommentsController extends AppController
         $this->request->allowMethod(['post']);
         $comment = $this->Comments->newEmptyEntity();
         $data = $this->request->getData();
-        $data['user_id'] = $this->request->getAttribute('identity')->get('id');
-    
         $comment = $this->Comments->patchEntity($comment, $data);
+        $comment->user_id = $this->request->getAttribute('identity')->get('id');
+
         if ($this->Comments->save($comment)) {
+            // 通知追加
+            $this->loadModel('Portfolios');
+            $portfolio = $this->Portfolios->get($comment->portfolio_id);
+
+            if ($portfolio->user_id !== $comment->user_id) {
+                $this->loadModel('Notifications');
+                $notification = $this->Notifications->newEntity([
+                    'user_id' => $portfolio->user_id,       // 通知受け取る側（投稿主）
+                    'sender_id' => $comment->user_id,       // 通知送る側（コメント主）
+                    'portfolio_id' => $portfolio->id,
+                    'type' => 'comment',
+                    'is_read' => false,
+                ]);
+                $this->Notifications->save($notification);
+            }
+
             $this->Flash->success('コメントを投稿しました。');
         } else {
             $this->Flash->error('コメントの投稿に失敗しました。');
         }
-    
-        return $this->redirect(['controller' => 'Portfolios', 'action' => 'view', $data['portfolio_id']]);
-    }    
+
+        return $this->redirect($this->referer());
+    }
 
     /**
      * Edit method
