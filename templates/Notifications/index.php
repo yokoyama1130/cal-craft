@@ -39,7 +39,7 @@
                     <?php endif; ?>
 
                     <div class="small text-muted mt-1">
-                        <?= $n->created?->nice() ?? '' ?>
+                        <?= ($n->created !== null) ? $n->created->nice() : '' ?>
                     </div>
                 </div>
 
