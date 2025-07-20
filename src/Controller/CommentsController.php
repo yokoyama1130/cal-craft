@@ -80,49 +80,46 @@ class CommentsController extends AppController
         return $this->redirect($this->referer());
     }
 
-    /**
-     * Edit method
-     *
-     * @param string|null $id Comment id.
-     * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function edit($id = null)
+    public function edit($id)
     {
-        $comment = $this->Comments->get($id, [
-            'contain' => [],
-        ]);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $comment = $this->Comments->patchEntity($comment, $this->request->getData());
-            if ($this->Comments->save($comment)) {
-                $this->Flash->success(__('The comment has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The comment could not be saved. Please, try again.'));
-        }
-        $users = $this->Comments->Users->find('list', ['limit' => 200])->all();
-        $portfolios = $this->Comments->Portfolios->find('list', ['limit' => 200])->all();
-        $this->set(compact('comment', 'users', 'portfolios'));
-    }
-
-    /**
-     * Delete method
-     *
-     * @param string|null $id Comment id.
-     * @return \Cake\Http\Response|null|void Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function delete($id = null)
-    {
-        $this->request->allowMethod(['post', 'delete']);
         $comment = $this->Comments->get($id);
-        if ($this->Comments->delete($comment)) {
-            $this->Flash->success(__('The comment has been deleted.'));
-        } else {
-            $this->Flash->error(__('The comment could not be deleted. Please, try again.'));
+        $userId = $this->request->getAttribute('identity')->get('id');
+
+        if ($comment->user_id !== $userId) {
+            $this->Flash->error('編集できません。');
+            return $this->redirect($this->referer());
         }
 
-        return $this->redirect(['action' => 'index']);
+        if ($this->request->is(['post', 'put', 'patch'])) {
+            $this->Comments->patchEntity($comment, $this->request->getData());
+            if ($this->Comments->save($comment)) {
+                $this->Flash->success('コメントを更新しました。');
+                return $this->redirect(['controller' => 'Portfolios', 'action' => 'view', $comment->portfolio_id]);
+            }
+            $this->Flash->error('コメントの更新に失敗しました。');
+        }
+
+        $this->set(compact('comment'));
     }
+
+    public function delete($id)
+    {
+        $comment = $this->Comments->get($id);
+        $userId = $this->request->getAttribute('identity')->get('id');
+
+        if ($comment->user_id !== $userId) {
+            $this->Flash->error('削除できません。');
+            return $this->redirect($this->referer());
+        }
+
+        $this->request->allowMethod(['post', 'delete']);
+        if ($this->Comments->delete($comment)) {
+            $this->Flash->success('コメントを削除しました。');
+        } else {
+            $this->Flash->error('削除に失敗しました。');
+        }
+
+        return $this->redirect(['controller' => 'Portfolios', 'action' => 'view', $comment->portfolio_id]);
+    }
+
 }

@@ -28,6 +28,16 @@
                 <strong><?= h($comment->user->name) ?></strong><br>
                 <?= nl2br(h($comment->content)) ?><br>
                 <small class="text-muted"><?= $comment->created->nice() ?></small>
+
+                <?php if ($comment->user_id === $this->request->getAttribute('identity')->get('id')): ?>
+                    <div class="mt-2">
+                        <?= $this->Html->link('編集', ['controller' => 'Comments', 'action' => 'edit', $comment->id], ['class' => 'btn btn-sm btn-outline-secondary me-2']) ?>
+                        <?= $this->Form->postLink('削除', ['controller' => 'Comments', 'action' => 'delete', $comment->id], [
+                            'confirm' => '本当に削除しますか？',
+                            'class' => 'btn btn-sm btn-outline-danger'
+                        ]) ?>
+                    </div>
+                <?php endif; ?>
             </li>
         <?php endforeach; ?>
     </ul>
