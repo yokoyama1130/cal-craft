@@ -30,6 +30,7 @@ class PortfoliosController extends AppController
         $userId = $identity ? $identity->get('id') : null;
     
         $portfolios = $this->Portfolios->find()
+            ->contain(['Users'])
             ->where(['is_public' => true])
             ->order(['created' => 'DESC'])
             ->limit(10)

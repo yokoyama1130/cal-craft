@@ -26,9 +26,9 @@ use Cake\Utility\Text;
                         <div class="d-flex justify-content-between align-items-start mb-1">
                         <?php if (!empty($p->user->icon_url)): ?>
                             <img src="<?= h($p->user->icon_url) ?>" alt="user icon" class="rounded-circle me-2" style="width: 36px; height: 36px; object-fit: cover;">
-                            <?php else: ?>
+                        <?php else: ?>
                             <i class="fas fa-user-circle fa-2x text-muted me-2"></i>
-                            <?php endif; ?>
+                        <?php endif; ?>
                             <div class="title">
                                 <?= $this->Html->link(h($p->title), ['controller' => 'Portfolios', 'action' => 'view', $p->id], ['class' => 'text-dark fw-bold text-decoration-none']) ?>
                             </div>

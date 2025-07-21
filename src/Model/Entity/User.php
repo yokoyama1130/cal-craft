@@ -15,6 +15,14 @@ class User extends Entity
         'icon_path' => true,
     ];
 
+    protected function _getIconUrl()
+    {
+        if (!empty($this->icon_path)) {
+            return '/img/' . $this->icon_path;
+        }
+        return null; // or return default image URL if you prefer
+    }
+
     protected $_hidden = ['password'];
 
     protected function _setPassword(string $password): ?string
