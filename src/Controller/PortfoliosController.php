@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Text;
 
 /**
  * Portfolios Controller
@@ -92,9 +93,18 @@ class PortfoliosController extends AppController
         $portfolio = $this->Portfolios->newEmptyEntity();
     
         if ($this->request->is('post')) {
-            $portfolio = $this->Portfolios->patchEntity($portfolio, $this->request->getData());
+            $data = $this->request->getData();
     
-            // 👇 ログインユーザーの user_id を自動でセット
+            // サムネイル画像の処理
+            $thumbnailFile = $this->request->getData('thumbnail_file');
+            if ($thumbnailFile && $thumbnailFile->getError() === UPLOAD_ERR_OK) {
+                $filename = Text::uuid() . '.' . pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION);
+                $uploadPath = WWW_ROOT . 'uploads' . DS . $filename;
+                $thumbnailFile->moveTo($uploadPath);
+                $data['thumbnail'] = '/uploads/' . $filename;
+            }
+    
+            $portfolio = $this->Portfolios->patchEntity($portfolio, $data);
             $portfolio->user_id = $this->request->getAttribute('identity')->get('id');
     
             if ($this->Portfolios->save($portfolio)) {
@@ -106,7 +116,6 @@ class PortfoliosController extends AppController
     
         $this->set(compact('portfolio'));
     }
-    
 
     /**
      * Edit method
