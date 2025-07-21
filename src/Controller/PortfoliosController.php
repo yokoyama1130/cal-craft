@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
+use Cake\Collection\Collection;
 
 /**
  * Portfolios Controller
@@ -115,8 +116,18 @@ class PortfoliosController extends AppController
             $this->Flash->error('投稿に失敗しました。もう一度お試しください。');
         }
     
-        $this->set(compact('portfolio'));
-    }
+        // categories に slug も含めて渡す
+        $categories = $this->Portfolios->Categories->find()
+            ->select(['id', 'name', 'slug'])
+            ->order(['id' => 'ASC'])
+            ->all()
+            ->map(function ($row) {
+                return $row;
+            })
+            ->toArray();
+    
+        $this->set(compact('portfolio', 'categories'));
+    }    
 
     /**
      * Edit method

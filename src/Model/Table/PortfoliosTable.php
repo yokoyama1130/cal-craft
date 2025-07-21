@@ -7,12 +7,14 @@ use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
-use Cake\ORM\Behavior\TimestampBehavior;
 
 /**
  * Portfolios Model
  *
  * @property \App\Model\Table\UsersTable&\Cake\ORM\Association\BelongsTo $Users
+ * @property \App\Model\Table\CategoriesTable&\Cake\ORM\Association\BelongsTo $Categories
+ * @property \App\Model\Table\LikesTable&\Cake\ORM\Association\HasMany $Likes
+ * @property \App\Model\Table\CommentsTable&\Cake\ORM\Association\HasMany $Comments
  *
  * @method \App\Model\Entity\Portfolio newEmptyEntity()
  * @method \App\Model\Entity\Portfolio newEntity(array $data, array $options = [])
@@ -44,11 +46,15 @@ class PortfoliosTable extends Table
         $this->setDisplayField('title');
         $this->setPrimaryKey('id');
 
-        // ✅ これを追加することで created/modified を自動セットしてくれる
         $this->addBehavior('Timestamp');
 
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
+            'joinType' => 'INNER',
+        ]);
+
+        $this->belongsTo('Categories', [
+            'foreignKey' => 'category_id',
             'joinType' => 'INNER',
         ]);
 
@@ -71,6 +77,10 @@ class PortfoliosTable extends Table
         $validator
             ->integer('user_id')
             ->notEmptyString('user_id');
+
+        $validator
+            ->integer('category_id')
+            ->notEmptyString('category_id', 'ジャンルを選択してください');
 
         $validator
             ->scalar('title')
@@ -102,6 +112,7 @@ class PortfoliosTable extends Table
     public function buildRules(RulesChecker $rules): RulesChecker
     {
         $rules->add($rules->existsIn('user_id', 'Users'), ['errorField' => 'user_id']);
+        $rules->add($rules->existsIn('category_id', 'Categories'), ['errorField' => 'category_id']);
 
         return $rules;
     }

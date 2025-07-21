@@ -6,17 +6,16 @@ namespace App\Model\Entity;
 use Cake\ORM\Entity;
 
 /**
- * Portfolio Entity
+ * Category Entity
  *
  * @property int $id
- * @property int $user_id
- * @property string $title
- * @property string $description
- * @property string $thumbnail
+ * @property string $name
+ * @property string $slug
+ * @property string|null $comment
  *
- * @property \App\Model\Entity\User $user
+ * @property \App\Model\Entity\Portfolio[] $portfolios
  */
-class Portfolio extends Entity
+class Category extends Entity
 {
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
@@ -28,12 +27,9 @@ class Portfolio extends Entity
      * @var array<string, bool>
      */
     protected $_accessible = [
-        'user_id' => true,
-        'title' => true,
-        'description' => true,
-        'thumbnail' => true,
-        'user' => true,
-        'is_public' => true,
-        'category_id' => true,
+        'name' => true,
+        'slug' => true,
+        'comment' => true,
+        'portfolios' => true,
     ];
 }
