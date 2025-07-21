@@ -24,6 +24,11 @@ use Cake\Utility\Text;
                     </div>
                     <div class="youtube-info">
                         <div class="d-flex justify-content-between align-items-start mb-1">
+                        <?php if (!empty($p->user->icon_url)): ?>
+                            <img src="<?= h($p->user->icon_url) ?>" alt="user icon" class="rounded-circle me-2" style="width: 36px; height: 36px; object-fit: cover;">
+                            <?php else: ?>
+                            <i class="fas fa-user-circle fa-2x text-muted me-2"></i>
+                            <?php endif; ?>
                             <div class="title">
                                 <?= $this->Html->link(h($p->title), ['controller' => 'Portfolios', 'action' => 'view', $p->id], ['class' => 'text-dark fw-bold text-decoration-none']) ?>
                             </div>
@@ -36,9 +41,6 @@ use Cake\Utility\Text;
                                 </button>
                                 <?= $this->Form->end() ?>
                             </div>
-                        </div>
-                        <div class="description text-muted small">
-                            <?= h(Text::truncate($p->description, 60)) ?>
                         </div>
                     </div>
                 </div>
