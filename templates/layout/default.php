@@ -16,6 +16,49 @@ $cakeDescription = 'Calcraft - 機械系エンジニアのためのポートフ�
     <?= $this->Html->meta('csrfToken', $this->request->getAttribute('csrfToken')) ?>
 
     <style>
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
+    }
+    .card-img-top {
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+    .card-body {
+        text-align: left;
+        padding: 0 10px 0 10px;
+    }
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .card-text {
+        font-size: 0.95rem;
+        color: #555;
+    }
+    .card-footer {
+        background-color: #fff;
+        border-top: none;
+    }
+    .like-button i {
+        transition: color 0.3s ease;
+    }
+    i.fa-heart.liked {
+        color: hotpink !important;
+    }
+    i.fa-heart.not-liked {
+        color: #ccc !important;
+    }
+    </style>
+
+    <style>
     body {
         font-family: 'Inter', sans-serif;
         background-color: #f9f9f9;
