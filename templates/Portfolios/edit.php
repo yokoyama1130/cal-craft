@@ -32,12 +32,63 @@
       ]) ?>
     </div>
 
-    <div class="form-check mb-3">
+    <!-- ▼ 機械系ジャンルの投稿だった場合のみ表示 -->
+    <?php if (!empty($portfolio->category) && $portfolio->category->slug === 'mechanical'): ?>
+      <hr>
+      <h5 class="mt-3 mb-2">機械系 詳細情報</h5>
+
+      <?= $this->Form->control('tool_used', [
+        'label' => '使用ツール',
+        'class' => 'form-control'
+      ]) ?>
+
+      <?= $this->Form->control('material_used', [
+        'label' => '使用材料',
+        'class' => 'form-control'
+      ]) ?>
+
+      <?= $this->Form->control('processing_method', [
+        'label' => '加工方法',
+        'class' => 'form-control'
+      ]) ?>
+
+      <?= $this->Form->control('analysis_method', [
+        'label' => '解析手法',
+        'class' => 'form-control'
+      ]) ?>
+
+      <?= $this->Form->control('development_period', [
+        'label' => '開発期間',
+        'class' => 'form-control'
+      ]) ?>
+
+      <?= $this->Form->control('design_url', [
+        'label' => '設計書リンク',
+        'class' => 'form-control',
+        'placeholder' => 'https://...'
+      ]) ?>
+
+      <?= $this->Form->control('design_description', [
+        'label' => '設計の説明',
+        'type' => 'textarea',
+        'rows' => 4,
+        'class' => 'form-control'
+      ]) ?>
+
+      <?= $this->Form->control('mechanical_notes', [
+        'label' => '工夫点・反省点など',
+        'type' => 'textarea',
+        'rows' => 4,
+        'class' => 'form-control'
+      ]) ?>
+    <?php endif; ?>
+
+    <div class="form-check mb-3 mt-4">
       <?= $this->Form->control('is_public', [
         'type' => 'checkbox',
         'label' => '公開する',
         'class' => 'form-check-input',
-        'hiddenField' => true // ← これで非公開の送信が可能になる
+        'hiddenField' => true
       ]) ?>
     </div>
 

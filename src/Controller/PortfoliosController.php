@@ -66,7 +66,7 @@ class PortfoliosController extends AppController
     public function view($id = null)
     {
         $portfolio = $this->Portfolios->get($id, [
-            'contain' => ['Users'],
+            'contain' => ['Users', 'Categories', 'Comments' => ['Users']],
         ]);
 
         // 非公開の投稿は本人以外見れない
@@ -138,9 +138,11 @@ class PortfoliosController extends AppController
      */
     public function edit($id = null)
     {
-        $portfolio = $this->Portfolios->get($id);
+        // ✅ カテゴリ情報も一緒に取得！
+        $portfolio = $this->Portfolios->get($id, [
+            'contain' => ['Categories']
+        ]);
     
-        // ログインユーザー以外が編集しようとしたらリダイレクト
         if ($portfolio->user_id !== $this->request->getAttribute('identity')->getIdentifier()) {
             $this->Flash->error('この投稿を編集する権限がありません。');
             return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
@@ -157,8 +159,6 @@ class PortfoliosController extends AppController
     
         $this->set(compact('portfolio'));
     }
-    
-    
 
     /**
      * Delete method

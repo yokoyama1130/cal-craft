@@ -35,5 +35,14 @@ class Portfolio extends Entity
         'user' => true,
         'is_public' => true,
         'category_id' => true,
+        // 他の項目に加えて
+        'tool_used' => true,
+        'material_used' => true,
+        'processing_method' => true,
+        'analysis_method' => true,
+        'development_period' => true,
+        'design_url' => true,
+        'design_description' => true,
+        'mechanical_notes' => true,
     ];
 }

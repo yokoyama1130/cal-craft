@@ -56,11 +56,69 @@ $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
   </div>
 
   <!-- ▼ カテゴリ別の入力欄 -->
-  <div id="extra-mechanical" class="extra-fields d-none">
-    <?= $this->Form->control('tool_used', [
-      'label' => '使用ツール（例: SolidWorks, Inventorなど）',
-      'class' => 'form-control'
-    ]) ?>
+  <!-- ▼ 機械系専用入力欄（slug: mechanical） -->
+  <div id="extra-mechanical" class="extra-fields d-none mt-4">
+
+    <div class="mb-3">
+      <?= $this->Form->control('tool_used', [
+        'label' => '使用ツール（例：SolidWorks, Fusion360 など）',
+        'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('material_used', [
+        'label' => '使用材料（例：アルミ、SUS304など）',
+        'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('processing_method', [
+        'label' => '加工方法（例：旋盤、フライス、3Dプリンタなど）',
+        'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('analysis_method', [
+        'label' => '解析手法（例：FEM、流体解析など）',
+        'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('development_period', [
+        'label' => '開発期間（例：2ヶ月）',
+        'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('design_url', [
+        'label' => '設計書の共有リンク（例：Google Drive、GitHubなど）',
+        'class' => 'form-control',
+        'placeholder' => 'https://drive.google.com/...'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('design_description', [
+        'label' => '設計の説明（設計意図や工夫点など）',
+        'type' => 'textarea',
+        'rows' => 4,
+        'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <div class="mb-3">
+      <?= $this->Form->control('mechanical_notes', [
+        'label' => 'その他の工夫点・反省点など',
+        'type' => 'textarea',
+        'rows' => 4,
+        'class' => 'form-control'
+      ]) ?>
+    </div>
   </div>
 
   <div id="extra-programming" class="extra-fields d-none">
