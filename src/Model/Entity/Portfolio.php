@@ -44,5 +44,11 @@ class Portfolio extends Entity
         'design_url' => true,
         'design_description' => true,
         'mechanical_notes' => true,
+        'purpose' => true,
+        'basic_spec' => true,
+        'parts_list' => true,
+        'processing_notes' => true,
+        'analysis_result' => true,
+        'reference_links' => true,
     ];
 }

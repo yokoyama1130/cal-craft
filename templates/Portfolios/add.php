@@ -59,6 +59,94 @@ $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
   <!-- ▼ 機械系専用入力欄（slug: mechanical） -->
   <div id="extra-mechanical" class="extra-fields d-none mt-4">
 
+  <!-- ▼ 設計コンセプト -->
+  <h5 class="mt-4 mb-2">[1] 設計構想・目的</h5>
+
+  <?= $this->Form->control('purpose', [
+    'label' => '目的・背景',
+    'type' => 'textarea',
+    'rows' => 3,
+    'class' => 'form-control'
+  ]) ?>
+
+  <?= $this->Form->control('basic_spec', [
+    'label' => '基本仕様（サイズ・重量・用途など）',
+    'type' => 'textarea',
+    'rows' => 3,
+    'class' => 'form-control'
+  ]) ?>
+
+  <!-- ▼ 設計・部品 -->
+  <h5 class="mt-4 mb-2">[2] 設計と部品情報</h5>
+
+  <?= $this->Form->control('design_url', [
+    'label' => '設計書リンク（Google Drive, GitHubなど）',
+    'class' => 'form-control'
+  ]) ?>
+
+  <?= $this->Form->control('design_description', [
+    'label' => '設計の説明',
+    'type' => 'textarea',
+    'rows' => 4,
+    'class' => 'form-control'
+  ]) ?>
+
+  <?= $this->Form->control('parts_list', [
+    'label' => '部品リスト（Markdown形式）',
+    'type' => 'textarea',
+    'rows' => 5,
+    'class' => 'form-control'
+  ]) ?>
+
+  <!-- ▼ 加工・解析 -->
+  <h5 class="mt-4 mb-2">[3] 加工・解析情報</h5>
+
+  <?= $this->Form->control('processing_method', [
+    'label' => '加工方法',
+    'class' => 'form-control'
+  ]) ?>
+
+  <?= $this->Form->control('processing_notes', [
+    'label' => '加工ノウハウ・注意点',
+    'type' => 'textarea',
+    'rows' => 3,
+    'class' => 'form-control'
+  ]) ?>
+
+  <?= $this->Form->control('analysis_method', [
+    'label' => '解析手法',
+    'class' => 'form-control'
+  ]) ?>
+
+  <?= $this->Form->control('analysis_result', [
+    'label' => '解析結果・考察',
+    'type' => 'textarea',
+    'rows' => 4,
+    'class' => 'form-control'
+  ]) ?>
+
+  <!-- ▼ 補足 -->
+  <h5 class="mt-4 mb-2">[4] 補足情報</h5>
+
+  <?= $this->Form->control('development_period', [
+    'label' => '開発期間',
+    'class' => 'form-control'
+  ]) ?>
+
+  <?= $this->Form->control('mechanical_notes', [
+    'label' => '工夫点・反省',
+    'type' => 'textarea',
+    'rows' => 3,
+    'class' => 'form-control'
+  ]) ?>
+
+  <?= $this->Form->control('reference_links', [
+    'label' => '参考資料・URL（Markdown可）',
+    'type' => 'textarea',
+    'rows' => 3,
+    'class' => 'form-control'
+  ]) ?>
+
     <div class="mb-3">
       <?= $this->Form->control('tool_used', [
         'label' => '使用ツール（例：SolidWorks, Fusion360 など）',
