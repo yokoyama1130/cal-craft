@@ -110,6 +110,13 @@
         <?php if ($portfolio->mechanical_notes): ?><p><strong>反省・工夫:</strong> <?= nl2br(h($portfolio->mechanical_notes)) ?></p><?php endif; ?>
         <?php if ($portfolio->reference_links): ?><pre><?= h($portfolio->reference_links) ?></pre><?php endif; ?>
       <?php endif; ?>
+      <?php if ($portfolio->tool_used): ?>
+        <p><strong>使用ツール:</strong> <?= nl2br(h($portfolio->tool_used)) ?></p>
+      <?php endif; ?>
+
+      <?php if ($portfolio->material_used): ?>
+        <p><strong>使用材料:</strong> <?= nl2br(h($portfolio->material_used)) ?></p>
+      <?php endif; ?>
     </div>
   <?php endif; ?>
 
