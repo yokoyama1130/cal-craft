@@ -28,4 +28,8 @@ return function (RouteBuilder $routes): void {
         $builder->connect('/pages/*', 'Pages::display');
         $builder->fallbacks();
     });
+    $routes->prefix('admin', function (RouteBuilder $routes) {
+        $routes->connect('/', ['controller' => 'Dashboard', 'action' => 'index']);
+        $routes->fallbacks(DashedRoute::class);
+    });    
 };
