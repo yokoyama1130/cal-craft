@@ -1,18 +1,24 @@
-<h2>ユーザー一覧</h2>
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>ID</th><th>名前</th><th>メール</th><th>管理者</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php foreach ($users as $user): ?>
-    <tr>
-      <td><?= $user->id ?></td>
-      <td><?= h($user->name) ?></td>
-      <td><?= h($user->email) ?></td>
-      <td><?= $user->is_admin ? '✅' : '❌' ?></td>
-    </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
+<h2 class="mb-4">👥 ユーザー一覧</h2>
+
+<div class="table-responsive">
+  <table class="table table-bordered table-hover align-middle text-center">
+    <thead class="table-dark">
+      <tr>
+        <th scope="col">ID</th>
+        <th scope="col">名前</th>
+        <th scope="col">メールアドレス</th>
+        <th scope="col">管理者</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($users as $user): ?>
+        <tr>
+          <td><?= $user->id ?></td>
+          <td><?= h($user->name) ?></td>
+          <td><?= h($user->email) ?></td>
+          <td><?= $user->is_admin ? '✅ 管理者' : '❌ 一般' ?></td>
+        </tr>
+      <?php endforeach; ?>
+    </tbody>
+  </table>
+</div>
