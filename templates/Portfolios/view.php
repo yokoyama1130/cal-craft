@@ -57,7 +57,7 @@
     }
   </style>
 </head>
-<body class="container py-5">
+<body>
 
   <div class="portfolio-header text-center fade-in">
     <h1><?= h($portfolio->title) ?></h1>
