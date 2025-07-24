@@ -58,4 +58,13 @@ class PortfoliosController extends AppController
         // クエリパラメータを維持してリダイレクト
         return $this->redirect($this->referer());
     }
+
+    public function view($id = null)
+    {
+        $portfolio = $this->Portfolios->get($id, [
+            'contain' => ['Users'], // 必要なら紐づくユーザーも表示
+        ]);
+
+        $this->set(compact('portfolio'));
+    }
 }

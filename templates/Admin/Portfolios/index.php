@@ -1,3 +1,5 @@
+<?= $this->Html->css("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css") ?>
+
 <h2 class="mb-4"><i class="bi bi-collection"></i> 投稿一覧（ユーザー選択）</h2>
 
 <div class="mb-4">
@@ -26,6 +28,7 @@
               <th>タイトル</th>
               <th>公開</th>
               <th>操作</th>
+              <th>詳細</th>
           </tr>
       </thead>
       <tbody>
@@ -48,6 +51,9 @@
                               'class' => 'btn btn-sm btn-outline-danger'
                           ]
                       ) ?>
+                  </td>
+                  <td>
+                    <?= $this->Html->link('詳細', ['action' => 'view', $p->id], ['class' => 'btn btn-sm btn-primary fw-bold']) ?>
                   </td>
               </tr>
           <?php endforeach; ?>
