@@ -22,6 +22,7 @@
       padding: 2rem;
       border-radius: 0.5rem;
       margin-bottom: 2rem;
+      position: relative;
     }
     .portfolio-img {
       max-width: 100%;
@@ -59,11 +60,18 @@
 </head>
 <body>
 
-  <div class="portfolio-header text-center fade-in">
-    <h1><?= h($portfolio->title) ?></h1>
-    <p class="mb-0">by <?= h($portfolio->user->name) ?></p>
-  </div>
+<?php if (!empty($portfolio->user->icon_url)): ?>
+  <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'view', $portfolio->user->id]) ?>">
+  <img src="<?= h($portfolio->user->icon_url) ?>" alt="user icon" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;"></a>
+<?php else: ?>
+  <i class="fas fa-user-circle fa-2x text-white me-2"></i>
+<?php endif; ?>
 
+  <div class="portfolio-header text-center fade-in d-flex align-items-center justify-content-center gap-3">
+    <div class="d-flex align-items-center justify-content-center mb-2">
+      <h1 class="m-0"><?= h($portfolio->title) ?></h1>
+    </div>
+  </div>
   <?php if ($portfolio->thumbnail): ?>
     <div class="text-center mb-4 fade-in">
       <img src="<?= h($portfolio->thumbnail) ?>" alt="Thumbnail" class="portfolio-img">
