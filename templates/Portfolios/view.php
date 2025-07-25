@@ -59,14 +59,27 @@
   </style>
 </head>
 <body>
-
-<?php if (!empty($portfolio->user->icon_url)): ?>
-  <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'view', $portfolio->user->id]) ?>">
-  <img src="<?= h($portfolio->user->icon_url) ?>" alt="user icon" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;"></a>
-<?php else: ?>
-  <i class="fas fa-user-circle fa-2x text-white me-2"></i>
-<?php endif; ?>
-
+<div class="d-flex align-items-center mb-4 fade-in">
+  <?php if (!empty($portfolio->user->icon_path)): ?>
+    <img src="/img/<?= h($portfolio->user->icon_path) ?>" class="rounded-circle me-3 shadow-sm border" style="width: 100px; height: 100px; object-fit: cover;">
+  <?php else: ?>
+    <i class="fas fa-user-circle fa-5x text-muted me-3"></i>
+  <?php endif; ?>
+  <div>
+    <h2 class="mb-1"><?= h($portfolio->user->name) ?></h2>
+    <div>
+      <?= $this->Html->link("フォロー {$followingCount}人", ['controller' => 'Users', 'action' => 'followings', $portfolio->user->id]) ?> /
+      <?= $this->Html->link("フォロワー {$followerCount}人", ['controller' => 'Users', 'action' => 'followers', $portfolio->user->id]) ?>
+    </div>
+    <?php if ($this->request->getAttribute('identity')->get('id') !== $portfolio->user->id): ?>
+      <?php if ($isFollowing): ?>
+        <?= $this->Form->postLink('フォロー解除', ['controller' => 'Follows', 'action' => 'unfollow', $portfolio->user->id], ['class' => 'btn btn-outline-secondary mt-2']) ?>
+      <?php else: ?>
+        <?= $this->Form->postLink('フォロー', ['controller' => 'Follows', 'action' => 'follow', $portfolio->user->id], ['class' => 'btn btn-primary mt-2']) ?>
+      <?php endif; ?>
+    <?php endif; ?>
+  </div>
+</div>
   <div class="portfolio-header text-center fade-in d-flex align-items-center justify-content-center gap-3">
     <div class="d-flex align-items-center justify-content-center mb-2">
       <h1 class="m-0"><?= h($portfolio->title) ?></h1>

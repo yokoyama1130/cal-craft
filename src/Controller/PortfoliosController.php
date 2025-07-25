@@ -65,25 +65,53 @@ class PortfoliosController extends AppController
      */
     public function view($id = null)
     {
+        $this->loadModel('Follows');
+        $this->loadModel('Comments');
+    
+        // ポートフォリオ取得（投稿者情報、カテゴリ、コメント含む）
         $portfolio = $this->Portfolios->get($id, [
             'contain' => ['Users', 'Categories', 'Comments' => ['Users']],
         ]);
-
-        // 非公開の投稿は本人以外見れない
+    
+        // 非公開チェック（投稿者本人以外アクセス禁止）
         if (!$portfolio->is_public && $portfolio->user_id !== $this->request->getAttribute('identity')->get('id')) {
             $this->Flash->error('この投稿にはアクセスできません。');
             return $this->redirect(['action' => 'index']);
         }
-
-        $this->loadModel('Comments');
+    
+        // コメント取得（並び順：新しい順）
         $comments = $this->Comments->find()
             ->where(['portfolio_id' => $id])
             ->contain(['Users'])
             ->order(['created' => 'DESC'])
             ->toArray();
-
-        $this->set(compact('portfolio', 'comments'));
-    }
+    
+        // 投稿者のユーザーID
+        $userId = $portfolio->user_id;
+    
+        // ログイン中のユーザーID
+        $authId = $this->request->getAttribute('identity')->get('id');
+    
+        // フォロー数／フォロワー数
+        $followerCount = $this->Follows->find()
+            ->where(['followed_id' => $userId])
+            ->count();
+    
+        $followingCount = $this->Follows->find()
+            ->where(['follower_id' => $userId])
+            ->count();
+    
+        // ログイン中ユーザーがフォローしているか
+        $isFollowing = false;
+        if ($authId && $authId != $userId) {
+            $isFollowing = $this->Follows->exists([
+                'follower_id' => $authId,
+                'followed_id' => $userId
+            ]);
+        }
+    
+        $this->set(compact('portfolio', 'comments', 'followerCount', 'followingCount', 'isFollowing'));
+    }    
 
     /**
      * Add method
