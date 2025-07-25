@@ -1,5 +1,6 @@
-<!-- このファイルいらないかも -->
-
+<?php
+use Cake\Utility\Text;
+?>
 <div class="container mt-4">
     <h2 class="mb-4">ユーザー検索</h2>
 
