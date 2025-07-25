@@ -61,9 +61,15 @@
 <body>
 <div class="d-flex align-items-center mb-4 fade-in">
   <?php if (!empty($portfolio->user->icon_path)): ?>
-    <img src="/img/<?= h($portfolio->user->icon_path) ?>" class="rounded-circle me-3 shadow-sm border" style="width: 100px; height: 100px; object-fit: cover;">
+    <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile', $portfolio->user->id]) ?>">
+      <img src="/img/<?= h($portfolio->user->icon_path) ?>" 
+          class="rounded-circle me-3 shadow-sm border" 
+          style="width: 100px; height: 100px; object-fit: cover;">
+    </a>
   <?php else: ?>
-    <i class="fas fa-user-circle fa-5x text-muted me-3"></i>
+    <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'view', $portfolio->user->id]) ?>">
+      <i class="fas fa-user-circle fa-5x text-muted me-3"></i>
+    </a>
   <?php endif; ?>
   <div>
     <h2 class="mb-1"><?= h($portfolio->user->name) ?></h2>
