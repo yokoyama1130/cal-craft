@@ -67,4 +67,37 @@ class FollowsController extends AppController
 
         return $this->redirect($this->referer());
     }
+
+    public function followAjax($userId = null)
+    {
+        $this->request->allowMethod(['post', 'ajax']);
+        $followerId = $this->request->getAttribute('identity')->get('id');
+
+        $follow = $this->Follows->newEmptyEntity();
+        $follow->follower_id = $followerId;
+        $follow->followed_id = $userId;
+        $this->Follows->save($follow);
+
+        $this->set('status', 'followed');
+        $this->viewBuilder()->setLayout('ajax');
+        $this->render('/Element/json_response');
+    }
+
+    public function unfollowAjax($userId = null)
+    {
+        $this->request->allowMethod(['post', 'ajax']);
+        $followerId = $this->request->getAttribute('identity')->get('id');
+
+        $follow = $this->Follows->find()
+            ->where(['follower_id' => $followerId, 'followed_id' => $userId])
+            ->first();
+
+        if ($follow) {
+            $this->Follows->delete($follow);
+        }
+
+        $this->set('status', 'unfollowed');
+        $this->viewBuilder()->setLayout('ajax');
+        $this->render('/Element/json_response');
+    }
 }

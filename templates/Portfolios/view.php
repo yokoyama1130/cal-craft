@@ -68,16 +68,30 @@
   <div>
     <h2 class="mb-1"><?= h($portfolio->user->name) ?></h2>
     <div>
-      <?= $this->Html->link("フォロー {$followingCount}人", ['controller' => 'Users', 'action' => 'followings', $portfolio->user->id]) ?> /
-      <?= $this->Html->link("フォロワー {$followerCount}人", ['controller' => 'Users', 'action' => 'followers', $portfolio->user->id]) ?>
+      <?= $this->Html->link(
+        'フォロー <span id="following-count">' . h($followingCount) . '</span>人',
+        ['controller' => 'Users', 'action' => 'followings', $portfolio->user->id],
+        ['escape' => false]
+      ) ?>
+      /
+      <?= $this->Html->link(
+        'フォロワー <span id="follower-count">' . h($followerCount) . '</span>人',
+        ['controller' => 'Users', 'action' => 'followers', $portfolio->user->id],
+        ['escape' => false]
+      ) ?>
     </div>
-    <?php if ($this->request->getAttribute('identity')->get('id') !== $portfolio->user->id): ?>
-      <?php if ($isFollowing): ?>
-        <?= $this->Form->postLink('フォロー解除', ['controller' => 'Follows', 'action' => 'unfollow', $portfolio->user->id], ['class' => 'btn btn-outline-secondary mt-2']) ?>
-      <?php else: ?>
-        <?= $this->Form->postLink('フォロー', ['controller' => 'Follows', 'action' => 'follow', $portfolio->user->id], ['class' => 'btn btn-primary mt-2']) ?>
+    <div id="follow-button-container">
+      <?php if ($this->request->getAttribute('identity')->get('id') !== $portfolio->user->id): ?>
+        <button
+          class="btn <?= $isFollowing ? 'btn-outline-secondary' : 'btn-primary' ?>"
+          id="follow-button"
+          data-following="<?= $isFollowing ? '1' : '0' ?>"
+          data-user-id="<?= h($portfolio->user->id) ?>"
+        >
+          <?= $isFollowing ? 'フォロー解除' : 'フォロー' ?>
+        </button>
       <?php endif; ?>
-    <?php endif; ?>
+    </div>
   </div>
 </div>
   <div class="portfolio-header text-center fade-in d-flex align-items-center justify-content-center gap-3">
@@ -182,3 +196,53 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const button = document.getElementById('follow-button');
+  if (!button) return;
+
+  button.addEventListener('click', function () {
+    const isFollowing = button.dataset.following === '1';
+    const userId = button.dataset.userId;
+    const url = isFollowing ? `/follows/unfollow-ajax/${userId}` : `/follows/follow-ajax/${userId}`;
+
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-Token': '<?= $this->request->getAttribute("csrfToken") ?>',
+        'Accept': 'application/json'
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const followerCountSpan = document.getElementById('follower-count');
+
+      if (data.status === 'followed') {
+        button.textContent = 'フォロー解除';
+        button.className = 'btn btn-outline-secondary';
+        button.dataset.following = '1';
+
+        // フォロワー数＋1
+        if (followerCountSpan) {
+          let count = parseInt(followerCountSpan.textContent);
+          followerCountSpan.textContent = count + 1;
+        }
+
+      } else if (data.status === 'unfollowed') {
+        button.textContent = 'フォロー';
+        button.className = 'btn btn-primary';
+        button.dataset.following = '0';
+
+        // フォロワー数−1
+        if (followerCountSpan) {
+          let count = parseInt(followerCountSpan.textContent);
+          followerCountSpan.textContent = count - 1;
+        }
+      }
+    })
+    .catch(err => console.error('フォロー切り替えエラー:', err));
+  });
+});
+</script>
+
+
