@@ -1,7 +1,10 @@
 <h2 class="mb-4 fw-bold">通知一覧</h2>
 
 <?php if (empty($notifications)): ?>
-    <div class="alert alert-secondary">通知はまだありません。</div>
+    <div class="alert alert-info text-center py-4 shadow-sm">
+        <i class="fas fa-bell-slash fa-2x text-secondary mb-2"></i><br>
+        通知はまだありません。
+    </div>
 <?php else: ?>
     <div class="list-group">
         <?php foreach ($notifications as $n): ?>
@@ -22,7 +25,9 @@
                         break;
                     case 'follow':
                         $message = "{$senderName} さんがあなたをフォローしました。";
-                        $link = ['controller' => 'Users', 'action' => 'profile', $sender->id];
+                        if ($sender) {
+                            $link = ['controller' => 'Users', 'action' => 'profile', $sender->id];
+                        }
                         break;
                     default:
                         $message = "{$senderName} さんから通知があります。";
@@ -30,21 +35,26 @@
                 }
             ?>
 
-            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start <?= $n->is_read ? '' : 'bg-light' ?>">
-                <div class="ms-2 me-auto">
-                    <?php if (!empty($n->portfolio_id)): ?>
-                        <?= $this->Html->link($message, ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id], ['class' => 'text-decoration-none fw-semibold text-dark']) ?>
-                    <?php else: ?>
-                        <span class="fw-semibold"><?= h($message) ?></span>
-                    <?php endif; ?>
+            <div class="list-group-item d-flex justify-content-between align-items-start p-3 rounded shadow-sm mb-2 <?= $n->is_read ? 'bg-white' : 'bg-light' ?>">
+                <div class="d-flex">
+                    <div class="me-3">
+                        <i class="fas fa-user-circle fa-2x text-secondary"></i>
+                    </div>
+                    <div>
+                        <?php if (!empty($link)): ?>
+                            <?= $this->Html->link($message, $link, ['class' => 'text-dark text-decoration-none fw-semibold']) ?>
+                        <?php else: ?>
+                            <span class="fw-semibold"><?= h($message) ?></span>
+                        <?php endif; ?>
 
-                    <div class="small text-muted mt-1">
-                        <?= ($n->created !== null) ? $n->created->nice() : '' ?>
+                        <div class="small text-muted mt-1">
+                            <?= ($n->created !== null) ? $n->created->nice() : '' ?>
+                        </div>
                     </div>
                 </div>
 
                 <?php if (!$n->is_read): ?>
-                    <span class="badge bg-danger align-self-center">NEW</span>
+                    <span class="badge bg-danger align-self-center ms-3">NEW</span>
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
