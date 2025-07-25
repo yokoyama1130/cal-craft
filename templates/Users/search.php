@@ -29,7 +29,7 @@ use Cake\Utility\Text;
                             <?php endif; ?>
                             <div>
                                 <h5 class="card-title mb-1">
-                                    <?= $this->Html->link(h($u->name), ['action' => 'view', $u->id], ['class' => 'text-dark text-decoration-none']) ?>
+                                    <?= $this->Html->link(h($u->name), ['action' => 'profile', $u->id], ['class' => 'text-dark text-decoration-none']) ?>
                                 </h5>
                                 <?php if (!empty($u->bio)): ?>
                                     <p class="card-text text-muted small mb-0"><?= h(Text::truncate($u->bio, 60)) ?></p>
