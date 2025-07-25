@@ -88,11 +88,11 @@ $cakeDescription = 'Calcraft';
 </head>
 <body>
 
-<nav class="navbar bg-white shadow-sm px-4 py-2">
+<nav class="navbar bg-white shadow-sm px-4 py-2 sticky-top">
   <div class="container-fluid">
     <!-- ✅ 強制的に常に表示させる -->
     <button class="btn btn-outline-secondary me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
-      <i class="fas fa-bars"></i> <!-- Font Awesome アイコン -->
+      <i class="fas fa-bars"></i>
     </button>
 
     <!-- 中央ロゴ -->
@@ -114,7 +114,6 @@ $cakeDescription = 'Calcraft';
     </div>
   </div>
 </nav>
-
 
 <div class="offcanvas offcanvas-start custom-offcanvas" tabindex="-1" id="sidebarMenu">
   <div class="offcanvas-header">
