@@ -5,8 +5,8 @@ $options = (new Collection($categories))->combine('id', 'name')->toArray();
 $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
 ?>
 
-<div class="container mt-5" style="max-width: 600px;">
-  <h2 class="mb-4 text-center">ポートフォリオを投稿</h2>
+<div class="container mt-5" style="max-width: 100%;">
+  <h2 class="mb-4 text-center">投稿</h2>
 
   <?= $this->Form->create($portfolio, ['type' => 'file']) ?>
 
@@ -103,7 +103,9 @@ $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
 
   <?= $this->Form->control('processing_method', [
     'label' => '加工方法',
-    'class' => 'form-control'
+    'class' => 'form-control',
+    'type' => 'textarea',
+    'rows' => 3
   ]) ?>
 
   <?= $this->Form->control('processing_notes', [
@@ -115,7 +117,9 @@ $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
 
   <?= $this->Form->control('analysis_method', [
     'label' => '解析手法',
-    'class' => 'form-control'
+    'class' => 'form-control',
+    'type' => 'textarea',
+    'rows' => 3
   ]) ?>
 
   <?= $this->Form->control('analysis_result', [
@@ -150,28 +154,36 @@ $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
     <div class="mb-3">
       <?= $this->Form->control('tool_used', [
         'label' => '使用ツール（例：SolidWorks, Fusion360 など）',
-        'class' => 'form-control'
+        'class' => 'form-control',
+        'type' => 'textarea',
+        'rows' => 3
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('material_used', [
         'label' => '使用材料（例：アルミ、SUS304など）',
-        'class' => 'form-control'
+        'class' => 'form-control',
+        'type' => 'textarea',
+        'rows' => 3,
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('processing_method', [
         'label' => '加工方法（例：旋盤、フライス、3Dプリンタなど）',
-        'class' => 'form-control'
+        'class' => 'form-control',
+        'type' => 'textarea',
+        'rows' => 3,
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('analysis_method', [
         'label' => '解析手法（例：FEM、流体解析など）',
-        'class' => 'form-control'
+        'class' => 'form-control',
+        'type' => 'textarea',
+        'rows' => 3
       ]) ?>
     </div>
 
@@ -231,6 +243,18 @@ $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
 
   <?= $this->Form->end() ?>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const textareas = document.querySelectorAll('textarea.form-control');
+  textareas.forEach(function (textarea) {
+    textarea.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = this.scrollHeight + 'px';
+    });
+  });
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
