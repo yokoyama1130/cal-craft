@@ -1,38 +1,67 @@
 <?php
 // templates/Users/edit.php
 ?>
-<h2 class="mb-4">プロフィール編集</h2>
 
-<?= $this->Form->create($user, ['type' => 'file']) ?>
+<div class="container mt-5" style="max-width: 80%;">
+  <h2 class="mb-4 text-center">プロフィールを編集</h2>
 
-<div class="mb-3">
-    <?= $this->Form->control('name', ['label' => 'ユーザー名']) ?>
-</div>
+  <div class="card shadow-sm p-4">
+    <?= $this->Form->create($user, ['type' => 'file']) ?>
 
-<div class="mb-3">
-    <?= $this->Form->control('bio', [
+    <!-- ユーザー名 -->
+    <div class="mb-3">
+      <?= $this->Form->control('name', [
+        'label' => 'ユーザー名',
+        'class' => 'form-control'
+      ]) ?>
+    </div>
+
+    <!-- 自己紹介 -->
+    <div class="mb-3">
+      <?= $this->Form->control('bio', [
         'label' => '自己紹介',
         'type' => 'textarea',
         'rows' => 4,
-        'placeholder' => '自己紹介を入力してください'
-    ]) ?>
-</div>
+        'placeholder' => '自己紹介を入力してください',
+        'class' => 'form-control'
+      ]) ?>
+    </div>
 
-<h4 class="mt-4">SNSリンク</h4>
-<div class="mb-3">
-    <?= $this->Form->control('twitter', ['label' => 'Twitterリンク']) ?>
-    <?= $this->Form->control('github', ['label' => 'GitHubリンク']) ?>
-    <?= $this->Form->control('youtube', ['label' => 'YouTubeリンク']) ?>
-    <?= $this->Form->control('instagram', ['label' => 'Instagramリンク']) ?>
-</div>
+    <!-- SNSリンク -->
+    <h5 class="mt-4 mb-2">🌐 SNSリンク</h5>
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <?= $this->Form->control('twitter', ['label' => 'Twitter', 'class' => 'form-control', 'placeholder' => 'https://twitter.com/...']) ?>
+      </div>
+      <div class="col-md-6 mb-3">
+        <?= $this->Form->control('github', ['label' => 'GitHub', 'class' => 'form-control', 'placeholder' => 'https://github.com/...']) ?>
+      </div>
+      <div class="col-md-6 mb-3">
+        <?= $this->Form->control('youtube', ['label' => 'YouTube', 'class' => 'form-control', 'placeholder' => 'https://youtube.com/...']) ?>
+      </div>
+      <div class="col-md-6 mb-3">
+        <?= $this->Form->control('instagram', ['label' => 'Instagram', 'class' => 'form-control', 'placeholder' => 'https://instagram.com/...']) ?>
+      </div>
+    </div>
 
-<h4 class="mt-4">アイコン画像</h4>
-<div class="mb-3">
-    <?php if (!empty($user->icon_path)): ?>
-        <img src="<?= h($user->icon_path) ?>" class="rounded-circle mb-2" style="width: 100px; height: 100px; object-fit: cover;">
-    <?php endif; ?>
-    <?= $this->Form->control('icon', ['type' => 'file', 'label' => '画像を選択']) ?>
-</div>
+    <!-- アイコン画像 -->
+    <h5 class="mt-4 mb-2">🖼️ プロフィール画像</h5>
+    <div class="mb-3 text-center">
+      <?php if (!empty($user->icon_path)): ?>
+        <img src="<?= h($user->icon_path) ?>" class="rounded-circle shadow-sm mb-3 border" style="width: 120px; height: 120px; object-fit: cover;">
+      <?php endif; ?>
+      <?= $this->Form->control('icon', [
+        'type' => 'file',
+        'label' => '画像をアップロード',
+        'class' => 'form-control'
+      ]) ?>
+    </div>
 
-<?= $this->Form->button('更新', ['class' => 'btn btn-primary']) ?>
-<?= $this->Form->end() ?>
+    <!-- 更新ボタン -->
+    <div class="d-grid mt-4">
+      <?= $this->Form->button('プロフィールを更新', ['class' => 'btn btn-primary btn-lg']) ?>
+    </div>
+
+    <?= $this->Form->end() ?>
+  </div>
+</div>

@@ -173,7 +173,7 @@ class UsersController extends AppController
             $user = $this->Users->patchEntity($user, $data);
             if ($this->Users->save($user)) {
                 $this->Flash->success(__('プロフィールを更新しました。'));
-                return $this->redirect(['action' => 'view', $user->id]);
+                return $this->redirect(['action' => 'profile', $user->id]);
             }
             $this->Flash->error(__('更新に失敗しました。'));
         } else {
