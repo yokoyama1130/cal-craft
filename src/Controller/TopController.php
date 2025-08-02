@@ -3,8 +3,20 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Cake\Event\EventInterface;
+
 class TopController extends AppController
 {
+    // src/Controller/PortfoliosController.php
+
+    public function beforeFilter(EventInterface $event)
+    {
+        parent::beforeFilter($event);
+
+        // indexアクションだけログイン不要にする
+        $this->Authentication->addUnauthenticatedActions(['index']);
+    }
+
     public function index()
     {
         $this->loadModel('Likes');
