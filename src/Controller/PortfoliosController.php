@@ -6,6 +6,7 @@ namespace App\Controller;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
 use Cake\Collection\Collection;
+use Cake\Event\EventInterface;
 
 /**
  * Portfolios Controller
@@ -15,6 +16,14 @@ use Cake\Collection\Collection;
  */
 class PortfoliosController extends AppController
 {
+    public function beforeFilter(EventInterface $event)
+    {
+        parent::beforeFilter($event);
+
+        // indexアクションだけログイン不要にする
+        $this->Authentication->addUnauthenticatedActions(['search']);
+    }
+
     /**
      * Index method
      *
