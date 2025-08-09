@@ -11,7 +11,7 @@
       <?= h($user->email) ?>
     </div>
     <div class="col right">
-      <?= $this->Html->link('変更', ['action' => 'editEmail'], ['class' => 'btn btn-secondary']) ?>
+      <?= $this->Html->link('変更', ['action' => 'editEmail'], ['class' => 'btn btn-primary']) ?>
     </div>
   </div>
   <hr>
@@ -24,12 +24,28 @@
       <?php endif; ?>
     </div>
     <div class="col right">
-      <?= $this->Html->link('変更', ['action' => 'editPassword'], ['class' => 'btn btn-secondary']) ?>
+      <?= $this->Html->link('変更', ['action' => 'editPassword'], ['class' => 'btn btn-primary']) ?>
     </div>
   </div>
 </div>
 
 <style>
+.card {
+    padding:16px;
+    border:1px solid #eee;
+    border-radius:12px;
+    max-width:720px
+}
+.row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:12px 0
+}
+.col.right {
+    text-align:right
+}
+
 .card{padding:16px;border:1px solid #eee;border-radius:12px;max-width:720px}
 .row{display:flex;align-items:center;justify-content:space-between;margin:12px 0}
 .col.right{text-align:right}
