@@ -325,5 +325,4 @@ class UsersController extends AppController
             $this->Flash->error('再送に失敗しました。時間をおいてお試しください。');
         }
     }
-
 }

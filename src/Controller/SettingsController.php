@@ -223,4 +223,53 @@ class SettingsController extends AppController
 
         return $this->redirect(['action' => 'editPassword']);
     }
+
+    // src/Controller/SettingsController.php
+    public function deleteConfirm()
+    {
+        // 確認画面（フォームだけ出す）
+        // ビュー: templates/Settings/delete_confirm.php
+    }
+
+    public function deleteAccount()
+    {
+        $this->request->allowMethod(['post']);
+
+        $identity = $this->request->getAttribute('identity');
+        $user = $this->Users->get($identity->getIdentifier());
+
+        // 再認証：現在パスワード
+        $hasher = new \Authentication\PasswordHasher\DefaultPasswordHasher();
+        $currentPassword = (string)$this->request->getData('current_password');
+        if (!$hasher->check($currentPassword, (string)$user->password)) {
+            $this->Flash->error('現在のパスワードが違います。');
+            return $this->redirect(['action' => 'deleteConfirm']);
+        }
+
+        // 確認キーワード
+        $confirm = (string)$this->request->getData('confirm_keyword');
+        if (strtoupper(trim($confirm)) !== 'DELETE') {
+            $this->Flash->error('確認キーワードが一致しません。DELETE と入力してください。');
+            return $this->redirect(['action' => 'deleteConfirm']);
+        }
+
+        // ソフトデリート＋匿名化
+        $user->deleted_at = new \Cake\I18n\FrozenTime();
+        $user->email = sprintf('deleted+%d@invalid.example', $user->id);
+        if ($this->Users->getSchema()->hasColumn('new_email')) $user->set('new_email', null);
+        if ($this->Users->getSchema()->hasColumn('email_change_token')) $user->set('email_change_token', null);
+        if ($this->Users->getSchema()->hasColumn('email_change_expires')) $user->set('email_change_expires', null);
+        $user->password = bin2hex(random_bytes(16)); // 再ログイン不能に
+
+        if ($this->Users->save($user)) {
+            // ログアウト
+            $this->Authentication->logout();
+            $this->request->getSession()->destroy();
+            $this->Flash->success('アカウントを削除（無効化）しました。');
+            return $this->redirect(['controller' => 'Pages', 'action' => 'display', 'home']);
+        }
+
+        $this->Flash->error('削除に失敗しました。時間をおいて再度お試しください。');
+        return $this->redirect(['action' => 'deleteConfirm']);
+    }
 }

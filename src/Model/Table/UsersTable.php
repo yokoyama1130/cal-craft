@@ -42,7 +42,8 @@ class UsersTable extends Table
         $this->setTable('users');
         $this->setDisplayField('name');
         $this->setPrimaryKey('id');
-    
+        $this->addBehavior('Timestamp'); 
+
         // 既存のアソシエーション
         $this->hasMany('Portfolios');
         $this->hasMany('Likes');
@@ -149,5 +150,11 @@ class UsersTable extends Table
               'message' => '大文字・小文字・数字・記号のうち2種類以上を含めてください。'
           ]);
         return $v;
+    }
+
+    // 共通 finder（アプリ側で使うやつは極力これ経由）
+    public function findActive(\Cake\ORM\Query $query, array $options)
+    {
+        return $query->where(['Users.deleted_at IS' => null]);
     }
 }
