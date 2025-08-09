@@ -293,4 +293,36 @@ class UsersController extends AppController
             $this->Flash->error('認証処理中にエラーが発生しました。');
         }
     }
+
+    public function resendVerification()
+    {
+        if ($this->request->is('post')) {
+            $email = $this->request->getData('email');
+            $user = $this->Users->find()->where(['email' => $email])->first();
+
+            if (!$user) {
+                $this->Flash->error('該当するメールアドレスは登録されていません。');
+                return $this->redirect(['action' => 'resendVerification']);
+            }
+            if ($user->email_verified) {
+                $this->Flash->success('すでに認証済みです。ログインしてください。');
+                return $this->redirect(['action' => 'login']);
+            }
+
+            $user->email_token = \Cake\Utility\Text::uuid();
+            if ($this->Users->save($user)) {
+                $mailer = new \Cake\Mailer\Mailer('default');
+                $mailer->setTo($user->email)
+                    ->setSubject('【Calcraft】メール認証の再送')
+                    ->deliver("以下のURLから認証を完了してください：\n\n" .
+                        \Cake\Routing\Router::url(['controller' => 'Users', 'action' => 'verifyEmail', $user->email_token], true));
+
+                $this->Flash->success('認証メールを再送しました。メールをご確認ください。');
+                return $this->redirect(['action' => 'login']);
+            }
+
+            $this->Flash->error('再送に失敗しました。時間をおいてお試しください。');
+        }
+    }
+
 }

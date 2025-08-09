@@ -8,5 +8,9 @@
             <?= $this->Form->control('password', ['class' => 'form-control', 'label' => 'Password']) ?>
         </div>
         <?= $this->Form->button('ログイン', ['class' => 'btn btn-primary w-100']) ?>
+        <p class="mt-3">
+        認証メールが届かない場合は
+        <?= $this->Html->link('こちら', ['action' => 'resendVerification']) ?> から再送できます。
+        </p>
     <?= $this->Form->end() ?>
 </div>
