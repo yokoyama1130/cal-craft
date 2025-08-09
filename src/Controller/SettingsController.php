@@ -8,6 +8,7 @@ namespace App\Controller;
 use Cake\I18n\FrozenTime;
 use Cake\Utility\Text;
 use Authentication\PasswordHasher\DefaultPasswordHasher;
+use App\Mailer\UserMailer;
 
 class SettingsController extends AppController
 {
@@ -68,15 +69,14 @@ class SettingsController extends AppController
 
         if ($this->Users->save($user)) {
             // 確認メール送信（UserMailer）
-            /** @var \App\Mailer\UserMailer $mailer */
-            $mailer = $this->getMailer('User');
-            $mailer->send('emailChangeConfirm', [$user, $token]);
-
+            $mailer = new UserMailer();
+            $mailer->emailChangeConfirm($user, $token);
+        
             // 旧メールにも通知（任意）
             if (!empty($user->email)) {
-                $mailer->send('emailChangeNoticeOld', [$user]);
+                $mailer->emailChangeNoticeOld($user);
             }
-
+        
             $this->Flash->success('確認メールを送信しました。メール内リンクで変更を完了してください。');
         } else {
             $this->Flash->error('メール変更の処理に失敗しました。');
