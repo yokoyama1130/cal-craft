@@ -31,5 +31,11 @@ return function (RouteBuilder $routes): void {
     $routes->prefix('admin', function (RouteBuilder $routes) {
         $routes->connect('/', ['controller' => 'Dashboard', 'action' => 'index']);
         $routes->fallbacks(DashedRoute::class);
-    });    
+    });
+    
+    // config/routes.php
+    $routes->connect('/settings', ['controller' => 'Settings', 'action' => 'index']);
+    $routes->post('/settings/email', ['controller' => 'Settings', 'action' => 'updateEmail']);
+    $routes->get('/settings/email/confirm/*', ['controller' => 'Settings', 'action' => 'confirmEmail']); // token
+    $routes->post('/settings/password', ['controller' => 'Settings', 'action' => 'updatePassword']);
 };
