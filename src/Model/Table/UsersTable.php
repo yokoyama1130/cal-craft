@@ -88,7 +88,8 @@ class UsersTable extends Table
             ->scalar('password')
             ->maxLength('password', 255)
             ->requirePresence('password', 'create')
-            ->notEmptyString('password');
+            ->notEmptyString('password')
+            ->minLength('password', 8, '8文字以上にしてください。');
 
         $validator
             ->scalar('bio')
@@ -115,5 +116,38 @@ class UsersTable extends Table
     public function findAuth(\Cake\ORM\Query $query, array $options)
     {
         return $query->where(['email_verified' => true]);
+    }
+
+    public function validationEmailChange(Validator $validator): Validator
+    {
+        $v = new Validator();
+        $v->email('new_email', false, '正しいメール形式で入力してください。')
+          ->requirePresence('new_email')
+          ->notEmptyString('new_email', '新しいメールアドレスを入力してください。')
+          ->add('new_email', 'unique', [
+              'rule' => function ($value) {
+                  // 既存email と他ユーザーの new_email に重複しない
+                  return !$this->exists(['email' => $value]) && !$this->exists(['new_email' => $value]);
+              },
+              'message' => 'このメールは既に使用されています。'
+          ]);
+        return $v;
+    }
+
+    public function validationPasswordChange(Validator $validator): Validator
+    {
+        $v = new Validator();
+        $v->minLength('password', 8, '8文字以上にしてください。')
+          ->add('password', 'complexity', [
+              'rule' => function (string $value) {
+                  $score = (int)preg_match('/[a-z]/', $value)
+                         + (int)preg_match('/[A-Z]/', $value)
+                         + (int)preg_match('/\d/', $value)
+                         + (int)preg_match('/[^a-zA-Z0-9]/', $value);
+                  return $score >= 2;
+              },
+              'message' => '大文字・小文字・数字・記号のうち2種類以上を含めてください。'
+          ]);
+        return $v;
     }
 }
