@@ -80,6 +80,8 @@ return [
      * Host and credential configuration in case you are using SmtpTransport
      *
      * See app.php for more configuration options.
+     * ここのメールアドレスを変えて、そのGmailからパスワード取得すれば送信先を変えられるんだと思う
+     * 公式のメールアドレスを作ったらここ修正する
      */
     'EmailTransport' => [
         'default' => [
