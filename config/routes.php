@@ -35,7 +35,13 @@ return function (RouteBuilder $routes): void {
     
     // config/routes.php
     $routes->connect('/settings', ['controller' => 'Settings', 'action' => 'index']);
+
+    $routes->get('/settings/email', ['controller' => 'Settings', 'action' => 'editEmail']);
     $routes->post('/settings/email', ['controller' => 'Settings', 'action' => 'updateEmail']);
-    $routes->get('/settings/email/confirm/*', ['controller' => 'Settings', 'action' => 'confirmEmail']); // token
+
+    $routes->get('/settings/password', ['controller' => 'Settings', 'action' => 'editPassword']);
     $routes->post('/settings/password', ['controller' => 'Settings', 'action' => 'updatePassword']);
+
+    $routes->get('/settings/email/confirm/*', ['controller' => 'Settings', 'action' => 'confirmEmail']);
+
 };
