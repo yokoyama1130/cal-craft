@@ -110,4 +110,10 @@ class UsersTable extends Table
 
         return $rules;
     }
+
+    // src/Model/Table/UsersTable.php
+    public function findAuth(\Cake\ORM\Query $query, array $options)
+    {
+        return $query->where(['email_verified' => true]);
+    }
 }
