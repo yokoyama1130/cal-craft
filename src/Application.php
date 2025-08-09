@@ -143,17 +143,23 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
         $service = new AuthenticationService([
-            'unauthenticatedRedirect' => '/users/login', // ← ここ重要！
+            'unauthenticatedRedirect' => '/users/login',
             'queryParam' => 'redirect',
         ]);
-
+    
+        // ★ ここがポイント：finder=auth を指定
         $service->loadIdentifier('Authentication.Password', [
             'fields' => [
                 'username' => 'email',
                 'password' => 'password',
-            ]
+            ],
+            'resolver' => [
+                'className' => 'Authentication.Orm',
+                'userModel' => 'Users',
+                'finder'    => 'auth',   // ← UsersTable::findAuth を使う
+            ],
         ]);
-
+    
         $service->loadAuthenticator('Authentication.Session');
         $service->loadAuthenticator('Authentication.Form', [
             'fields' => [
@@ -162,7 +168,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             ],
             'loginUrl' => '/users/login',
         ]);
-
+    
         return $service;
     }
 }
