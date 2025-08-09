@@ -88,32 +88,45 @@ $cakeDescription = 'Calcraft';
 </head>
 <body>
 
-<nav class="navbar bg-white shadow-sm px-4 py-2 sticky-top">
-  <div class="container-fluid">
-    <!-- ✅ 強制的に常に表示させる -->
-    <button class="btn btn-outline-secondary me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu">
-      <i class="fas fa-bars"></i>
-    </button>
+<nav class="navbar bg-white shadow-sm px-3 py-2 sticky-top">
+  <div class="container-fluid position-relative d-flex align-items-center" style="min-height:56px;">
+    
+    <!-- 左：メニュー -->
+    <div class="nav-left">
+      <button class="btn btn-outline-secondary me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-label="メニュー">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
 
-    <!-- 中央ロゴ -->
-    <div class="mx-auto position-absolute start-50 translate-middle-x">
-      <a class="navbar-brand fw-bold fs-5 text-dark" href="<?= $this->Url->build('/') ?>">
-        Calcraft <span class="text-muted small"></span>
+    <!-- 中央ロゴ（常に中央固定） -->
+    <div class="position-absolute top-50 start-50 translate-middle">
+      <a class="navbar-brand fw-bold text-dark m-0" href="<?= $this->Url->build('/') ?>">
+        Calcraft
       </a>
     </div>
 
-    <!-- 右ログイン -->
-    <div class="d-flex ms-auto">
+    <!-- 右：ログイン系 -->
+    <div class="nav-right ms-auto d-flex align-items-center">
       <?php if ($this->Identity->isLoggedIn()): ?>
-        <span class="me-2 mt-2">ようこそ <?= h($this->Identity->get('name')) ?> さん</span>
-        <a href="/users/logout" class="btn btn-outline-secondary">ログアウト</a>
+        <span class="me-2 d-none d-sm-inline text-truncate" style="max-width:140px;">
+          ようこそ <?= h($this->Identity->get('name')) ?> さん
+        </span>
+        <a href="/users/logout" class="btn btn-outline-secondary btn-sm d-none d-sm-inline">ログアウト</a>
+        <a href="/users/logout" class="btn btn-outline-secondary btn-sm d-inline d-sm-none" title="ログアウト">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </a>
       <?php else: ?>
-        <a href="/users/login" class="btn btn-outline-primary me-2">ログイン</a>
-        <a href="/users/register" class="btn btn-primary">新規登録</a>
+        <a href="/users/login" class="btn btn-outline-primary btn-sm me-2 d-none d-sm-inline">ログイン</a>
+        <a href="/users/register" class="btn btn-primary btn-sm d-none d-sm-inline">新規登録</a>
+        <a href="/users/login" class="btn btn-primary btn-sm d-inline d-sm-none" title="ログイン">
+          <i class="fa-solid fa-user"></i>
+        </a>
       <?php endif; ?>
     </div>
+
   </div>
 </nav>
+
 
 <div class="offcanvas offcanvas-start custom-offcanvas" tabindex="-1" id="sidebarMenu">
   <div class="offcanvas-header">
@@ -161,6 +174,17 @@ $cakeDescription = 'Calcraft';
 
 .custom-offcanvas ul li a:hover {
     background-color: #f0f0f0;
+}
+
+/* ✅ 3カラム想定の崩れ防止 */
+.navbar-3cols { min-height: 56px; } /* タップしやすい高さ確保 */
+.nav-left, .nav-right { flex: 0 0 auto; }
+.nav-center { flex: 1 1 auto; }
+
+/* スマホでボタンが大きすぎると折り返すので微調整 */
+@media (max-width: 576px) {
+  .navbar .btn { padding: .4rem .6rem; }
+  .navbar .navbar-brand { font-size: 1.125rem; } /* ロゴ少し小さめ */
 }
 </style>
 
