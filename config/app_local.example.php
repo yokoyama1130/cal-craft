@@ -83,12 +83,22 @@ return [
      */
     'EmailTransport' => [
         'default' => [
-            'host' => 'localhost',
-            'port' => 25,
-            'username' => null,
-            'password' => null,
-            'client' => null,
-            'url' => env('EMAIL_TRANSPORT_DEFAULT_URL', null),
+            'className' => 'Smtp',
+            'host' => 'smtp.gmail.com',
+            'port' => 587,
+            'username' => 'your_email@gmail.com',
+            'password' => 'pddujvzacfnphbif',
+            'tls' => true,
+        ],
+    ],
+
+    'Email' => [
+        'default' => [
+            'transport' => 'default',
+            'from' => ['your_email@gmail.com' => 'Calcraft'],
+            'emailFormat' => 'text',
+            'charset' => 'utf-8',
+            'headerCharset' => 'utf-8',
         ],
     ],
 ];

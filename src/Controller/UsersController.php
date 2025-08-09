@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Cake\Utility\Text;
+use Cake\Mailer\Mailer;
+use Cake\Routing\Router;
+
 class UsersController extends AppController
 {
     public function initialize(): void
@@ -47,11 +51,38 @@ class UsersController extends AppController
     {
         $user = $this->Users->newEmptyEntity();
         if ($this->request->is('post')) {
-            $user = $this->Users->patchEntity($user, $this->request->getData());
+            $data = $this->request->getData();
+    
+            // SNSリンクを空のJSONとして初期化（必要に応じて個別に設定可）
+            $data['sns_links'] = json_encode([
+                'twitter' => '',
+                'github' => '',
+                'youtube' => '',
+                'instagram' => ''
+            ]);
+
+            $user = $this->Users->patchEntity($user, $data);
+    
+            $user->email_verified = false;
+            $user->email_token = Text::uuid(); // ランダムトークン
+
             if ($this->Users->save($user)) {
-                $this->Flash->success('登録完了しました。ログインしてください。');
+                $mailer = new Mailer('default');
+                // $mailer->setTo('nunouvlog@gmail.com')
+                //     ->setSubject('テスト送信')
+                //     ->deliver('CakePHPから送ったテストメールです。');
+
+                // 認証メール送信
+                $mailer = new Mailer('default');
+                $mailer->setTo($user->email)
+                    ->setSubject('【Calcraft】メール認証のお願い')
+                    ->deliver("以下のURLをクリックしてメール認証を完了してください：\n\n" .
+                        Router::url(['controller' => 'Users', 'action' => 'verifyEmail', $user->email_token], true));
+    
+                $this->Flash->success('確認メールを送信しました。メールをご確認ください。');
                 return $this->redirect(['action' => 'login']);
             }
+
             $this->Flash->error('登録に失敗しました。');
         }
         $this->set(compact('user'));
@@ -243,4 +274,23 @@ class UsersController extends AppController
         $this->set(compact('users', 'keyword'));
     }
 
+    public function verifyEmail($token = null)
+    {
+        $user = $this->Users->find()->where(['email_token' => $token])->first();
+
+        if (!$user) {
+            $this->Flash->error('無効な認証リンクです。');
+            return $this->redirect(['action' => 'login']);
+        }
+
+        $user->email_verified = true;
+        $user->email_token = null;
+
+        if ($this->Users->save($user)) {
+            $this->Flash->success('メールアドレスの認証が完了しました。ログインできます。');
+            return $this->redirect(['action' => 'login']);
+        } else {
+            $this->Flash->error('認証処理中にエラーが発生しました。');
+        }
+    }
 }
