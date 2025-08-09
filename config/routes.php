@@ -44,4 +44,6 @@ return function (RouteBuilder $routes): void {
 
     $routes->get('/settings/email/confirm/*', ['controller' => 'Settings', 'action' => 'confirmEmail']);
 
+    $routes->get('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteConfirm']);
+    $routes->post('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteAccount']);
 };
