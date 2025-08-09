@@ -135,6 +135,7 @@ $cakeDescription = 'Calcraft';
             通知<?= isset($unreadCount) && $unreadCount > 0 ? "（{$unreadCount}）" : '' ?>
           </a>
         </li>
+        <li><a href="/settings/index">設定</a></li>
     </ul>
   </div>
 </div>
