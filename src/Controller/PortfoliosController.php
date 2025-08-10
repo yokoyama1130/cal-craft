@@ -135,37 +135,46 @@ class PortfoliosController extends AppController
         if ($this->request->is('post')) {
             $data = $this->request->getData();
     
-            // サムネイル画像の処理
+            // --- サムネ画像（既存ロジックそのまま/少し安全化） ---
             $thumbnailFile = $this->request->getData('thumbnail_file');
             if ($thumbnailFile && $thumbnailFile->getError() === UPLOAD_ERR_OK) {
-                $filename = Text::uuid() . '.' . pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION);
+                $ext = strtolower(pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION));
+                $safeExt = in_array($ext, ['jpg','jpeg','png','webp'], true) ? $ext : 'jpg';
+                $filename = Text::uuid() . '.' . $safeExt;
                 $uploadPath = WWW_ROOT . 'uploads' . DS . $filename;
                 $thumbnailFile->moveTo($uploadPath);
                 $data['thumbnail'] = '/uploads/' . $filename;
             }
     
+            // --- エンティティに反映 ---
             $portfolio = $this->Portfolios->patchEntity($portfolio, $data);
             $portfolio->user_id = $this->request->getAttribute('identity')->get('id');
     
+            // 先に保存してIDを確定（保存後に /files/portfolios/{id}/ に置く）
             if ($this->Portfolios->save($portfolio)) {
-                $this->Flash->success('投稿が完了しました！');
-                return $this->redirect(['controller' => 'Top', 'action' => 'index']);
+                try {
+                    $this->handlePdfUploads($portfolio); // ← PDF保存＋パス更新（下に定義）
+    
+                    $this->Flash->success('投稿が完了しました！');
+                    return $this->redirect(['controller' => 'Top', 'action' => 'index']);
+                } catch (\Throwable $e) {
+                    // PDF保存で失敗した場合
+                    $this->Flash->error('ファイル保存でエラーが発生しました：' . $e->getMessage());
+                }
+            } else {
+                $this->Flash->error('投稿に失敗しました。もう一度お試しください。');
             }
-            $this->Flash->error('投稿に失敗しました。もう一度お試しください。');
         }
     
-        // categories に slug も含めて渡す
+        // categories に slug も含めて渡す（既存）
         $categories = $this->Portfolios->Categories->find()
             ->select(['id', 'name', 'slug'])
             ->order(['id' => 'ASC'])
             ->all()
-            ->map(function ($row) {
-                return $row;
-            })
             ->toArray();
     
         $this->set(compact('portfolio', 'categories'));
-    }    
+    }   
 
     /**
      * Edit method
