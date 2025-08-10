@@ -325,6 +325,40 @@ class PortfoliosController extends AppController
         }
     }
 
+    /**
+     * PDF 1ファイルを検証して保存し、保存したファイル名を返す
+     */
+    private function moveOnePdf(\Psr\Http\Message\UploadedFileInterface $file, string $baseDir, string $kind, int $pid): string
+    {
+        // 拡張子チェック（フロントの accept だけでは不十分）
+        $ext = strtolower(pathinfo($file->getClientFilename(), PATHINFO_EXTENSION));
+        if ($ext !== 'pdf') {
+            throw new \RuntimeException('PDFのみアップロードできます。');
+        }
+
+        // MIME検証（finfo）※ stream を一度読み込んでから rewind 必須
+        $stream = $file->getStream();
+        $contents = $stream->getContents();
+        $stream->rewind();
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->buffer($contents);
+        if (!in_array($mime, ['application/pdf', 'application/x-pdf'], true)) {
+            throw new \RuntimeException('PDF以外のファイルです。');
+        }
+
+        // サイズ上限（例：20MB）
+        if ($file->getSize() > 20 * 1024 * 1024) {
+            throw new \RuntimeException('ファイルサイズは20MBまでです。');
+        }
+
+        // ランダムな安全ファイル名
+        $safeName = sprintf('p-%d-%s-%s.pdf', $pid, $kind, bin2hex(random_bytes(8)));
+        $file->moveTo($baseDir . $safeName);
+
+        return $safeName;
+    }
+
 
 
 }
