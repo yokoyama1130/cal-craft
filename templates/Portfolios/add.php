@@ -132,6 +132,15 @@ $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
   <!-- ▼ 補足 -->
   <h5 class="mt-4 mb-2">[4] 補足情報</h5>
 
+  <?= $this->Form->create($portfolio, ['type' => 'file']) ?>  <!-- ← or 'enctype' => 'multipart/form-data' -->
+
+  <!-- 図面PDF（1枚） -->
+  <?= $this->Form->control('drawing_pdf', [
+    'type' => 'file',
+    'label' => '図面PDF',
+    'accept' => 'application/pdf'
+  ]) ?>
+
   <?= $this->Form->control('development_period', [
     'label' => '開発期間',
     'class' => 'form-control'
@@ -219,6 +228,14 @@ $slugMap = (new Collection($categories))->combine('id', 'slug')->toArray();
         'class' => 'form-control'
       ]) ?>
     </div>
+
+        <!-- 補足PDF（複数可） -->
+    <?= $this->Form->control('supplement_pdfs[]', [
+      'type' => 'file',
+      'label' => '補足資料PDF（複数可）',
+      'multiple' => true,
+      'accept' => 'application/pdf'
+    ]) ?>
   </div>
 
   <div id="extra-programming" class="extra-fields d-none">
