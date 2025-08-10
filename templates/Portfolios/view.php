@@ -158,6 +158,52 @@
       <?php if ($portfolio->material_used): ?>
         <p><strong>使用材料:</strong> <?= nl2br(h($portfolio->material_used)) ?></p>
       <?php endif; ?>
+
+      <?php
+      // JSON or array どちらでも扱えるように補助変数を用意
+      $suppPaths = [];
+      if (!empty($portfolio->supplement_pdf_paths)) {
+          $suppPaths = is_array($portfolio->supplement_pdf_paths)
+              ? $portfolio->supplement_pdf_paths
+              : (array)json_decode((string)$portfolio->supplement_pdf_paths, true);
+      }
+      ?>
+
+      <?php if (!empty($portfolio->drawing_pdf_path) || !empty($suppPaths)): ?>
+        <h5 class="mt-4">📄 図面・資料</h5>
+
+        <?php if (!empty($portfolio->drawing_pdf_path)): ?>
+          <div class="pdf-frame mb-3">
+            <iframe
+              src="/<?= h($portfolio->drawing_pdf_path) ?>"
+              title="図面PDF"
+              loading="lazy"
+            ></iframe>
+          </div>
+          <div class="small text-muted mb-4">
+            <a href="/<?= h($portfolio->drawing_pdf_path) ?>" target="_blank" rel="noopener">図面PDFを別タブで開く</a>
+          </div>
+        <?php endif; ?>
+
+        <?php if (!empty($suppPaths)): ?>
+          <div class="supplement-list">
+            <ul class="list-unstyled">
+              <?php foreach ($suppPaths as $i => $p): if (empty($p)) continue; ?>
+                <li class="mb-2 d-flex align-items-center gap-2">
+                  <i class="fa-regular fa-file-pdf"></i>
+                  <a href="/<?= h($p) ?>" target="_blank" rel="noopener">補足資料 <?= $i + 1 ?></a>
+                  <details class="ms-2 d-none d-md-block">
+                    <summary class="text-muted small">プレビュー</summary>
+                    <div class="pdf-frame mt-2">
+                      <iframe src="/<?= h($p) ?>" loading="lazy" title="補足PDF <?= $i + 1 ?>"></iframe>
+                    </div>
+                  </details>
+                </li>
+              <?php endforeach; ?>
+            </ul>
+          </div>
+        <?php endif; ?>
+      <?php endif; ?>
     </div>
   <?php endif; ?>
 
