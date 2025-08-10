@@ -369,6 +369,54 @@ class PortfoliosController extends AppController
         return $safeName;
     }
 
+    /**
+     * 図面PDF（単一）と補足PDF（複数）を保存し、パスをエンティティに反映して再保存する
+     */
+    private function handlePdfUploads(\App\Model\Entity\Portfolio $portfolio): void
+    {
+        $req = $this->request;
+
+        // フォームの name 属性と合わせてください：
+        //   drawing_pdf（単一） / supplement_pdfs[]（複数）
+        $drawing = $req->getData('drawing_pdf');
+        $supps   = (array)$req->getData('supplement_pdfs');
+
+        if (!$drawing && empty(array_filter($supps))) {
+            return; // 何もなければ何もしない
+        }
+
+        $baseDir = WWW_ROOT . 'files' . DS . 'portfolios' . DS . $portfolio->id . DS;
+        (new Folder($baseDir, true, 0755));
+
+        // 図面（単一）
+        if ($drawing && $drawing->getError() === UPLOAD_ERR_OK) {
+            $fname = $this->moveOnePdf($drawing, $baseDir, 'drawing', (int)$portfolio->id);
+            $portfolio->drawing_pdf_path = 'files/portfolios/' . $portfolio->id . '/' . $fname;
+        }
+
+        // 補足（複数）
+        $suppPaths = [];
+        foreach ($supps as $f) {
+            if ($f && $f->getError() === UPLOAD_ERR_OK) {
+                $fname = $this->moveOnePdf($f, $baseDir, 'supplement', (int)$portfolio->id);
+                $suppPaths[] = 'files/portfolios/' . $portfolio->id . '/' . $fname;
+            }
+        }
+        if ($suppPaths) {
+            $current = $portfolio->supplement_pdf_paths;
+            $currentArr = is_string($current) ? (array)json_decode($current, true) : (array)$current;
+            $portfolio->supplement_pdf_paths = array_values(array_merge($currentArr, $suppPaths));
+        }
+
+        // JSON化して保存（text カラムに格納）
+        if (is_array($portfolio->supplement_pdf_paths)) {
+            $portfolio->supplement_pdf_paths = json_encode($portfolio->supplement_pdf_paths, JSON_UNESCAPED_SLASHES);
+        }
+
+        if (!$this->Portfolios->save($portfolio)) {
+            throw new \RuntimeException('ファイルパスの保存に失敗しました。');
+        }
+    }
 
 
 }
