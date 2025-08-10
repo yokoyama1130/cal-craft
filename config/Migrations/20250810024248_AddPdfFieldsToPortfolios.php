@@ -1,0 +1,29 @@
+<?php
+declare(strict_types=1);
+
+use Migrations\AbstractMigration;
+
+class AddPdfFieldsToPortfolios extends AbstractMigration
+{
+    /**
+     * Change Method.
+     *
+     * More information on this method is available here:
+     * https://book.cakephp.org/phinx/0/en/migrations.html#the-change-method
+     * @return void
+     */
+    public function change(): void
+    {
+        $table = $this->table('portfolios');
+        $table->addColumn('drawing_pdf_path', 'string', [
+            'default' => null,
+            'limit' => 255,
+            'null' => false,
+        ]);
+        $table->addColumn('supplement_pdf_paths', 'text', [
+            'default' => null,
+            'null' => false,
+        ]);
+        $table->update();
+    }
+}
