@@ -17,12 +17,26 @@ use Cake\Utility\Text;
     </div>
     <!-- フォローボタン -->
     <?php if ($this->request->getAttribute('identity')->get('id') !== $user->id): ?>
+    <div class="mt-2 d-flex gap-2">
       <?php if ($isFollowing): ?>
-        <?= $this->Form->postLink('フォロー解除', ['controller' => 'Follows', 'action' => 'unfollow', $user->id], ['class' => 'btn btn-outline-secondary mt-2']) ?>
+        <?= $this->Form->postLink('フォロー解除', ['controller' => 'Follows', 'action' => 'unfollow', $user->id], ['class' => 'btn btn-outline-secondary']) ?>
       <?php else: ?>
-        <?= $this->Form->postLink('フォロー', ['controller' => 'Follows', 'action' => 'follow', $user->id], ['class' => 'btn btn-primary mt-2']) ?>
+        <?= $this->Form->postLink('フォロー', ['controller' => 'Follows', 'action' => 'follow', $user->id], ['class' => 'btn btn-outline-primary']) ?>
       <?php endif; ?>
-    <?php endif; ?>
+
+      <!-- ここが追加：メッセージボタン -->
+      <?php if ($this->Identity->isLoggedIn()): ?>
+        <a href="<?= $this->Url->build(['controller' => 'Conversations', 'action' => 'start', $user->id]) ?>"
+          class="btn btn-primary">
+          <i class="fa-regular fa-paper-plane me-1"></i> メッセージ
+        </a>
+      <?php else: ?>
+        <a href="/users/login?redirect=<?= urlencode($this->request->getRequestTarget()) ?>" class="btn btn-primary">
+          <i class="fa-regular fa-paper-plane me-1"></i> メッセージ
+        </a>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
   </div>
 </div>
 
