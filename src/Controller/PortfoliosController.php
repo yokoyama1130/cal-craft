@@ -7,6 +7,7 @@ use Cake\ORM\TableRegistry;
 use Cake\Utility\Text;
 use Cake\Collection\Collection;
 use Cake\Event\EventInterface;
+use Cake\Filesystem\Folder;
 
 /**
  * Portfolios Controller
