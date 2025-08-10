@@ -267,5 +267,63 @@ class PortfoliosController extends AppController
         $this->render('index'); // ← トップページ（index）テンプレートを再利用
     }
 
+    private function savePdfUploads(\App\Model\Entity\Portfolio $portfolio): void
+    {
+        $request = $this->request;
+        $files = [];
+
+        // 単体：図面
+        $drawing = $request->getData('drawing_pdf');
+        if ($drawing && $drawing->getError() === UPLOAD_ERR_OK) {
+            $files[] = ['file' => $drawing, 'kind' => 'drawing'];
+        }
+
+        // 複数：補足
+        $supps = (array)$request->getData('supplement_pdfs');
+        foreach ($supps as $f) {
+            if ($f && $f->getError() === UPLOAD_ERR_OK) {
+                $files[] = ['file' => $f, 'kind' => 'supplement'];
+            }
+        }
+
+        if (!$files) return;
+
+        $baseDir = WWW_ROOT . 'files' . DS . 'portfolios' . DS . $portfolio->id . DS;
+        (new Folder($baseDir, true, 0755));
+
+        foreach ($files as $item) {
+            $f = $item['file'];
+
+            // サーバ側バリデーション（拡張子だけでなくMIMEも確認）
+            if (strtolower(pathinfo($f->getClientFilename(), PATHINFO_EXTENSION)) !== 'pdf') {
+                throw new \RuntimeException('PDFのみアップロードできます。');
+            }
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->buffer($f->getStream()->getContents());
+            $f->getStream()->rewind();
+            if (!in_array($mime, ['application/pdf', 'application/x-pdf'], true)) {
+                throw new \RuntimeException('PDF以外のファイルです。');
+            }
+            if ($f->getSize() > 20 * 1024 * 1024) { // 20MB
+                throw new \RuntimeException('ファイルサイズは20MBまでです。');
+            }
+
+            // 衝突しない安全なファイル名に
+            $safe = 'p-' . $portfolio->id . '-' . $item['kind'] . '-' . bin2hex(random_bytes(8)) . '.pdf';
+            $f->moveTo($baseDir . $safe);
+
+            // 簡易的にポートフォリオのフィールドへ格納（最小構成）
+            if ($item['kind'] === 'drawing') {
+                $portfolio->drawing_pdf_path = 'files/portfolios/' . $portfolio->id . '/' . $safe;
+            } else {
+                // 複数は配列→JSONで持つ
+                $list = (array)($portfolio->supplement_pdf_paths ?? []);
+                $list[] = 'files/portfolios/' . $portfolio->id . '/' . $safe;
+                $portfolio->supplement_pdf_paths = $list;
+            }
+        }
+    }
+
+
 
 }
