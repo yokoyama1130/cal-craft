@@ -135,7 +135,7 @@ $cakeDescription = 'Calcraft';
   </div>
   <div class="offcanvas-body">
     <ul class="list-unstyled">
-        <li><a href="<?= $this->Url->build('/') ?>">ホーム</a></li>
+        <li><a href="/top">トップ画面</a></li>
         <?php if ($this->Identity->isLoggedIn()): ?>
           <li><a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile']) ?>">プロフィール</a></li>
         <?php endif; ?>
