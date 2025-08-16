@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Cake\Event\EventInterface;
+
 /**
  * Home Controller
  *
@@ -10,6 +12,14 @@ namespace App\Controller;
  */
 class HomeController extends AppController
 {
+    public function beforeFilter(EventInterface $event)
+    {
+        parent::beforeFilter($event);
+
+        // indexアクションだけログイン不要にする
+        $this->Authentication->addUnauthenticatedActions(['index']);
+    }
+
     public function index()
     {
         $this->loadModel('Portfolios');
