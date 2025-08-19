@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\Utility\Text;
+use Cake\Event\EventInterface;
 
 class CompaniesController extends AppController
 {
@@ -14,16 +15,24 @@ class CompaniesController extends AppController
         // $this->loadComponent('Flash');
     }
 
+    public function beforeFilter(EventInterface $event)
+    {
+        parent::beforeFilter($event);
+
+        // indexアクションだけログイン不要にする
+        $this->Authentication->addUnauthenticatedActions(['add']);
+    }
+
     /**
      * 会社一覧（必要なければ消してOK）
      */
     public function index()
     {
-        $this->paginate = [
-            'limit' => 20,
-            'order' => ['Companies.modified' => 'DESC'],
-        ];
         $companies = $this->paginate($this->Companies->find());
+        $query = $this->Companies->find()
+        ->contain(['Users']); // owner_user_id -> Users との belongsTo
+        $this->paginate = ['limit' => 20, 'order' => ['Companies.modified' => 'DESC']];
+        $companies = $this->paginate($query);
         $this->set(compact('companies'));
     }
 
