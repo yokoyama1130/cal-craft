@@ -69,6 +69,30 @@ use Cake\Utility\Text;
 
         <hr class="my-4">
 
+        <div class="row g-3 mt-1">
+            <div class="col-md-7">
+                <label class="form-label fw-semibold">
+                <i class="fa-solid fa-user-shield me-2 text-primary"></i>
+                オーナー用メール（未ログイン時）
+                </label>
+                <?= $this->Form->email('owner_email', [
+                'class' => 'form-control',
+                'placeholder' => 'owner@example.com'
+                ]) ?>
+                <div class="form-text">未ログインで作成する場合は必須です（ログイン中なら無視されます）。</div>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label fw-semibold">
+                <i class="fa-solid fa-key me-2 text-secondary"></i>
+                オーナー用パスワード（任意）
+                </label>
+                <?= $this->Form->password('owner_password', [
+                'class' => 'form-control',
+                'placeholder' => '未入力なら自動発行'
+                ]) ?>
+            </div>
+        </div>
+
         <!-- Web / 請求メール -->
         <div class="row g-3">
           <div class="col-md-6">

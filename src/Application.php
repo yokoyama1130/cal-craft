@@ -33,7 +33,6 @@ use Authentication\AuthenticationServiceProviderInterface;
 use Authentication\Middleware\AuthenticationMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
 
-
 /**
  * Application setup class.
  *
@@ -142,32 +141,51 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
-        $service = new AuthenticationService([
-            'unauthenticatedRedirect' => '/users/login',
-            'queryParam' => 'redirect',
-        ]);
+        $service = new AuthenticationService();
+        $prefix = $request->getParam('prefix');
     
-        // ★ ここがポイント：finder=auth を指定
-        $service->loadIdentifier('Authentication.Password', [
-            'fields' => [
-                'username' => 'email',
-                'password' => 'password',
-            ],
-            'resolver' => [
-                'className' => 'Authentication.Orm',
-                'userModel' => 'Users',
-                'finder'    => 'auth',   // ← UsersTable::findAuth を使う
-            ],
-        ]);
+        if ($prefix === 'Employer') {
+            // ★ Companies を対象（auth_email / auth_password）
+            $service->loadIdentifier('Authentication.Password', [
+                'fields' => ['username' => 'auth_email', 'password' => 'auth_password'],
+                'resolver' => [
+                    'className' => 'Authentication.Orm',
+                    'userModel' => 'Companies',
+                ],
+            ]);
     
-        $service->loadAuthenticator('Authentication.Session');
-        $service->loadAuthenticator('Authentication.Form', [
-            'fields' => [
-                'username' => 'email',
-                'password' => 'password',
-            ],
-            'loginUrl' => '/users/login',
-        ]);
+            $service->loadAuthenticator('Authentication.Session');
+            $service->loadAuthenticator('Authentication.Form', [
+                'loginUrl' => '/employer/login',
+                'fields'   => ['username' => 'auth_email', 'password' => 'auth_password'],
+            ]);
+    
+            $service->setConfig([
+                'unauthenticatedRedirect' => '/employer/login',
+                'queryParam' => 'redirect',
+            ]);
+        } else {
+            // ★ Users を対象（email / password）
+            $service->loadIdentifier('Authentication.Password', [
+                'fields' => ['username' => 'email', 'password' => 'password'],
+                'resolver' => [
+                    'className' => 'Authentication.Orm',
+                    'userModel' => 'Users',
+                    // 'finder' => 'auth', // UsersTable::findAuth を使うなら有効化
+                ],
+            ]);
+    
+            $service->loadAuthenticator('Authentication.Session');
+            $service->loadAuthenticator('Authentication.Form', [
+                'loginUrl' => '/users/login',
+                'fields'   => ['username' => 'email', 'password' => 'password'],
+            ]);
+    
+            $service->setConfig([
+                'unauthenticatedRedirect' => '/users/login',
+                'queryParam' => 'redirect',
+            ]);
+        }
     
         return $service;
     }

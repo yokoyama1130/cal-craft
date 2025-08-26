@@ -48,4 +48,10 @@ return function (RouteBuilder $routes): void {
 
     $routes->get('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteConfirm']);
     $routes->post('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteAccount']);
+
+    $routes->prefix('Employer', function ($routes) {
+        $routes->connect('/login', ['controller' => 'Auth', 'action' => 'login']);
+        $routes->connect('/logout', ['controller' => 'Auth', 'action' => 'logout']);
+        $routes->fallbacks();
+    });
 };

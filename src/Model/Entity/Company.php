@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace App\Model\Entity;
 
 use Cake\ORM\Entity;
+// ❌ use Cake\Auth\DefaultPasswordHasher;
+use Authentication\PasswordHasher\DefaultPasswordHasher;
 
 /**
  * Company Entity
@@ -38,20 +40,16 @@ class Company extends Entity
      * @var array<string, bool>
      */
     protected $_accessible = [
-        'name' => true,
-        'slug' => true,
-        'website' => true,
-        'industry' => true,
-        'size' => true,
-        'description' => true,
-        'logo_path' => true,
-        'domain' => true,
-        'verified' => true,
-        'plan' => true,
-        'billing_email' => true,
-        'created' => true,
-        'modified' => true,
-        'owner_user_id' => true,
-        'user' => true,
+        '*' => true,
+        'id' => false,
     ];
+
+    // ★ auth_password を保存時にハッシュ化
+    protected function _setAuthPassword(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return $value;
+        }
+        return (new DefaultPasswordHasher())->hash($value);
+    }
 }

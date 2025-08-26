@@ -128,7 +128,11 @@ class CompaniesTable extends Table
             ->notEmptyString('owner_user_id')
             ->add('owner_user_id', 'unique', ['rule' => 'validateUnique', 'provider' => 'table']);
 
-        return $validator;
+        return $validator
+            ->email('auth_email', false, 'Invalid email')
+            ->allowEmptyString('auth_email') // 必須化はコントローラ側の運用に合わせて
+            ->minLength('auth_password', 8, 'Min 8 chars')
+            ->allowEmptyString('auth_password'); // 未入力→自動発行なら allow
     }
 
     /**

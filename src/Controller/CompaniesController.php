@@ -37,77 +37,43 @@ class CompaniesController extends AppController
             return;
         }
 
-        // POST以降
         $data = $this->request->getData();
 
-        // 会社スラッグ自動生成
         if (empty($data['slug']) && !empty($data['name'])) {
             $data['slug'] = Text::slug((string)$data['name']);
         }
 
-        // ★トランザクション開始
-        $conn = ConnectionManager::get('default');
-        $conn->begin();
+        // ★ owner_* → auth_* にマップ（フォーム名はそのままでOK）
+        $ownerEmail    = trim((string)($data['owner_email'] ?? $data['billing_email'] ?? ''));
+        $ownerPassword = (string)($data['owner_password'] ?? '');
 
-        try {
-            // 1) オーナーIDの決定
-            $ownerUserId = $this->getIdentity(); // ログイン中ならIDが入る
+        if ($ownerEmail === '') {
+            throw new \RuntimeException('Owner email is required.');
+        }
+        if ($ownerPassword === '') {
+            $ownerPassword = bin2hex(random_bytes(8)); // 最低8文字以上に
+        }
+        $data['auth_email']    = $ownerEmail;
+        $data['auth_password'] = $ownerPassword; // ★エンティティでハッシュされる
 
-            if (!$ownerUserId) {
-                // 未ログイン → オーナーユーザーを自動作成
-                // フォームから受ける想定のフィールド:
-                // - owner_email（必須推奨）
-                // - owner_password（任意。未入力ならランダム）
-                $ownerEmail = $data['owner_email'] ?? null;
-                $ownerPassword = $data['owner_password'] ?? null;
+        // もし “一般ユーザーIDをオーナーとして保持したい”なら、別カラムに保持（任意）
+        // $data['owner_user_id'] = $this->getIdentity() ?? null;
 
-                if (empty($ownerEmail)) {
-                    // 必須にするならここでエラーにする
-                    throw new \RuntimeException('Owner email is required.');
-                }
-                if (empty($ownerPassword)) {
-                    // ランダム発行（あとでパスワード変更導線を送る運用がおすすめ）
-                    $ownerPassword = bin2hex(random_bytes(8)); // 16桁
-                }
-
-                /** @var \App\Model\Table\UsersTable $Users */
-                $Users = $this->fetchTable('Users');
-                $ownerUser = $Users->newEntity([
-                    'email' => $ownerEmail,
-                    'password' => $ownerPassword,
-                    'role' => 'employer',      // 例：企業用ロール。存在しなければ追加
-                    'status' => 'active',      // 例：状態フラグ。不要なら削除
-                ], ['validate' => 'default']);
-
-                if (!$Users->save($ownerUser)) {
-                    throw new \RuntimeException('Failed to create owner user.');
-                }
-                $ownerUserId = (int)$ownerUser->id;
-
-                // TODO: ここで「初回パスワード設定メール」や「認証メール」を送る処理を入れると◎
-            }
-
-            // 2) Company 保存
-            $data['owner_user_id'] = $ownerUserId; // ★必ずサーバ側で上書き
-            unset($data['id']); // 念のため
-
-            $company = $this->Companies->patchEntity($company, $data);
-            if (!$this->Companies->save($company)) {
-                throw new \RuntimeException('Failed to create company.');
-            }
-
-            $conn->commit();
-
-            $this->Flash->success(__('Company has been created.'));
-            return $this->redirect(['action' => 'view', $company->id]);
-
-        } catch (\Throwable $e) {
-            $conn->rollback();
-            $this->Flash->error(__('Unable to create company: ') . $e->getMessage());
+        // 保存
+        $company = $this->Companies->patchEntity($company, $data /* , ['validate' => 'employerLogin'] */);
+        if (!$this->Companies->save($company)) {
+            $errors = $company->getErrors();
+            $this->Flash->error('Unable to create company: ' . json_encode($errors));
+            $this->set(compact('company'));
+            return;
         }
 
-        $this->set(compact('company'));
+        // 作成完了 → 企業ログイン画面へ誘導（email を自動入力したいならクエリで渡す）
+        $this->Flash->success(__('Company has been created. Please sign in to Employer Console.'));
+        return $this->redirect('/employer/login?auth_email=' . urlencode($ownerEmail));
     }
+
+
     /**
      * 会社一覧（必要なければ消してOK）
      * 多分いらないかも

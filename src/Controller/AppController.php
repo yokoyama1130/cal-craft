@@ -32,4 +32,37 @@ class AppController extends Controller
             $this->set('unreadCount', $unreadCount);
         }
     }
+
+    public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
+    {
+        $service = new AuthenticationService();
+
+        $service->loadAuthenticator('Authentication.Session');
+
+        $prefix = $request->getParam('prefix');
+
+        if ($prefix === 'Employer') {
+            // ★企業ログイン：Companies を使う
+            $service->loadIdentifier('Authentication.Orm', [
+                'userModel' => 'Companies',
+                'fields' => ['username' => 'auth_email', 'password' => 'auth_password'],
+            ]);
+            $service->loadAuthenticator('Authentication.Form', [
+                'loginUrl' => '/employer/login',
+                'fields'   => ['username' => 'auth_email', 'password' => 'auth_password'],
+            ]);
+        } else {
+            // 既存の一般ユーザー側
+            $service->loadIdentifier('Authentication.Orm', [
+                'userModel' => 'Users',
+                'fields' => ['username' => 'email', 'password' => 'password'],
+            ]);
+            $service->loadAuthenticator('Authentication.Form', [
+                'loginUrl' => '/users/login',
+                'fields'   => ['username' => 'email', 'password' => 'password'],
+            ]);
+        }
+
+        return $service;
+    }
 }
