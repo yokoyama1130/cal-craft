@@ -9,7 +9,7 @@ use Cake\Utility\Text;
             placeholder="検索..." value="<?= h($keyword ?? '') ?>">
     </form>
 
-    <h2 class="mb-4">ホーム画面</h2>
+    <h2 class="mb-4">おすすめ</h2>
 
     <div class="row">
         <?php foreach ($portfolios as $p): ?>
