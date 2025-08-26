@@ -55,4 +55,15 @@ class CompaniesController extends AppController
         // 既存のテンプレをそのまま使う
         $this->render('edit'); // templates/Companies/edit.php
     }
+
+    /**
+     * 会社詳細
+     */
+    public function view($id = null)
+    {
+        $company = $this->Companies->get($id, [
+            'contain' => [],
+        ]);
+        $this->set(compact('company'));
+    }
 }
