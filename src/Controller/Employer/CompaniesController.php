@@ -46,7 +46,7 @@ class CompaniesController extends AppController
 
             if ($this->fetchTable('Companies')->save($company)) {
                 $this->Flash->success(__('Company updated.'));
-                return $this->redirect(['action' => 'edit']); // 自分の編集に戻る
+                return $this->redirect(['action' => 'edit']); // ここを後で詳細画面に修正する
             }
             $this->Flash->error(__('Update failed. Please try again.'));
         }
