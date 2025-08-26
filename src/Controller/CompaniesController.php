@@ -25,6 +25,7 @@ class CompaniesController extends AppController
 
     /**
      * 会社一覧（必要なければ消してOK）
+     * 多分いらないかも
      */
     public function index()
     {
@@ -54,6 +55,14 @@ class CompaniesController extends AppController
      */
     public function add()
     {
+        if ($this->request->is('get')) {
+            // フォームだけ表示（未ログインOK）
+            $company = $this->Companies->newEmptyEntity();
+            $this->set(compact('company'));
+            return;
+        }
+
+        // ここからPOST系はログイン必須
         $identity = $this->getIdentity();
         if (!$identity) {
             $this->Flash->error(__('Please sign in.'));
@@ -61,39 +70,33 @@ class CompaniesController extends AppController
         }
         $userId = (int)$identity;
 
-        // 既に自分の会社があるなら edit に飛ばす
+        // 既存チェック
         $existing = $this->Companies->find()
             ->select(['id'])
             ->where(['owner_user_id' => $userId])
             ->first();
-
         if ($existing) {
             $this->Flash->info(__('You already have a company profile.'));
             return $this->redirect(['action' => 'edit', $existing->id]);
         }
 
         $company = $this->Companies->newEmptyEntity();
-        if ($this->request->is('post')) {
-            $data = $this->request->getData();
+        $data = $this->request->getData();
 
-            // slug 未入力なら name から自動生成
-            if (empty($data['slug']) && !empty($data['name'])) {
-                $data['slug'] = Text::slug((string)$data['name']);
-            }
-
-            // オーナーを自動セット（UIから渡させない）
-            $data['owner_user_id'] = $userId;
-
-            $company = $this->Companies->patchEntity($company, $data);
-            if ($this->Companies->save($company)) {
-                $this->Flash->success(__('Company has been created.'));
-                return $this->redirect(['action' => 'view', $company->id]);
-            }
-            $this->Flash->error(__('Unable to create company. Please try again.'));
+        if (empty($data['slug']) && !empty($data['name'])) {
+            $data['slug'] = \Cake\Utility\Text::slug((string)$data['name']);
         }
+        $data['owner_user_id'] = $userId;
 
+        $company = $this->Companies->patchEntity($company, $data);
+        if ($this->Companies->save($company)) {
+            $this->Flash->success(__('Company has been created.'));
+            return $this->redirect(['action' => 'view', $company->id]);
+        }
+        $this->Flash->error(__('Unable to create company. Please try again.'));
         $this->set(compact('company'));
     }
+
 
     /**
      * 会社編集：
@@ -196,18 +199,19 @@ class CompaniesController extends AppController
      */
     private function getIdentity(): ?int
     {
-        // Authenticationプラグイン（推奨）
-        if (method_exists($this, 'Authentication') && $this->Authentication->getIdentity()) {
-            $id = $this->Authentication->getIdentity()->getIdentifier();
-            return $id !== null ? (int)$id : null;
-        }
-        // リクエスト属性（別方式）
+        // Authenticationプラグインが載っていれば request attribute に入ります
         $identity = $this->request->getAttribute('identity');
         if ($identity && method_exists($identity, 'getIdentifier')) {
             $id = $identity->getIdentifier();
             return $id !== null ? (int)$id : null;
         }
-        // それでもダメなら null
+    
+        // 直接コンポーネントから取るパターン（保険）
+        if (property_exists($this, 'Authentication') && $this->Authentication->getIdentity()) {
+            $id = $this->Authentication->getIdentity()->getIdentifier();
+            return $id !== null ? (int)$id : null;
+        }
+    
         return null;
     }
 }
