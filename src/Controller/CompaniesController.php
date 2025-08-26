@@ -5,24 +5,109 @@ namespace App\Controller;
 
 use Cake\Utility\Text;
 use Cake\Event\EventInterface;
+use Cake\Datasource\ConnectionManager;
 
 class CompaniesController extends AppController
 {
     public function initialize(): void
     {
         parent::initialize();
-        // 必要に応じてフォーム/FlashなどのComponentロード
-        // $this->loadComponent('Flash');
+        // 認証コンポーネントが未ロードなら AppController で $this->loadComponent('Authentication.Authentication') を
     }
 
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
-
-        // indexアクションだけログイン不要にする
-        $this->Authentication->addUnauthenticatedActions(['add']);
+        // 未ログインでも add を許可
+        // ★メソッド名は allowUnauthenticated が正
+        $this->Authentication->allowUnauthenticated(['add']);
     }
 
+    /**
+     * 会社作成：
+     * - ログインユーザーの company が既にあれば edit にリダイレクト
+     * - なければ owner_user_id を自動セットして作成
+     */
+    public function add()
+    {
+        $company = $this->Companies->newEmptyEntity();
+
+        if ($this->request->is('get')) {
+            $this->set(compact('company'));
+            return;
+        }
+
+        // POST以降
+        $data = $this->request->getData();
+
+        // 会社スラッグ自動生成
+        if (empty($data['slug']) && !empty($data['name'])) {
+            $data['slug'] = Text::slug((string)$data['name']);
+        }
+
+        // ★トランザクション開始
+        $conn = ConnectionManager::get('default');
+        $conn->begin();
+
+        try {
+            // 1) オーナーIDの決定
+            $ownerUserId = $this->getIdentity(); // ログイン中ならIDが入る
+
+            if (!$ownerUserId) {
+                // 未ログイン → オーナーユーザーを自動作成
+                // フォームから受ける想定のフィールド:
+                // - owner_email（必須推奨）
+                // - owner_password（任意。未入力ならランダム）
+                $ownerEmail = $data['owner_email'] ?? null;
+                $ownerPassword = $data['owner_password'] ?? null;
+
+                if (empty($ownerEmail)) {
+                    // 必須にするならここでエラーにする
+                    throw new \RuntimeException('Owner email is required.');
+                }
+                if (empty($ownerPassword)) {
+                    // ランダム発行（あとでパスワード変更導線を送る運用がおすすめ）
+                    $ownerPassword = bin2hex(random_bytes(8)); // 16桁
+                }
+
+                /** @var \App\Model\Table\UsersTable $Users */
+                $Users = $this->fetchTable('Users');
+                $ownerUser = $Users->newEntity([
+                    'email' => $ownerEmail,
+                    'password' => $ownerPassword,
+                    'role' => 'employer',      // 例：企業用ロール。存在しなければ追加
+                    'status' => 'active',      // 例：状態フラグ。不要なら削除
+                ], ['validate' => 'default']);
+
+                if (!$Users->save($ownerUser)) {
+                    throw new \RuntimeException('Failed to create owner user.');
+                }
+                $ownerUserId = (int)$ownerUser->id;
+
+                // TODO: ここで「初回パスワード設定メール」や「認証メール」を送る処理を入れると◎
+            }
+
+            // 2) Company 保存
+            $data['owner_user_id'] = $ownerUserId; // ★必ずサーバ側で上書き
+            unset($data['id']); // 念のため
+
+            $company = $this->Companies->patchEntity($company, $data);
+            if (!$this->Companies->save($company)) {
+                throw new \RuntimeException('Failed to create company.');
+            }
+
+            $conn->commit();
+
+            $this->Flash->success(__('Company has been created.'));
+            return $this->redirect(['action' => 'view', $company->id]);
+
+        } catch (\Throwable $e) {
+            $conn->rollback();
+            $this->Flash->error(__('Unable to create company: ') . $e->getMessage());
+        }
+
+        $this->set(compact('company'));
+    }
     /**
      * 会社一覧（必要なければ消してOK）
      * 多分いらないかも
@@ -47,56 +132,6 @@ class CompaniesController extends AppController
         ]);
         $this->set(compact('company'));
     }
-
-    /**
-     * 会社作成：
-     * - ログインユーザーの company が既にあれば edit にリダイレクト
-     * - なければ owner_user_id を自動セットして作成
-     */
-    public function add()
-    {
-        if ($this->request->is('get')) {
-            // フォームだけ表示（未ログインOK）
-            $company = $this->Companies->newEmptyEntity();
-            $this->set(compact('company'));
-            return;
-        }
-
-        // ここからPOST系はログイン必須
-        $identity = $this->getIdentity();
-        if (!$identity) {
-            $this->Flash->error(__('Please sign in.'));
-            return $this->redirect(['controller' => 'Users', 'action' => 'login']);
-        }
-        $userId = (int)$identity;
-
-        // 既存チェック
-        $existing = $this->Companies->find()
-            ->select(['id'])
-            ->where(['owner_user_id' => $userId])
-            ->first();
-        if ($existing) {
-            $this->Flash->info(__('You already have a company profile.'));
-            return $this->redirect(['action' => 'edit', $existing->id]);
-        }
-
-        $company = $this->Companies->newEmptyEntity();
-        $data = $this->request->getData();
-
-        if (empty($data['slug']) && !empty($data['name'])) {
-            $data['slug'] = \Cake\Utility\Text::slug((string)$data['name']);
-        }
-        $data['owner_user_id'] = $userId;
-
-        $company = $this->Companies->patchEntity($company, $data);
-        if ($this->Companies->save($company)) {
-            $this->Flash->success(__('Company has been created.'));
-            return $this->redirect(['action' => 'view', $company->id]);
-        }
-        $this->Flash->error(__('Unable to create company. Please try again.'));
-        $this->set(compact('company'));
-    }
-
 
     /**
      * 会社編集：
@@ -199,19 +234,15 @@ class CompaniesController extends AppController
      */
     private function getIdentity(): ?int
     {
-        // Authenticationプラグインが載っていれば request attribute に入ります
         $identity = $this->request->getAttribute('identity');
         if ($identity && method_exists($identity, 'getIdentifier')) {
             $id = $identity->getIdentifier();
             return $id !== null ? (int)$id : null;
         }
-    
-        // 直接コンポーネントから取るパターン（保険）
         if (property_exists($this, 'Authentication') && $this->Authentication->getIdentity()) {
             $id = $this->Authentication->getIdentity()->getIdentifier();
             return $id !== null ? (int)$id : null;
         }
-    
         return null;
     }
 }
