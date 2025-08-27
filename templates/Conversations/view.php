@@ -53,12 +53,6 @@ if (!empty($partnerIcon)) {
       <?php endif; ?>
     <?php endif; ?>
     <div class="bubble <?= $isMine ? 'mine' : 'theirs' ?>">
-      <div class="bubble-meta small <?= $isMine ? 'text-white-50' : 'text-muted' ?>">
-        <?php
-          // 送信者の簡易表示（必要ならコントローラで名前を埋めて渡す実装に拡張）
-          echo h($m->sender_type === 'user' ? "User#{$m->sender_ref_id}" : "Company#{$m->sender_ref_id}");
-        ?>
-      </div>
       <div class="bubble-body"><?= nl2br(h($m->content)) ?></div>
       <div class="bubble-time small <?= $isMine ? 'text-white-50' : 'text-muted' ?>">
         <?= h($m->created->nice()) ?>
