@@ -15,7 +15,7 @@ if (!empty($partnerIcon)) {
 ?>
 <!-- Header -->
 <div class="chat-header d-flex align-items-center gap-2 mb-3">
-  <a href="<?= $this->Url->build('/') ?>" class="btn btn-light btn-sm rounded-pill">
+  <a href="<?= $this->Url->build('/conversations') ?>" class="btn btn-light btn-sm rounded-pill">
     <i class="fa-solid fa-chevron-left"></i>
   </a>
   <div class="d-flex align-items-center gap-2">
