@@ -34,7 +34,7 @@ use Cake\Utility\Text;
     <div class="col-lg-8">
       <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
-          <?= $this->Form->create($company, ['class'=>'needs-validation', 'novalidate'=>true]) ?>
+          <?= $this->Form->create($company, ['class'=>'needs-validation', 'novalidate'=>true, 'type' => 'file']) ?>
 
           <!-- 会社名 / スラッグ -->
           <div class="row g-3">
@@ -116,17 +116,22 @@ use Cake\Utility\Text;
               </div>
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="fa-regular fa-image me-2 text-secondary"></i>ロゴパス（任意）</label>
+              <label class="form-label fw-semibold">
+                <i class="fa-regular fa-image me-2 text-secondary"></i>ロゴ（画像アップロード）
+              </label>
+
               <div class="input-group">
                 <span class="input-group-text"><i class="fa-regular fa-image"></i></span>
-                <?= $this->Form->text('logo_path', [
-                  'class'=>'form-control',
-                  'placeholder'=>'/img/companies/calcraft.png',
-                  'id'=>'cmp-logo-path',
-                  'data-preview'=>'#cmp-logo-preview'
+                <?= $this->Form->file('logo_file', [
+                  'accept' => 'image/png,image/jpeg,image/webp,image/gif, image/svg+xml', // svgは必要なら
+                  'id' => 'cmp-logo-file',
+                  'class' => 'form-control'
                 ]) ?>
               </div>
-              <div class="form-text">入力すると上のプレビューが更新されます。</div>
+              <div class="form-text">PNG / JPG / WEBP / GIF / SVG、最大 2MB 推奨。</div>
+
+              <?php // 既存のパスは維持用（新規アップ時にサーバ側で上書き） ?>
+              <?= $this->Form->hidden('logo_path') ?>
             </div>
           </div>
 
@@ -239,5 +244,21 @@ use Cake\Utility\Text;
     if(!form.checkValidity()){ e.preventDefault(); e.stopPropagation(); }
     form.classList.add('was-validated');
   });
+})();
+</script>
+
+<script>
+(() => {
+  const file = document.getElementById('cmp-logo-file');
+  const preview = document.getElementById('cmp-logo-preview');
+  if (file && preview) {
+    file.addEventListener('change', () => {
+      const f = file.files?.[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = e => { preview.src = e.target.result; };
+      reader.readAsDataURL(f);
+    });
+  }
 })();
 </script>

@@ -5,6 +5,8 @@ namespace App\Controller\Employer;
 
 use App\Controller\AppController;
 use Cake\Utility\Text;
+use Psr\Http\Message\UploadedFileInterface;
+use Cake\Filesystem\Folder;
 
 class CompaniesController extends AppController
 {
@@ -34,6 +36,52 @@ class CompaniesController extends AppController
 
         if ($this->request->is(['patch','post','put'])) {
             $data = $this->request->getData();
+
+            $uploaded = $this->request->getData('logo_file');
+
+            if ($uploaded instanceof UploadedFileInterface && $uploaded->getError() === UPLOAD_ERR_OK) {
+                // 軽いバリデーション
+                $allowed = ['image/png','image/jpeg','image/webp','image/gif','image/svg+xml'];
+                $mime = $uploaded->getClientMediaType() ?: '';
+                $size = (int)$uploaded->getSize(); // bytes
+                if (!in_array($mime, $allowed, true)) {
+                    $this->Flash->error(__('Logo must be an image (png, jpg, webp, gif, svg).'));
+                    return $this->redirect($this->request->getRequestTarget());
+                }
+                if ($size > 2 * 1024 * 1024) { // 2MB
+                    $this->Flash->error(__('Logo is too large (max 2MB).'));
+                    return $this->redirect($this->request->getRequestTarget());
+                }
+
+                // 拡張子決定（MIMEベース）
+                $extMap = [
+                    'image/png' => 'png',
+                    'image/jpeg' => 'jpg',
+                    'image/webp' => 'webp',
+                    'image/gif' => 'gif',
+                    'image/svg+xml' => 'svg',
+                ];
+                $ext = $extMap[$mime] ?? 'bin';
+
+                // 保存先（会社IDごとに分けても良い。ここでは単一ディレクトリ）
+                $dir = WWW_ROOT . 'img' . DS . 'companies';
+                (new Folder($dir, true, 0755)); // 無ければ作成
+
+                // ファイル名は衝突防止のために companyId + タイムスタンプ
+                $filename = sprintf('company_%d_%d.%s', $companyId, time(), $ext);
+                $dest = $dir . DS . $filename;
+
+                // move
+                $uploaded->moveTo($dest);
+
+                // Web からの参照パス
+                $webPath = '/img/companies/' . $filename;
+
+                // 旧ファイルを掃除したい場合は、ここで $company->logo_path を見て unlink するなど（任意）
+
+                // 保存用に data を上書き
+                $data['logo_path'] = $webPath;
+            }
 
             // slug 自動補完（空なら name から）
             if (empty($data['slug']) && !empty($data['name'])) {
