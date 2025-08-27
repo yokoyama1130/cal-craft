@@ -30,7 +30,7 @@ class UsersController extends AppController
         $result = $this->Authentication->getResult();
 
         if ($result->isValid()) {
-            return $this->redirect(['controller' => 'Top', 'action' => 'index']);
+            return $this->redirect('/top');
         }
 
         if ($this->request->is('post')) {
