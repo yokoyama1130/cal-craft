@@ -106,6 +106,8 @@ class CompaniesController extends AppController
 
         // 作成完了 → 企業ログイン画面へ誘導（email を自動入力したいならクエリで渡す）
         $this->Flash->success(__('Company has been created. Please sign in to Employer Console.'));
+        // ★ いったんEmployerセッションを破棄してからログイン画面へ
+        $this->Authentication->logout();
         return $this->redirect('/employer/login?auth_email=' . urlencode($ownerEmail));
     }
 
