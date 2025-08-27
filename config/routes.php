@@ -54,4 +54,19 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/logout', ['controller' => 'Auth', 'action' => 'logout']);
         $routes->fallbacks();
     });
+    $routes->scope('/', function (\Cake\Routing\RouteBuilder $routes) {
+        // /conversations/start/user/2 /conversations/start/company/4
+        $routes->connect(
+            '/conversations/start/:type/:id',
+            ['controller' => 'Conversations', 'action' => 'start'],
+            ['pass' => ['type','id'], 'id' => '\d+', 'type' => 'user|company']
+        );
+    
+        // 後方互換: /conversations/start/2 → start(2)
+        $routes->connect(
+            '/conversations/start/:id',
+            ['controller' => 'Conversations', 'action' => 'start'],
+            ['pass' => ['id'], 'id' => '\d+']
+        );
+    });    
 };

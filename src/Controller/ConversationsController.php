@@ -3,52 +3,60 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-/**
- * Conversations Controller
- *
- * @property \App\Model\Table\ConversationsTable $Conversations
- * @method \App\Model\Entity\Conversation[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
- */
 class ConversationsController extends AppController
 {
+    /**
+     * 会話一覧（自分が当事者の会話）
+     */
     public function index()
     {
         $this->loadModel('Conversations');
 
-        [$type, $id] = (function($a){ return [$a['type'],$a['id']]; })($this->getActor());
+        // 自分（ユーザー or 会社）
+        $actor = $this->getActor(); // ['type'=>'user'|'company','id'=>int]
+        $type = $actor['type'] ?? null;
+        $id   = $actor['id']   ?? null;
+
         if (!$type || !$id) {
             $this->Flash->error('ログインしてください。');
             return $this->redirect('/');
         }
 
-        $convos = $this->Conversations->find()
+        $rows = $this->Conversations->find()
             ->where([
                 'OR' => [
                     ['p1_type' => $type, 'p1_id' => $id],
                     ['p2_type' => $type, 'p2_id' => $id],
-                ]
+                ],
             ])
             ->order(['Conversations.modified' => 'DESC'])
             ->all();
 
-        // 相手エンティティをまとめてプリロード
+        // 相手のエンティティを一括ロード
         $userIds = $companyIds = [];
-        foreach ($convos as $c) {
-            $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === $id);
+        foreach ($rows as $c) {
+            $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === (int)$id);
             $pType  = $isP1Me ? $c->p2_type : $c->p1_type;
             $pId    = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
             if ($pType === 'user')    $userIds[$pId] = true;
             if ($pType === 'company') $companyIds[$pId] = true;
         }
-        $Users = $this->fetchTable('Users');
-        $Companies = $this->fetchTable('Companies');
-        $userMap = $userIds ? $Users->find()->where(['id IN' => array_keys($userIds)])->indexBy('id')->toArray() : [];
-        $companyMap = $companyIds ? $Companies->find()->where(['id IN' => array_keys($companyIds)])->indexBy('id')->toArray() : [];
 
-        // partner をくっつける（ビューが使いやすいように）
+        $Users     = $this->fetchTable('Users');
+        $Companies = $this->fetchTable('Companies');
+
+        $userMap = $userIds
+            ? $Users->find()->select(['id','name','icon_path'])->where(['id IN' => array_keys($userIds)])->indexBy('id')->toArray()
+            : [];
+
+        $companyMap = $companyIds
+            ? $Companies->find()->select(['id','name','logo_path'])->where(['id IN' => array_keys($companyIds)])->indexBy('id')->toArray()
+            : [];
+
+        // partner を付与
         $conversations = [];
-        foreach ($convos as $c) {
-            $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === $id);
+        foreach ($rows as $c) {
+            $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === (int)$id);
             $pType  = $isP1Me ? $c->p2_type : $c->p1_type;
             $pId    = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
 
@@ -56,126 +64,131 @@ class ConversationsController extends AppController
             if ($pType === 'user')    $partner = $userMap[$pId]    ?? null;
             if ($pType === 'company') $partner = $companyMap[$pId] ?? null;
 
-            // ビュー互換のために最低限 name/icon_path っぽいものを束ねる
-            if ($partner) {
-                $c->set('partner_type', $pType);
-                $c->set('partner', $partner);
-            }
+            $c->set('partner_type', $pType);
+            $c->set('partner', $partner);
             $conversations[] = $c;
         }
 
         $this->set([
             'conversations' => $conversations,
-            'actorType' => $type,
-            'actorId' => $id,
+            'actorType'     => $type,
+            'actorId'       => $id,
         ]);
     }
 
-    // 開始: /conversations/start/{partnerType}/{partnerId}
-    public function start(string $partnerType, int $partnerId)
+    /**
+     * 会話開始
+     *  - /conversations/start/2            → user/2 とみなす（後方互換）
+     *  - /conversations/start/user/2
+     *  - /conversations/start/company/4
+     */
+    public function start($arg1 = null, $arg2 = null)
     {
-        $this->loadModel('Conversations');
-        $actor = $this->getActor();
-        if (!$actor['type'] || !$actor['id']) {
-            $this->Flash->error('ログインしてください。');
-            return $this->redirect(['action' => 'index']);
+        $this->request->allowMethod(['get']);
+
+        if ($arg1 === null) {
+            throw new \Cake\Http\Exception\BadRequestException('Missing parameter(s).');
         }
 
-        // 自分自身とは開始不可
-        if ($actor['type'] === $partnerType && $actor['id'] === $partnerId) {
+        if ($arg2 === null) {
+            $partnerType = 'user';
+            $partnerId   = (int)$arg1;
+        } else {
+            $partnerType = strtolower((string)$arg1);
+            $partnerId   = (int)$arg2;
+        }
+
+        if (!in_array($partnerType, ['user','company'], true) || $partnerId <= 0) {
+            throw new \Cake\Http\Exception\BadRequestException('Invalid type or id.');
+        }
+
+        $actor = $this->getActor(); // ['type','id']
+        if (empty($actor['type']) || empty($actor['id'])) {
+            $this->Flash->error('ログインが必要です。');
+            return $this->redirect('/');
+        }
+
+        if ($actor['type'] === $partnerType && (int)$actor['id'] === $partnerId) {
             $this->Flash->error('自分自身とは会話できません。');
             return $this->redirect(['action' => 'index']);
         }
 
-        // 既存チェック（順不同）
-        $conversation = $this->Conversations->find()
+        $Conversations = $this->fetchTable('Conversations');
+
+        $conv = $Conversations->find()
             ->where([
                 'OR' => [
-                    ['p1_type'=>$actor['type'],'p1_id'=>$actor['id'],'p2_type'=>$partnerType,'p2_id'=>$partnerId],
-                    ['p1_type'=>$partnerType,'p1_id'=>$partnerId,'p2_type'=>$actor['type'],'p2_id'=>$actor['id']],
-                ]
+                    ['p1_type' => $actor['type'], 'p1_id' => $actor['id'], 'p2_type' => $partnerType, 'p2_id' => $partnerId],
+                    ['p1_type' => $partnerType, 'p1_id' => $partnerId, 'p2_type' => $actor['type'], 'p2_id' => $actor['id']],
+                ],
             ])
             ->first();
 
-        if (!$conversation) {
-            $conversation = $this->Conversations->newEntity([
+        if (!$conv) {
+            $conv = $Conversations->newEntity([
                 'p1_type' => $actor['type'],
                 'p1_id'   => $actor['id'],
                 'p2_type' => $partnerType,
                 'p2_id'   => $partnerId,
             ]);
-            $this->Conversations->saveOrFail($conversation);
+            if (!$Conversations->save($conv)) {
+                $this->Flash->error('会話を開始できませんでした。');
+                return $this->redirect(['action' => 'index']);
+            }
         }
 
-        return $this->redirect(['action' => 'view', $conversation->id]);
+        return $this->redirect(['action' => 'view', $conv->id]);
     }
 
+    /**
+     * 会話詳細（相手情報とメッセージ一覧）
+     */
     public function view($id)
     {
-        $this->loadModel('Conversations');
-        $this->loadModel('Messages');
+        $Conversations = $this->fetchTable('Conversations');
+        $Messages      = $this->fetchTable('Messages');
 
         $actor = $this->getActor();
-        if (!$actor['type'] || !$actor['id']) {
-            $this->Flash->error('ログインしてください。');
-            return $this->redirect(['action' => 'index']);
+        if (empty($actor['id'])) {
+            $this->Flash->error('ログインが必要です。');
+            return $this->redirect('/');
         }
 
-        $c = $this->Conversations->find()
-            ->where([
-                'Conversations.id' => $id,
-                'OR' => [
-                    ['p1_type'=>$actor['type'],'p1_id'=>$actor['id']],
-                    ['p2_type'=>$actor['type'],'p2_id'=>$actor['id']],
-                ]
-            ])
-            ->firstOrFail();
+        $conversation = $Conversations->get($id);
 
-        // 相手側のタイプ/ID
-        $isP1Me = ($c->p1_type === $actor['type'] && (int)$c->p1_id === $actor['id']);
-        $partnerType = $isP1Me ? $c->p2_type : $c->p1_type;
-        $partnerId   = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
+        $isP1 = ($conversation->p1_type === $actor['type'] && (int)$conversation->p1_id === (int)$actor['id']);
+        $isP2 = ($conversation->p2_type === $actor['type'] && (int)$conversation->p2_id === (int)$actor['id']);
+        if (!$isP1 && !$isP2) {
+            throw new \Cake\Http\Exception\ForbiddenException('この会話にはアクセスできません。');
+        }
 
-        // 相手エンティティ
-        $partner = null;
-        if ($partnerType === 'user') {
-            $partner = $this->fetchTable('Users')->get($partnerId);
+        if ($isP1) {
+            $partnerType = $conversation->p2_type;
+            $partnerId   = (int)$conversation->p2_id;
         } else {
-            $partner = $this->fetchTable('Companies')->get($partnerId);
+            $partnerType = $conversation->p1_type;
+            $partnerId   = (int)$conversation->p1_id;
         }
 
-        // メッセージ取得（送信者は polymorphic）
-        $rows = $this->Messages->find()
+        if ($partnerType === 'user') {
+            $partner = $this->fetchTable('Users')->find()
+                ->select(['id','name','icon_path'])
+                ->where(['id' => $partnerId])->first();
+        } else {
+            $partner = $this->fetchTable('Companies')->find()
+                ->select(['id','name','logo_path'])
+                ->where(['id' => $partnerId])->first();
+        }
+
+        $messages = $Messages->find()
             ->where(['conversation_id' => $id])
-            ->order(['Messages.created' => 'ASC'])
+            ->orderAsc('created')
+            ->all()
             ->toArray();
 
-        // 送信者をまとめて解決（N+1防止）
-        $userIds = $companyIds = [];
-        foreach ($rows as $m) {
-            if ($m->sender_type === 'user')    $userIds[(int)$m->sender_id] = true;
-            if ($m->sender_type === 'company') $companyIds[(int)$m->sender_id] = true;
-        }
-        $Users = $this->fetchTable('Users');
-        $Companies = $this->fetchTable('Companies');
-        $userMap = $userIds ? $Users->find()->where(['id IN' => array_keys($userIds)])->indexBy('id')->toArray() : [];
-        $companyMap = $companyIds ? $Companies->find()->where(['id IN' => array_keys($companyIds)])->indexBy('id')->toArray() : [];
+        $myType = $actor['type'];
+        $myId   = (int)$actor['id'];
 
-        // ビュー用の sender を付与
-        $messages = [];
-        foreach ($rows as $m) {
-            $sender = ($m->sender_type === 'user') ? ($userMap[(int)$m->sender_id] ?? null)
-                                                   : ($companyMap[(int)$m->sender_id] ?? null);
-            $m->set('sender', $sender);
-            $messages[] = $m;
-        }
-
-        $this->set([
-            'conversation' => $c,
-            'messages' => $messages,
-            // ビュー互換のため
-            'userId' => $actor['id'], // 送受判定に使っているのでIDだけ渡す
-            'partner' => $partner,
-        ]);
+        $this->set(compact('conversation','messages','partner','myType','myId'));
     }
 }
