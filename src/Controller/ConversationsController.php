@@ -11,62 +11,100 @@ namespace App\Controller;
  */
 class ConversationsController extends AppController
 {
-    /**
-     * Index method
-     *
-     * @return \Cake\Http\Response|null|void Renders view
-     */
     public function index()
     {
         $this->loadModel('Conversations');
-    
-        $userId = $this->request->getAttribute('identity')->get('id');
-    
-        $conversations = $this->Conversations->find()
-            ->where(['OR' => [
-                'user1_id' => $userId,
-                'user2_id' => $userId
-            ]])
-            ->contain(['User1', 'User2'])
-            ->order(['Conversations.modified' => 'DESC'])
-            ->toArray();
-    
-        // partner を各会話に付与
-        foreach ($conversations as $c) {
-            $c->partner = ($c->user1_id == $userId) ? $c->user2 : $c->user1;
-        }
-    
-        $this->set(compact('conversations', 'userId'));
-    }
-    
 
-    public function start($partnerId)
+        [$type, $id] = (function($a){ return [$a['type'],$a['id']]; })($this->getActor());
+        if (!$type || !$id) {
+            $this->Flash->error('ログインしてください。');
+            return $this->redirect('/');
+        }
+
+        $convos = $this->Conversations->find()
+            ->where([
+                'OR' => [
+                    ['p1_type' => $type, 'p1_id' => $id],
+                    ['p2_type' => $type, 'p2_id' => $id],
+                ]
+            ])
+            ->order(['Conversations.modified' => 'DESC'])
+            ->all();
+
+        // 相手エンティティをまとめてプリロード
+        $userIds = $companyIds = [];
+        foreach ($convos as $c) {
+            $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === $id);
+            $pType  = $isP1Me ? $c->p2_type : $c->p1_type;
+            $pId    = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
+            if ($pType === 'user')    $userIds[$pId] = true;
+            if ($pType === 'company') $companyIds[$pId] = true;
+        }
+        $Users = $this->fetchTable('Users');
+        $Companies = $this->fetchTable('Companies');
+        $userMap = $userIds ? $Users->find()->where(['id IN' => array_keys($userIds)])->indexBy('id')->toArray() : [];
+        $companyMap = $companyIds ? $Companies->find()->where(['id IN' => array_keys($companyIds)])->indexBy('id')->toArray() : [];
+
+        // partner をくっつける（ビューが使いやすいように）
+        $conversations = [];
+        foreach ($convos as $c) {
+            $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === $id);
+            $pType  = $isP1Me ? $c->p2_type : $c->p1_type;
+            $pId    = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
+
+            $partner = null;
+            if ($pType === 'user')    $partner = $userMap[$pId]    ?? null;
+            if ($pType === 'company') $partner = $companyMap[$pId] ?? null;
+
+            // ビュー互換のために最低限 name/icon_path っぽいものを束ねる
+            if ($partner) {
+                $c->set('partner_type', $pType);
+                $c->set('partner', $partner);
+            }
+            $conversations[] = $c;
+        }
+
+        $this->set([
+            'conversations' => $conversations,
+            'actorType' => $type,
+            'actorId' => $id,
+        ]);
+    }
+
+    // 開始: /conversations/start/{partnerType}/{partnerId}
+    public function start(string $partnerType, int $partnerId)
     {
         $this->loadModel('Conversations');
+        $actor = $this->getActor();
+        if (!$actor['type'] || !$actor['id']) {
+            $this->Flash->error('ログインしてください。');
+            return $this->redirect(['action' => 'index']);
+        }
 
-        $userId = $this->request->getAttribute('identity')->get('id');
-
-        if ($userId == $partnerId) {
+        // 自分自身とは開始不可
+        if ($actor['type'] === $partnerType && $actor['id'] === $partnerId) {
             $this->Flash->error('自分自身とは会話できません。');
             return $this->redirect(['action' => 'index']);
         }
 
-        // すでに会話があるかチェック
+        // 既存チェック（順不同）
         $conversation = $this->Conversations->find()
             ->where([
                 'OR' => [
-                    ['user1_id' => $userId, 'user2_id' => $partnerId],
-                    ['user1_id' => $partnerId, 'user2_id' => $userId]
+                    ['p1_type'=>$actor['type'],'p1_id'=>$actor['id'],'p2_type'=>$partnerType,'p2_id'=>$partnerId],
+                    ['p1_type'=>$partnerType,'p1_id'=>$partnerId,'p2_type'=>$actor['type'],'p2_id'=>$actor['id']],
                 ]
             ])
             ->first();
 
         if (!$conversation) {
             $conversation = $this->Conversations->newEntity([
-                'user1_id' => $userId,
-                'user2_id' => $partnerId
+                'p1_type' => $actor['type'],
+                'p1_id'   => $actor['id'],
+                'p2_type' => $partnerType,
+                'p2_id'   => $partnerId,
             ]);
-            $this->Conversations->save($conversation);
+            $this->Conversations->saveOrFail($conversation);
         }
 
         return $this->redirect(['action' => 'view', $conversation->id]);
@@ -77,93 +115,67 @@ class ConversationsController extends AppController
         $this->loadModel('Conversations');
         $this->loadModel('Messages');
 
-        $userId = $this->request->getAttribute('identity')->get('id');
+        $actor = $this->getActor();
+        if (!$actor['type'] || !$actor['id']) {
+            $this->Flash->error('ログインしてください。');
+            return $this->redirect(['action' => 'index']);
+        }
 
-        $conversation = $this->Conversations->find()
+        $c = $this->Conversations->find()
             ->where([
                 'Conversations.id' => $id,
                 'OR' => [
-                    'user1_id' => $userId,
-                    'user2_id' => $userId
+                    ['p1_type'=>$actor['type'],'p1_id'=>$actor['id']],
+                    ['p2_type'=>$actor['type'],'p2_id'=>$actor['id']],
                 ]
             ])
-            ->contain(['User1', 'User2'])
             ->firstOrFail();
 
-        $messages = $this->Messages->find()
+        // 相手側のタイプ/ID
+        $isP1Me = ($c->p1_type === $actor['type'] && (int)$c->p1_id === $actor['id']);
+        $partnerType = $isP1Me ? $c->p2_type : $c->p1_type;
+        $partnerId   = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
+
+        // 相手エンティティ
+        $partner = null;
+        if ($partnerType === 'user') {
+            $partner = $this->fetchTable('Users')->get($partnerId);
+        } else {
+            $partner = $this->fetchTable('Companies')->get($partnerId);
+        }
+
+        // メッセージ取得（送信者は polymorphic）
+        $rows = $this->Messages->find()
             ->where(['conversation_id' => $id])
-            ->contain(['Sender'])
             ->order(['Messages.created' => 'ASC'])
             ->toArray();
 
-        $this->set(compact('conversation', 'messages', 'userId'));
-    }
-
-    /**
-     * Add method
-     *
-     * @return \Cake\Http\Response|null|void Redirects on successful add, renders view otherwise.
-     */
-    public function add()
-    {
-        $conversation = $this->Conversations->newEmptyEntity();
-        if ($this->request->is('post')) {
-            $conversation = $this->Conversations->patchEntity($conversation, $this->request->getData());
-            if ($this->Conversations->save($conversation)) {
-                $this->Flash->success(__('The conversation has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The conversation could not be saved. Please, try again.'));
+        // 送信者をまとめて解決（N+1防止）
+        $userIds = $companyIds = [];
+        foreach ($rows as $m) {
+            if ($m->sender_type === 'user')    $userIds[(int)$m->sender_id] = true;
+            if ($m->sender_type === 'company') $companyIds[(int)$m->sender_id] = true;
         }
-        $user1 = $this->Conversations->User1->find('list', ['limit' => 200])->all();
-        $user2 = $this->Conversations->User2->find('list', ['limit' => 200])->all();
-        $this->set(compact('conversation', 'user1', 'user2'));
-    }
+        $Users = $this->fetchTable('Users');
+        $Companies = $this->fetchTable('Companies');
+        $userMap = $userIds ? $Users->find()->where(['id IN' => array_keys($userIds)])->indexBy('id')->toArray() : [];
+        $companyMap = $companyIds ? $Companies->find()->where(['id IN' => array_keys($companyIds)])->indexBy('id')->toArray() : [];
 
-    /**
-     * Edit method
-     *
-     * @param string|null $id Conversation id.
-     * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function edit($id = null)
-    {
-        $conversation = $this->Conversations->get($id, [
-            'contain' => [],
+        // ビュー用の sender を付与
+        $messages = [];
+        foreach ($rows as $m) {
+            $sender = ($m->sender_type === 'user') ? ($userMap[(int)$m->sender_id] ?? null)
+                                                   : ($companyMap[(int)$m->sender_id] ?? null);
+            $m->set('sender', $sender);
+            $messages[] = $m;
+        }
+
+        $this->set([
+            'conversation' => $c,
+            'messages' => $messages,
+            // ビュー互換のため
+            'userId' => $actor['id'], // 送受判定に使っているのでIDだけ渡す
+            'partner' => $partner,
         ]);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $conversation = $this->Conversations->patchEntity($conversation, $this->request->getData());
-            if ($this->Conversations->save($conversation)) {
-                $this->Flash->success(__('The conversation has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The conversation could not be saved. Please, try again.'));
-        }
-        $user1 = $this->Conversations->User1->find('list', ['limit' => 200])->all();
-        $user2 = $this->Conversations->User2->find('list', ['limit' => 200])->all();
-        $this->set(compact('conversation', 'user1', 'user2'));
-    }
-
-    /**
-     * Delete method
-     *
-     * @param string|null $id Conversation id.
-     * @return \Cake\Http\Response|null|void Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function delete($id = null)
-    {
-        $this->request->allowMethod(['post', 'delete']);
-        $conversation = $this->Conversations->get($id);
-        if ($this->Conversations->delete($conversation)) {
-            $this->Flash->success(__('The conversation has been deleted.'));
-        } else {
-            $this->Flash->error(__('The conversation could not be deleted. Please, try again.'));
-        }
-
-        return $this->redirect(['action' => 'index']);
     }
 }
