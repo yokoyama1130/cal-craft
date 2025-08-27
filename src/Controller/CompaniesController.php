@@ -6,6 +6,8 @@ namespace App\Controller;
 use Cake\Utility\Text;
 use Cake\Event\EventInterface;
 use Cake\Datasource\ConnectionManager;
+use Psr\Http\Message\UploadedFileInterface;
+use Cake\Filesystem\Folder;
 
 class CompaniesController extends AppController
 {
@@ -41,6 +43,40 @@ class CompaniesController extends AppController
 
         if (empty($data['slug']) && !empty($data['name'])) {
             $data['slug'] = Text::slug((string)$data['name']);
+        }
+
+        $uploaded = $this->request->getData('logo_file');
+        if ($uploaded instanceof UploadedFileInterface && $uploaded->getError() === UPLOAD_ERR_OK) {
+            // 簡易バリデーション
+            $allowed = ['image/png','image/jpeg','image/webp','image/gif','image/svg+xml'];
+            $mime = $uploaded->getClientMediaType() ?: '';
+            $size = (int)$uploaded->getSize();
+            if (!in_array($mime, $allowed, true)) {
+                $this->Flash->error(__('Logo must be an image (png, jpg, webp, gif, svg).'));
+                return $this->redirect($this->request->getRequestTarget());
+            }
+            if ($size > 2*1024*1024) { // 2MB
+                $this->Flash->error(__('Logo is too large (max 2MB).'));
+                return $this->redirect($this->request->getRequestTarget());
+            }
+
+            $extMap = [
+                'image/png'=>'png','image/jpeg'=>'jpg','image/webp'=>'webp',
+                'image/gif'=>'gif','image/svg+xml'=>'svg',
+            ];
+            $ext = $extMap[$mime] ?? 'bin';
+
+            $dir = WWW_ROOT . 'img' . DS . 'companies';
+            (new Folder($dir, true, 0755)); // 無ければ作る
+
+            // まだIDは無いので、一旦タイムスタンプ＋乱数で
+            $filename = sprintf('company_new_%d_%04d.%s', time(), random_int(0,9999), $ext);
+            $dest = $dir . DS . $filename;
+
+            $uploaded->moveTo($dest);
+
+            // Webからのパス
+            $data['logo_path'] = '/img/companies/' . $filename;
         }
 
         // ★ owner_* → auth_* にマップ（フォーム名はそのままでOK）
