@@ -1,6 +1,12 @@
 <?php
 $cakeDescription = 'Calcraft';
 ?>
+<?php
+$isLoggedIn  = $this->Identity->isLoggedIn();
+$isEmployer  = $isLoggedIn && $this->Identity->get('auth_email') !== null; // 企業ログイン判定
+$companyId   = $isEmployer ? (int)$this->Identity->get('id') : null;
+$logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
+?>
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -107,12 +113,12 @@ $cakeDescription = 'Calcraft';
 
     <!-- 右：ログイン系 -->
     <div class="nav-right ms-auto d-flex align-items-center">
-      <?php if ($this->Identity->isLoggedIn()): ?>
+      <?php if ($isLoggedIn): ?>
         <span class="me-2 d-none d-sm-inline text-truncate" style="max-width:140px;">
           ようこそ <?= h($this->Identity->get('name')) ?> さん
         </span>
-        <a href="/users/logout" class="btn btn-outline-secondary btn-sm d-none d-sm-inline">ログアウト</a>
-        <a href="/users/logout" class="btn btn-outline-secondary btn-sm d-inline d-sm-none" title="ログアウト">
+        <a href="<?= $logoutUrl ?>" class="btn btn-outline-secondary btn-sm d-none d-sm-inline">ログアウト</a>
+        <a href="<?= $logoutUrl ?>" class="btn btn-outline-secondary btn-sm d-inline d-sm-none" title="ログアウト">
           <i class="fa-solid fa-right-from-bracket"></i>
         </a>
       <?php else: ?>
@@ -123,7 +129,6 @@ $cakeDescription = 'Calcraft';
         </a>
       <?php endif; ?>
     </div>
-
   </div>
 </nav>
 
@@ -136,8 +141,25 @@ $cakeDescription = 'Calcraft';
   <div class="offcanvas-body">
     <ul class="list-unstyled">
         <li><a href="/top">トップ画面</a></li>
-        <?php if ($this->Identity->isLoggedIn()): ?>
-          <li><a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile']) ?>">プロフィール</a></li>
+        <?php if ($isLoggedIn): ?>
+          <?php if ($isEmployer): ?>
+            <li>
+              <a href="<?= $this->Url->build([
+                'prefix' => 'Employer',
+                'controller' => 'Companies',
+                'action' => 'view',
+                $companyId
+              ]) ?>">
+                会社マイページ
+              </a>
+            </li>
+          <?php else: ?>
+            <li>
+              <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile']) ?>">
+                プロフィール
+              </a>
+            </li>
+          <?php endif; ?>
         <?php endif; ?>
         <li><a href="/users/search">ユーザー検索</a></li>
         <li><a href="/favorites">お気に入り</a></li>
