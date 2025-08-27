@@ -17,10 +17,19 @@ class AuthController extends AppController
     public function login()
     {
         $result = $this->Authentication->getResult();
+
         if ($result->isValid()) {
-            return $this->redirect($this->request->getQuery('redirect', '/employer/companies/edit'));
-        }
+            // 認証されたのは Companies のレコード（=企業本人）
+            $companyId = (int)$this->Authentication->getIdentity()->get('id');
     
+            return $this->redirect([
+                'prefix' => 'Employer',
+                'controller' => 'Companies',
+                'action' => 'view',
+                $companyId,  // => /employer/companies/view/4 など
+            ]);
+        }
+
         if ($this->request->is('post')) {
             $email = (string)$this->request->getData('auth_email');
             $plain = (string)$this->request->getData('auth_password');
