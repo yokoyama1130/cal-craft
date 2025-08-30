@@ -33,6 +33,7 @@ class Portfolio extends Entity
         'description' => true,
         'thumbnail' => true,
         'user' => true,
+        'company_id' => true,
         'is_public' => true,
         'category_id' => true,
         // 他の項目に加えて
