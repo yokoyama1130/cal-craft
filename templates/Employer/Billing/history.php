@@ -1,6 +1,8 @@
 <div class="container py-4">
-  <h1 class="h4 mb-3">請求履歴</h1>
-
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h5 mb-0">請求履歴</h1>
+        <?= $this->Html->link('プラン変更へ', ['action' => 'plan'], ['class' => 'btn btn-outline-secondary']) ?>
+    </div>
   <?php if ($invoices->isEmpty()): ?>
     <div class="alert alert-info">請求履歴はまだありません。</div>
   <?php else: ?>
