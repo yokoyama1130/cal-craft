@@ -53,6 +53,10 @@ class PortfoliosTable extends Table
             'joinType' => 'INNER',
         ]);
 
+        $this->belongsTo('Companies', [
+            'foreignKey' => 'company_id',
+        ]);
+
         $this->belongsTo('Categories', [
             'foreignKey' => 'category_id',
             'joinType' => 'INNER',
@@ -113,6 +117,23 @@ class PortfoliosTable extends Table
     {
         $rules->add($rules->existsIn('user_id', 'Users'), ['errorField' => 'user_id']);
         $rules->add($rules->existsIn('category_id', 'Categories'), ['errorField' => 'category_id']);
+        $rules->add($rules->existsIn(['company_id'], 'Companies'), ['errorField' => 'company_id']);
+
+        // user_id と company_id の どちらか一方は必須（両方NULLは禁止）
+        $rules->add(function ($entity, $options) {
+            return (bool)($entity->user_id || $entity->company_id);
+        }, 'OwnerRequired', [
+            'errorField' => 'owner',
+            'message' => 'ユーザーまたは会社のいずれかが投稿者として必要です。'
+        ]);
+
+        // 両方同時セットを許すか？ → 原則どちらか一方にしたい場合は以下で禁止
+        $rules->add(function ($entity, $options) {
+            return !($entity->user_id && $entity->company_id);
+        }, 'OwnerExclusive', [
+            'errorField' => 'owner',
+            'message' => 'ユーザー投稿か会社投稿かはどちらか一方にしてください。'
+        ]);
 
         return $rules;
     }
