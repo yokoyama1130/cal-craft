@@ -107,6 +107,11 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // https://book.cakephp.org/4/en/security/csrf.html#cross-site-request-forgery-csrf-middleware
             ->add(new CsrfProtectionMiddleware([
                 'httponly' => true,
+                'skipCheckCallback' => function ($request) {
+                    // Webhook は CSRF 対象外
+                    $path = $request->getPath();
+                    return str_starts_with($path, '/employer/billing/webhook');
+                }
             ]));
 
         return $middlewareQueue;
