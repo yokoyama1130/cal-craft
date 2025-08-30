@@ -57,8 +57,9 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/billing/success', ['controller' => 'Billing', 'action' => 'success']);     // 成功
         $routes->connect('/billing/cancel',  ['controller' => 'Billing', 'action' => 'cancel']);      // キャンセル
         $routes->fallbacks();
-        $routes->fallbacks();
     });
+    $routes->connect('/stripe/webhook', ['controller' => 'Stripe', 'action' => 'webhook', 'prefix' => false, '_method' => 'POST']);
+
     $routes->scope('/', function (\Cake\Routing\RouteBuilder $routes) {
         // /conversations/start/user/2 /conversations/start/company/4
         $routes->connect(
