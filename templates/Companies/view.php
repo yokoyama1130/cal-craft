@@ -58,17 +58,7 @@
 
         <!-- アクション -->
         <div class="d-flex gap-2">
-          <?php if (!empty($company->slug)): ?>
-            <a href="/c/<?= h($company->slug) ?>" target="_blank" class="btn btn-outline-secondary">
-              <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> 公開ページを見る
-            </a>
-          <?php endif; ?>
           <?= $this->Html->link('<i class="fa-regular fa-pen-to-square me-1"></i> 編集', ['action' => 'edit', $company->id], ['escape' => false, 'class' => 'btn btn-primary']) ?>
-          <?= $this->Form->postLink('<i class="fa-regular fa-trash-can me-1"></i> 削除', ['action' => 'delete', $company->id], [
-                'escape' => false, 'class' => 'btn btn-outline-danger',
-                'confirm' => __('本当に削除しますか？')
-              ]) ?>
-          <?= $this->Html->link('一覧へ', ['action' => 'index'], ['class' => 'btn btn-outline-dark']) ?>
           <?= $this->Html->link('プラン変更', '/employer/billing/plan', ['class'=>'btn btn-outline-primary']) ?>
           <?= $this->Html->link('請求履歴', '/employer/billing/history', ['class'=>'btn btn-outline-primary']) ?>
         </div>

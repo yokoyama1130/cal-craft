@@ -64,6 +64,7 @@ return function (RouteBuilder $routes): void {
         $routes->fallbacks();
     });
     $routes->connect('/stripe/webhook', ['controller' => 'Stripe', 'action' => 'webhook', 'prefix' => false]);
+    $routes->connect('/webhooks/stripe', ['controller' => 'Webhooks', 'action' => 'stripe', 'prefix' => false]);
 
     $routes->scope('/', function (\Cake\Routing\RouteBuilder $routes) {
         // /conversations/start/user/2 /conversations/start/company/4
