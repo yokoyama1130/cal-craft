@@ -13,12 +13,12 @@
           特典資料 配布中
         </span>
         <h1 class="display-5 fw-bold lh-sm text-dark mb-3">
-          <span class="text-gradient">機械系エンジニア</span>のための<br>
+          <span class="text-gradient">実力者同士</span>のための<br>
           ポートフォリオ＆マッチング
         </h1>
         <p class="lead text-secondary mb-4">
           設計・解析・加工の成果物を、美しく・正しく・伝わる形で公開。<br class="d-none d-md-inline">
-          企業・エンジニア間の発見とマッチングを加速します。
+          企業・実力者間の発見とマッチングを加速します。
         </p>
 
         <div class="d-flex flex-wrap gap-2">
