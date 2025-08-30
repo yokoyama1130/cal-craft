@@ -28,8 +28,8 @@ class BillingController extends AppController
     
         $plans = [
             'free' => ['label'=>'Free','price'=>0,'features'=>['月1ユーザーに先出しメッセージ','基本機能']],
-            'pro'  => ['label'=>'Pro','price'=>2980,'features'=>['月100ユーザーに先出しメッセージ','高度検索','優先サポート']],
-            'enterprise' => ['label'=>'Enterprise','price'=>0,'features'=>['無制限','SLA/管理機能','個別サポート']],
+            'pro'  => ['label'=>'Pro','price'=>5000,'features'=>['月100ユーザーに先出しメッセージ','高度検索','優先サポート']],
+            'enterprise' => ['label'=>'Enterprise','price'=>20000,'features'=>['無制限','SLA/管理機能','個別サポート']],
         ];
     
         $this->set(compact('company','plans'));

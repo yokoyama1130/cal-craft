@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.1-apache
 
 #必要な拡張をインストール
 RUN apt-get update && apt-get install -y unzip libzip-dev libpng-dev libonig-dev \
