@@ -28,10 +28,48 @@ class MessagesController extends AppController
             return $this->redirect(['controller' => 'Conversations', 'action' => 'view', $conversationId]);
         }
 
-        $actor = $this->getActor(); // ['type','id']
-        if (empty($actor['type']) || empty($actor['id'])) {
-            $this->Flash->error('ログインが必要です。');
-            return $this->redirect('/');
+        // MessagesController::send の保存直前
+        $actor = $this->getActor();
+        if ($actor['type'] === 'company') {
+            $Companies = $this->fetchTable('Companies');
+            $company = $Companies->get($actor['id']);
+            $plan = $company->plan ?? 'free';
+            $limit = $this->planUserContactLimits[$plan] ?? 0;
+
+            if ($limit > 0) {
+                // 相手がユーザーかどうか＆そのユーザーIDを取得
+                $Conversations = $this->fetchTable('Conversations');
+                $conv = $Conversations->get($conversationId);
+
+                // 相手のタイプとID
+                $partnerType = ($conv->p1_type === 'company' && (int)$conv->p1_id === (int)$company->id)
+                    ? $conv->p2_type : $conv->p1_type;
+                $partnerId = ($conv->p1_type === 'company' && (int)$conv->p1_id === (int)$company->id)
+                    ? (int)$conv->p2_id : (int)$conv->p1_id;
+
+                if ($partnerType === 'user') {
+                    // 当月、このユーザー宛に会社が既に送っているか？
+                    $Messages = $this->fetchTable('Messages');
+                    $since = new \DateTime('first day of this month 00:00:00');
+
+                    $alreadyThisMonth = $Messages->find()
+                        ->where([
+                            'conversation_id' => $conversationId,
+                            'sender_type' => 'company',
+                            'sender_ref_id' => $company->id,
+                            'created >=' => $since,
+                        ])
+                        ->count() > 0;
+
+                    if (!$alreadyThisMonth) {
+                        $used = $this->countMonthlyUniqueUsersContacted((int)$company->id);
+                        if ($used >= $limit) {
+                            $this->Flash->error('このプランで当月に話しかけ可能なユーザー数の上限に達しました。');
+                            return $this->redirect(['controller' => 'Conversations', 'action' => 'view', $conversationId]);
+                        }
+                    }
+                }
+            }
         }
 
         $Conversations = $this->fetchTable('Conversations');
@@ -108,4 +146,104 @@ class MessagesController extends AppController
 
         return $this->redirect(['controller' => 'Conversations', 'action' => 'view', $conversationId]);
     }
+
+    // どこか共通で（例: MessagesController/ConversationsController のプロパティとして）
+    private array $planUserContactLimits = [
+        'free'       => 1,   // 当月 新規に話しかけられるユーザー数
+        'pro'        => 100,
+        'enterprise' => 0,    // 0は無制限
+    ];
+
+    /**
+     * 当月、会社が“実際に送信した”相手ユーザーIDのユニーク数を返す
+     */
+    private function countMonthlyUniqueUsersContacted(int $companyId): int
+    {
+        $Messages = $this->fetchTable('Messages');
+        $Conversations = $this->fetchTable('Conversations');
+
+        // 会社が参加する会話ID（相手がユーザーのもの）の集合
+        $convIds = $Conversations->find()
+            ->select('id')
+            ->where([
+                'OR' => [
+                    ['p1_type' => 'company', 'p1_id' => $companyId, 'p2_type' => 'user'],
+                    ['p2_type' => 'company', 'p2_id' => $companyId, 'p1_type' => 'user'],
+                ]
+            ])
+            ->enableHydration(false)
+            ->all()
+            ->extract('id')
+            ->toList();
+
+        if (!$convIds) {
+            return 0;
+        }
+
+        $since = new \DateTime('first day of this month 00:00:00');
+
+        // その会話群の中で、会社が送ったメッセージの相手ユーザーIDを集める
+        // 相手ユーザーIDは、会話レコードから引く必要があるので2回に分ける
+        $p1 = $Conversations->find()
+            ->select(['uid' => 'p2_id'])
+            ->where(['id IN' => $convIds, 'p1_type' => 'company', 'p2_type' => 'user'])
+            ->enableHydration(false)
+            ->toArray();
+        $p2 = $Conversations->find()
+            ->select(['uid' => 'p1_id'])
+            ->where(['id IN' => $convIds, 'p2_type' => 'company', 'p1_type' => 'user'])
+            ->enableHydration(false)
+            ->toArray();
+
+        // 「当月その会話で会社が送ったことがあるか」を Messages で確認
+        $sentConvIds = $Messages->find()
+            ->select('conversation_id')
+            ->where([
+                'conversation_id IN' => $convIds,
+                'sender_type' => 'company',
+                'sender_ref_id' => $companyId,
+                'created >=' => $since,
+            ])
+            ->distinct()
+            ->enableHydration(false)
+            ->all()
+            ->extract('conversation_id')
+            ->toList();
+
+        if (!$sentConvIds) {
+            return 0;
+        }
+
+        // sentConvIds に対応する相手ユーザーIDを抽出
+        $partnerUserIds = [];
+
+        if ($sentConvIds) {
+            // p1(company)/p2(user) 側
+            $rows1 = $Conversations->find()
+                ->select(['uid' => 'p2_id'])
+                ->where([
+                    'id IN' => $sentConvIds,
+                    'p1_type' => 'company',
+                    'p2_type' => 'user',
+                ])
+                ->enableHydration(false)
+                ->all();
+            foreach ($rows1 as $r) $partnerUserIds[$r['uid']] = true;
+
+            // p2(company)/p1(user) 側
+            $rows2 = $Conversations->find()
+                ->select(['uid' => 'p1_id'])
+                ->where([
+                    'id IN' => $sentConvIds,
+                    'p2_type' => 'company',
+                    'p1_type' => 'user',
+                ])
+                ->enableHydration(false)
+                ->all();
+            foreach ($rows2 as $r) $partnerUserIds[$r['uid']] = true;
+        }
+
+        return count($partnerUserIds);
+    }
+
 }
