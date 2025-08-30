@@ -164,8 +164,11 @@ class BillingController extends AppController
     public function pay(string $planKey)
     {
         $auth = $this->Authentication->getIdentity();
-        if (!$auth) {
-            return $this->redirect('/employer/login');
+        if (!$auth) return $this->redirect('/employer/login');
+
+        // ★ Free はカード不要。checkout に逃がす
+        if ($planKey === 'free') {
+            return $this->redirect(['action' => 'checkout', 'free']);
         }
 
         $valid = ['pro','enterprise'];
@@ -173,10 +176,10 @@ class BillingController extends AppController
             throw new BadRequestException('Invalid plan.');
         }
 
-        $pk = (string)(Configure::read('Stripe.publishable') ?? '');
+        $pk = (string)(\Cake\Core\Configure::read('Stripe.publishable') ?? '');
         if (!$pk) {
             $this->Flash->error('Stripeの公開鍵が未設定です。');
-            return $this->redirect(['action' => 'plan']);
+            return $this->redirect(['action'=>'plan']);
         }
 
         $this->set([
