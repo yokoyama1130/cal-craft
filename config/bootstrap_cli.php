@@ -33,3 +33,5 @@ if (Configure::check('Log.debug')) {
 if (Configure::check('Log.error')) {
     Configure::write('Log.error.file', 'cli-error');
 }
+
+Configure::load('stripe', 'default', true); // config/stripe.php を読む
