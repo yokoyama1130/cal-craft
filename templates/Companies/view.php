@@ -12,12 +12,12 @@
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
       <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-        <div class="d-flex align-items-start gap-3">
-          <img src="<?= h($company->logo_path ?: 'https://placehold.co/120x120?text=Logo') ?>"
-               alt="logo" class="rounded shadow-sm border bg-white"
-               style="width:96px;height:96px;object-fit:contain"
-               onerror="this.src='https://placehold.co/120x120?text=Logo'">
-          <div>
+      <div class="d-flex align-items-start gap-3">
+        <img src="<?= h($company->logo_path ?: 'https://placehold.co/120x120?text=Logo') ?>"
+            alt="logo" class="rounded-circle shadow-sm border bg-white"
+            style="width:96px;height:96px;object-fit:cover"
+            onerror="this.src='https://placehold.co/120x120?text=Logo'">
+        <div>
             <h2 class="mb-1">
               <?= h($company->name ?: 'Company') ?>
             </h2>
