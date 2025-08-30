@@ -60,45 +60,81 @@
 </head>
 <body>
 <div class="d-flex align-items-center mb-4 fade-in">
-  <?php if (!empty($portfolio->user->icon_path)): ?>
+  <?php if (!empty($portfolio->user_id) && !empty($portfolio->user)): ?>
+    <!-- ユーザー投稿のとき -->
     <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile', $portfolio->user->id]) ?>">
-      <img src="/img/<?= h($portfolio->user->icon_path) ?>" 
-          class="rounded-circle me-3 shadow-sm border" 
-          style="width: 100px; height: 100px; object-fit: cover;">
-    </a>
-  <?php else: ?>
-    <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'view', $portfolio->user->id]) ?>">
-      <i class="fas fa-user-circle fa-5x text-muted me-3"></i>
-    </a>
-  <?php endif; ?>
-  <div>
-    <h2 class="mb-1"><?= h($portfolio->user->name) ?></h2>
-    <div>
-      <?= $this->Html->link(
-        'フォロー <span id="following-count">' . h($followingCount) . '</span>人',
-        ['controller' => 'Users', 'action' => 'followings', $portfolio->user->id],
-        ['escape' => false]
-      ) ?>
-      /
-      <?= $this->Html->link(
-        'フォロワー <span id="follower-count">' . h($followerCount) . '</span>人',
-        ['controller' => 'Users', 'action' => 'followers', $portfolio->user->id],
-        ['escape' => false]
-      ) ?>
-    </div>
-    <div id="follow-button-container">
-      <?php if ($this->request->getAttribute('identity')->get('id') !== $portfolio->user->id): ?>
-        <button
-          class="btn <?= $isFollowing ? 'btn-outline-secondary' : 'btn-primary' ?>"
-          id="follow-button"
-          data-following="<?= $isFollowing ? '1' : '0' ?>"
-          data-user-id="<?= h($portfolio->user->id) ?>"
-        >
-          <?= $isFollowing ? 'フォロー解除' : 'フォロー' ?>
-        </button>
+      <?php if (!empty($portfolio->user->icon_path)): ?>
+        <img src="/img/<?= h($portfolio->user->icon_path) ?>" class="rounded-circle me-3 shadow-sm border" style="width:100px;height:100px;object-fit:cover;">
+      <?php else: ?>
+        <i class="fas fa-user-circle fa-5x text-muted me-3"></i>
       <?php endif; ?>
+    </a>
+    <div>
+      <h2 class="mb-1"><?= h($portfolio->user->name) ?></h2>
+
+      <?php if (!empty($showFollowUi)): ?>
+        <div>
+          <?= $this->Html->link(
+            'フォロー <span id="following-count">' . h((int)$followingCount) . '</span>人',
+            ['controller' => 'Users', 'action' => 'followings', $portfolio->user->id],
+            ['escape' => false]
+          ) ?>
+          /
+          <?= $this->Html->link(
+            'フォロワー <span id="follower-count">' . h((int)$followerCount) . '</span>人',
+            ['controller' => 'Users', 'action' => 'followers', $portfolio->user->id],
+            ['escape' => false]
+          ) ?>
+        </div>
+
+        <?php if ($this->request->getAttribute('identity') && $this->request->getAttribute('identity')->get('id') !== $portfolio->user->id): ?>
+          <div id="follow-button-container" class="mt-2">
+            <button
+              class="btn <?= $isFollowing ? 'btn-outline-secondary' : 'btn-primary' ?>"
+              id="follow-button"
+              data-following="<?= $isFollowing ? '1' : '0' ?>"
+              data-user-id="<?= h($portfolio->user->id) ?>"
+            >
+              <?= $isFollowing ? 'フォロー解除' : 'フォロー' ?>
+            </button>
+          </div>
+        <?php endif; ?>
+      <?php endif; ?>
+
     </div>
-  </div>
+
+    <?php else: ?>
+    <!-- 会社投稿のとき -->
+    <?php if (!empty($portfolio->company)): ?>
+      <a href="<?= $this->Url->build(['controller' => 'Companies', 'action' => 'view', $portfolio->company->id]) ?>">
+        <?php if (!empty($portfolio->company->logo_path)): ?>
+          <img src="<?= h($portfolio->company->logo_path) ?>"
+              alt="<?= h($portfolio->company->name) ?>"
+              class="rounded-circle me-3 shadow-sm border"
+              style="width:100px;height:100px;object-fit:cover;">
+        <?php else: ?>
+          <i class="fa-solid fa-building fa-5x text-muted me-3"></i>
+        <?php endif; ?>
+      </a>
+      <div>
+        <h2 class="mb-1">
+          <a href="<?= $this->Url->build(['controller' => 'Companies', 'action' => 'view', $portfolio->company->id]) ?>"
+            class="text-decoration-none text-dark">
+            <?= h($portfolio->company->name) ?>
+          </a>
+        </h2>
+        <!-- 会社にはフォローUIを出さない -->
+      </div>
+    <?php else: ?>
+      <!-- company 情報が無い場合のフォールバック -->
+      <a href="#">
+        <i class="fa-solid fa-building fa-5x text-muted me-3"></i>
+      </a>
+      <div>
+        <h2 class="mb-1">企業投稿</h2>
+      </div>
+    <?php endif; ?>
+  <?php endif; ?>
 </div>
   <div class="portfolio-header text-center fade-in d-flex align-items-center justify-content-center gap-3">
     <div class="d-flex align-items-center justify-content-center mb-2">
@@ -248,6 +284,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+<?php if (!empty($showFollowUi)): ?>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const button = document.getElementById('follow-button');
@@ -268,33 +305,21 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(res => res.json())
     .then(data => {
       const followerCountSpan = document.getElementById('follower-count');
-
       if (data.status === 'followed') {
         button.textContent = 'フォロー解除';
         button.className = 'btn btn-outline-secondary';
         button.dataset.following = '1';
-
-        // フォロワー数＋1
-        if (followerCountSpan) {
-          let count = parseInt(followerCountSpan.textContent);
-          followerCountSpan.textContent = count + 1;
-        }
-
+        if (followerCountSpan) followerCountSpan.textContent = (parseInt(followerCountSpan.textContent) + 1);
       } else if (data.status === 'unfollowed') {
         button.textContent = 'フォロー';
         button.className = 'btn btn-primary';
         button.dataset.following = '0';
-
-        // フォロワー数−1
-        if (followerCountSpan) {
-          let count = parseInt(followerCountSpan.textContent);
-          followerCountSpan.textContent = count - 1;
-        }
+        if (followerCountSpan) followerCountSpan.textContent = (parseInt(followerCountSpan.textContent) - 1);
       }
     })
     .catch(err => console.error('フォロー切り替えエラー:', err));
   });
 });
 </script>
-
+<?php endif; ?>
 

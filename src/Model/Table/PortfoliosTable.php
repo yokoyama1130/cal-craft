@@ -50,7 +50,7 @@ class PortfoliosTable extends Table
 
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
-            'joinType' => 'INNER',
+            // 'joinType' => 'INNER', // ← 削除（LEFT相当）
         ]);
 
         $this->belongsTo('Companies', [
@@ -63,24 +63,17 @@ class PortfoliosTable extends Table
         ]);
 
         $this->hasMany('Likes');
-
         $this->hasMany('Comments', [
             'foreignKey' => 'portfolio_id',
             'dependent' => true,
         ]);
     }
 
-    /**
-     * Default validation rules.
-     *
-     * @param \Cake\Validation\Validator $validator Validator instance.
-     * @return \Cake\Validation\Validator
-     */
     public function validationDefault(Validator $validator): Validator
     {
         $validator
             ->integer('user_id')
-            ->notEmptyString('user_id');
+            ->allowEmptyString('user_id'); // ← 会社投稿を許可
 
         $validator
             ->integer('category_id')
@@ -97,44 +90,43 @@ class PortfoliosTable extends Table
             ->requirePresence('description', 'create')
             ->notEmptyString('description');
 
+        // サムネ必須にしないなら allowEmpty に変更
         $validator
             ->scalar('thumbnail')
             ->maxLength('thumbnail', 255)
-            ->requirePresence('thumbnail', 'create')
-            ->notEmptyString('thumbnail');
+            ->allowEmptyString('thumbnail');
 
         return $validator;
     }
 
-    /**
-     * Returns a rules checker object that will be used for validating
-     * application integrity.
-     *
-     * @param \Cake\ORM\RulesChecker $rules The rules object to be modified.
-     * @return \Cake\ORM\RulesChecker
-     */
     public function buildRules(RulesChecker $rules): RulesChecker
     {
-        $rules->add($rules->existsIn('user_id', 'Users'), ['errorField' => 'user_id']);
-        $rules->add($rules->existsIn('category_id', 'Categories'), ['errorField' => 'category_id']);
-        $rules->add($rules->existsIn(['company_id'], 'Companies'), ['errorField' => 'company_id']);
-
-        // user_id と company_id の どちらか一方は必須（両方NULLは禁止）
+        // 片方があれば existsIn を確認する
+        $rules->add($rules->existsIn(['user_id'], 'Users'), [
+            'errorField' => 'user_id',
+            'allowNullableNulls' => true,
+        ]);
+        $rules->add($rules->existsIn(['company_id'], 'Companies'), [
+            'errorField' => 'company_id',
+            'allowNullableNulls' => true,
+        ]);
+    
+        // どちらか一方必須
         $rules->add(function ($entity, $options) {
             return (bool)($entity->user_id || $entity->company_id);
         }, 'OwnerRequired', [
             'errorField' => 'owner',
-            'message' => 'ユーザーまたは会社のいずれかが投稿者として必要です。'
+            'message' => 'ユーザーIDまたは会社IDのいずれかを指定してください。'
         ]);
-
-        // 両方同時セットを許すか？ → 原則どちらか一方にしたい場合は以下で禁止
+    
+        // 両方同時はNG
         $rules->add(function ($entity, $options) {
             return !($entity->user_id && $entity->company_id);
         }, 'OwnerExclusive', [
             'errorField' => 'owner',
-            'message' => 'ユーザー投稿か会社投稿かはどちらか一方にしてください。'
+            'message' => 'ユーザーと会社の両方を同時に設定することはできません。'
         ]);
-
+    
         return $rules;
-    }
+    }    
 }

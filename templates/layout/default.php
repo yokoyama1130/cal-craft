@@ -163,7 +163,26 @@ $logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
         <?php endif; ?>
         <li><a href="/users/search">ユーザー検索</a></li>
         <li><a href="/favorites">お気に入り</a></li>
-        <li><a href="/portfolios/add">投稿する</a></li>
+        <?php if ($isLoggedIn): ?>
+          <?php if ($isEmployer): ?>
+            <li>
+              <a href="<?= $this->Url->build([
+                'prefix' => 'Employer',
+                'controller' => 'portfolios',
+                'action' => 'add',
+                $companyId
+              ]) ?>">
+                投稿するよ！！！！！！！
+              </a>
+            </li>
+          <?php else: ?>
+            <li>
+              <a href="<?= $this->Url->build(['controller' => 'portfolios', 'action' => 'add']) ?>">
+                投稿する
+              </a>
+            </li>
+          <?php endif; ?>
+        <?php endif; ?>
         <li><a href="/conversations">メッセージ</a></li>
         <li>
           <a href="/notifications">

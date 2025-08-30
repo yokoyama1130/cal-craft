@@ -52,6 +52,8 @@ return function (RouteBuilder $routes): void {
     $routes->prefix('Employer', function ($routes) {
         $routes->connect('/login', ['controller' => 'Auth', 'action' => 'login']);
         $routes->connect('/logout', ['controller' => 'Auth', 'action' => 'logout']);
+        $routes->connect('/portfolios', ['controller' => 'Portfolios', 'action' => 'index', 'prefix' => 'Employer']);
+        $routes->connect('/portfolios/add', ['controller' => 'Portfolios', 'action' => 'add', 'prefix' => 'Employer']);
         $routes->connect('/billing/plan',     ['controller'=>'Billing','action'=>'plan']);
         $routes->connect('/billing/pay/:plan',    ['controller' => 'Billing', 'action' => 'pay'])
             ->setPass(['plan'])->setPatterns(['plan' => '[a-z]+']);
