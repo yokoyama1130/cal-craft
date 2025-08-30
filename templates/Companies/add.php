@@ -191,10 +191,16 @@ use Cake\Utility\Text;
       <div class="col-lg-4 p-4 p-md-5 bg-light-subtle">
         <!-- ロゴプレビュー -->
         <div class="card border-0 shadow-sm mb-4">
-          <div class="card-body">
-            <h6 class="fw-semibold mb-3"><i class="fa-regular fa-image me-2 text-primary"></i>ロゴプレビュー</h6>
-            <div class="logo-preview-wrap">
-              <img id="cmp-logo-preview" src="<?= h($company->logo_path ?? '') ?>" alt="" onerror="this.src='https://placehold.co/240x120?text=Logo';">
+          <div class="card-body text-center">
+            <h6 class="fw-semibold mb-3">
+              <i class="fa-regular fa-image me-2 text-primary"></i>ロゴプレビュー
+            </h6>
+            <div class="logo-preview-wrap rounded-circle d-flex align-items-center justify-content-center mx-auto">
+              <img id="cmp-logo-preview"
+                  src="<?= h($company->logo_path ?? '') ?>"
+                  alt="logo preview"
+                  class="rounded-circle"
+                  onerror="this.src='https://placehold.co/240x240?text=Logo';">
             </div>
             <div class="form-text mt-2">ロゴパスを入力すると自動プレビューします。</div>
           </div>
