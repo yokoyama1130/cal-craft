@@ -9,7 +9,7 @@
           <div class="card-body d-flex flex-column">
             <h5 class="fw-bold mb-1"><?= h($p['label']) ?></h5>
             <div class="text-muted mb-2">
-              <?= $p['price'] ? '¥' . number_format($p['price']) . '/月' : ($key==='enterprise' ? '要お問い合わせ' : '無料') ?>
+              <?= $p['price'] === null ? '要お問い合わせ' : ($p['price'] ? '¥'.number_format($p['price']).'/月' : '無料') ?>
             </div>
             <ul class="small list-unstyled mb-4">
               <?php foreach ($p['features'] as $f): ?>
