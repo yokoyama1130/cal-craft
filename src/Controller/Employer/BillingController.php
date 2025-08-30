@@ -19,61 +19,54 @@ class BillingController extends AppController
     // プラン一覧
     public function plan()
     {
-        $company = $this->Authentication->getIdentity(); // Companies の行が入っている想定
-        if (!$company) return $this->redirect('/employer/login');
-
-        // 表示用の定義（後でDBや設定ファイルに移せます）
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) return $this->redirect('/employer/login');
+    
+        // ★ ここで最新をDBから取り直す
+        $Companies = $this->fetchTable('Companies');
+        $company   = $Companies->get($auth->id);
+    
         $plans = [
-            'free' => [
-                'label' => 'Free',
-                'price' => 0,
-                'features' => ['月1ユーザーに先出しメッセージ', '基本機能'],
-            ],
-            'pro' => [
-                'label' => 'Pro',
-                'price' => 2980,
-                'features' => ['月100ユーザーに先出しメッセージ', '高度検索', '優先サポート'],
-            ],
-            'enterprise' => [
-                'label' => 'Enterprise',
-                'price' => 0, // 要見積もり
-                'features' => ['無制限', 'SLA/管理機能', '個別サポート'],
-            ],
+            'free' => ['label'=>'Free','price'=>0,'features'=>['月1ユーザーに先出しメッセージ','基本機能']],
+            'pro'  => ['label'=>'Pro','price'=>2980,'features'=>['月100ユーザーに先出しメッセージ','高度検索','優先サポート']],
+            'enterprise' => ['label'=>'Enterprise','price'=>0,'features'=>['無制限','SLA/管理機能','個別サポート']],
         ];
-
-        $this->set(compact('company', 'plans'));
-    }
+    
+        $this->set(compact('company','plans'));
+    }    
 
     // プラン確認/決済（まずは決済なし版 → 直接反映 or 次回更新に予約）
-    public function checkout($plan = null)
+    public function checkout(?string $plan = null)
     {
-        $company = $this->Authentication->getIdentity();
-        if (!$company) return $this->redirect('/employer/login');
-
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) {
+            return $this->redirect('/employer/login');
+        }
+    
         $valid = ['free','pro','enterprise'];
         if (!$plan || !in_array($plan, $valid, true)) {
-            throw new BadRequestException('Invalid plan.');
+            throw new \Cake\Http\Exception\BadRequestException('Invalid plan.');
         }
-
-        // POSTで確定
+    
+        $Companies = $this->fetchTable('Companies');
+        // ★ ここで会社を取得してビューへ渡す
+        $company   = $Companies->get($auth->id);
+    
         if ($this->request->is('post')) {
-            $Companies = $this->fetchTable('Companies');
-
-            // ここで本来は Stripe セッション作成→成功コールバックでプラン反映
-            // まずは「即時反映（開発用）」にしておく
-            $entity = $Companies->get($company->id);
-            $entity->plan = $plan;
-
-            if ($Companies->save($entity)) {
+            $company->plan = $plan;
+    
+            if ($Companies->save($company)) {
+                // ついでに Identity も更新（現在プラン表示のズレ防止）
+                $this->Authentication->setIdentity($Companies->get($auth->id));
                 $this->Flash->success('プランを変更しました。');
-                return $this->redirect('/employer/companies/view/' . $company->id);
+                return $this->redirect('/employer/companies/view/' . $auth->id);
             }
             $this->Flash->error('プラン変更に失敗しました。');
         }
-
-        // 確認画面表示
-        $this->set(compact('company','plan'));
-    }
+    
+        // ★ ビューで使う変数を渡す
+        $this->set(compact('company', 'plan'));
+    }    
 
     public function success()
     {
