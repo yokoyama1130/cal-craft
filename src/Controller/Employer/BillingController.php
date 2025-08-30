@@ -219,12 +219,78 @@ class BillingController extends AppController
         return $this->response->withStringBody(json_encode(['clientSecret' => $pi->client_secret]));
     }
 
-
     public function success()
     {
-        $this->Flash->success('決済が完了しました（反映には数秒かかることがあります）');
+        $this->request->allowMethod(['get']);
+    
+        // Stripe から付与されるクエリ
+        $piId  = (string)$this->request->getQuery('payment_intent');
+        $redir = (string)$this->request->getQuery('redirect_status'); // succeeded など
+    
+        if (!$piId) {
+            $this->Flash->error('決済情報が見つかりません（payment_intent 不足）。');
+            return $this->redirect(['action' => 'plan']);
+        }
+    
+        // Stripe API で PaymentIntent を検証
+        $cfg = (array)Configure::read('Stripe');
+        $secret = $cfg['secret'] ?? null;
+        if (!$secret) {
+            $this->Flash->error('Stripe シークレットキーが未設定です。');
+            return $this->redirect(['action' => 'plan']);
+        }
+    
+        $stripe = new StripeClient($secret);
+    
+        try {
+            $pi = $stripe->paymentIntents->retrieve($piId, []);
+        } catch (\Throwable $e) {
+            $this->Flash->error('決済の確認に失敗しました。');
+            return $this->redirect(['action' => 'plan']);
+        }
+    
+        // ステータス確認
+        if (($pi->status ?? '') !== 'succeeded') {
+            $this->Flash->error('決済が完了していません。（status=' . ($pi->status ?? 'unknown') . '）');
+            return $this->redirect(['action' => 'plan']);
+        }
+    
+        // メタデータから会社とプランを取得（intent 作成時に入れていた値）
+        $companyId  = (int)($pi->metadata['company_id']  ?? 0);
+        $targetPlan = (string)($pi->metadata['target_plan'] ?? '');
+    
+        if ($companyId <= 0 || $targetPlan === '') {
+            $this->Flash->error('決済メタデータが不正です。');
+            return $this->redirect(['action' => 'plan']);
+        }
+    
+        // ログイン会社と整合を軽くチェック（任意）
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth || (int)$auth->id !== $companyId) {
+            $this->Flash->error('不正なアクセスです。');
+            return $this->redirect(['action' => 'plan']);
+        }
+    
+        // 顧客IDの整合性チェック（改ざん防止の一手）
+        $Companies = $this->fetchTable('Companies');
+        $company   = $Companies->get($companyId);
+        if (!empty($company->stripe_customer_id) && !empty($pi->customer) && $company->stripe_customer_id !== $pi->customer) {
+            $this->Flash->error('決済情報と会社情報が一致しません。');
+            return $this->redirect(['action' => 'plan']);
+        }
+    
+        // プラン更新
+        $company->plan = $targetPlan;
+        if ($Companies->save($company)) {
+            // Identity を更新して画面の表示ズレを防止
+            $this->Authentication->setIdentity($Companies->get($companyId));
+            $this->Flash->success('決済が完了しました。プランを「' . h($targetPlan) . '」に更新しました。');
+            return $this->redirect('/employer/companies/view/' . $companyId);
+        }
+    
+        $this->Flash->error('プランの更新に失敗しました。');
         return $this->redirect(['action' => 'plan']);
-    }
+    }    
 
     public function cancel()
     {
