@@ -53,8 +53,11 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/login', ['controller' => 'Auth', 'action' => 'login']);
         $routes->connect('/logout', ['controller' => 'Auth', 'action' => 'logout']);
         $routes->connect('/billing/plan',     ['controller'=>'Billing','action'=>'plan']);
-        $routes->connect('/billing/pay/*',    ['controller'=>'Billing','action'=>'pay']);     // 入力画面
-        $routes->connect('/billing/intent/*', ['controller'=>'Billing','action'=>'intent']);  // client_secretを返すAPI
+        $routes->connect('/billing/pay/:plan',    ['controller' => 'Billing', 'action' => 'pay'])
+            ->setPass(['plan'])->setPatterns(['plan' => '[a-z]+']);
+
+        $routes->connect('/billing/intent/:plan', ['controller' => 'Billing', 'action' => 'intent'])
+            ->setPass(['plan'])->setPatterns(['plan' => '[a-z]+']);
         $routes->connect('/billing/success',  ['controller'=>'Billing','action'=>'success']);
         $routes->connect('/billing/cancel',   ['controller'=>'Billing','action'=>'cancel']);   // キャンセル
         $routes->fallbacks();

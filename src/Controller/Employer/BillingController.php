@@ -171,70 +171,54 @@ class BillingController extends AppController
     public function intent(string $planKey)
     {
         $this->request->allowMethod(['post']);
+        $company = $this->Authentication->getIdentity();
 
-        $auth = $this->Authentication->getIdentity();
-        if (!$auth) {
-            return $this->response->withStatus(401);
-        }
-
-        $valid = ['pro','enterprise'];
-        if (!in_array($planKey, $valid, true)) {
+        // 金額マップ（例）
+        $amountMap = ['pro' => 9800, 'enterprise' => 20000]; // 円
+        $amount = $amountMap[$planKey] ?? null;
+        if (!$amount) {
             return $this->response->withStatus(400);
         }
 
-        $secret   = (string)(Configure::read('Stripe.secret') ?? '');
-        $priceMap = (array)(Configure::read('Stripe.price_map') ?? []);
-        $priceId  = $priceMap[$planKey] ?? null;
-        if (!$secret || !$priceId) {
-            return $this->response->withStatus(500)->withStringBody('Stripe config missing');
+        $cfg = \Cake\Core\Configure::read('Stripe');
+        if (empty($cfg['secret'])) {
+            return $this->response->withStatus(500);
         }
+        $stripe = new \Stripe\StripeClient($cfg['secret']);
 
-        $Companies = $this->fetchTable('Companies');
-        $company   = $Companies->get($auth->id);
-
-        $stripe = new StripeClient($secret);
-
-        // Customer を作成/再利用
-        $customerId = $company->stripe_customer_id ?: null;
+        // 顧客（あるなら再利用）
+        $customerId = $company->stripe_customer_id ?? null;
         if (!$customerId) {
-            $customer = $stripe->customers->create([
-                'name'  => (string)$company->name,
-                'email' => $company->auth_email ?: null,
+            $c = $stripe->customers->create([
+                'name' => $company->name,
+                'email'=> $company->auth_email ?: null,
                 'metadata' => ['company_id' => (string)$company->id],
             ]);
-            $customerId = $customer->id;
-            $company->stripe_customer_id = $customerId;
-            $Companies->save($company);
+            $customerId = $c->id;
+            $Companies = $this->fetchTable('Companies');
+            $rec = $Companies->get($company->id);
+            $rec->stripe_customer_id = $customerId;
+            $Companies->save($rec);
         }
 
-        // サブスクを incomplete で作成 → latest_invoice.payment_intent を返す
-        $subscription = $stripe->subscriptions->create([
+        // JPY, 金額は「整数（例：9800 = ¥9,800）」
+        $pi = $stripe->paymentIntents->create([
+            'amount' => $amount,
+            'currency' => 'jpy',
             'customer' => $customerId,
-            'items'    => [[ 'price' => $priceId ]],
-            'payment_behavior' => 'default_incomplete',
-            'expand' => ['latest_invoice.payment_intent'],
+            // 3Dセキュア対応
+            'automatic_payment_methods' => ['enabled' => true],
             'metadata' => [
-                'company_id'  => (string)$company->id,
-                'target_plan' => $planKey,
+                'company_id' => (string)$company->id,
+                'target_plan'=> $planKey,
+                'type' => 'one_time_upgrade',
             ],
         ]);
 
-        $pi = $subscription->latest_invoice->payment_intent ?? null;
-        if (!$pi || empty($pi->client_secret)) {
-            return $this->response->withStatus(500)->withStringBody('No client_secret');
-        }
-
-        // 進行中の subscription id を一旦保存（任意）
-        $company->stripe_subscription_id = $subscription->id;
-        $Companies->save($company);
-
-        return $this->response
-            ->withType('application/json')
-            ->withStringBody(json_encode([
-                'clientSecret'   => $pi->client_secret,
-                'subscriptionId' => $subscription->id,
-            ]));
+        $this->response = $this->response->withType('application/json');
+        return $this->response->withStringBody(json_encode(['clientSecret' => $pi->client_secret]));
     }
+
 
     public function success()
     {

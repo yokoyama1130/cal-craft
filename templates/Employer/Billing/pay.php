@@ -6,6 +6,7 @@
 ?>
 <div class="container py-4" style="max-width:520px;">
   <h1 class="h5 mb-3">クレジットカードでお支払い</h1>
+  <?= $this->Html->meta('csrfToken', $this->request->getAttribute('csrfToken')) ?>
   <p class="text-muted">選択プラン：<strong><?= h($planKey) ?></strong></p>
 
   <div class="card border-0 shadow-sm">
@@ -25,17 +26,29 @@
 <script>
 (async () => {
   const stripe = Stripe('<?= h($publishableKey) ?>');
+  const csrf = document.querySelector('meta[name="csrfToken"]')?.getAttribute('content');
 
-  // サーバに client_secret を要求
   const resp = await fetch('<?= $this->Url->build(['prefix'=>'Employer','controller'=>'Billing','action'=>'intent',$planKey]) ?>', {
     method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRF-Token': csrf ?? '',
+      'Content-Type': 'application/json'
+    },
+    body: '{}' // 空でもOK（CakeのCSRFがPOSTボディ/ヘッダを検査）
   });
+
   if (!resp.ok) {
-    alert('決済の準備に失敗しました。しばらくしてからお試しください。');
+    document.getElementById('payment-message').textContent = '決済の準備に失敗しました。（' + resp.status + '）';
+    document.getElementById('payment-message').style.display = 'block';
     return;
   }
   const { clientSecret } = await resp.json();
+  if (!clientSecret) {
+    document.getElementById('payment-message').textContent = '決済の準備に失敗しました。（clientSecret無し）';
+    document.getElementById('payment-message').style.display = 'block';
+    return;
+  }
 
   const elements = stripe.elements({ clientSecret });
   const paymentElement = elements.create("payment");
@@ -50,7 +63,6 @@
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        // 決済完了後の戻り先
         return_url: "<?= h((string)\Cake\Core\Configure::read('Stripe.success_url') ?: 'http://localhost:8765/employer/billing/success') ?>",
       },
     });
