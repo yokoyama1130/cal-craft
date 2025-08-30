@@ -52,6 +52,11 @@ return function (RouteBuilder $routes): void {
     $routes->prefix('Employer', function ($routes) {
         $routes->connect('/login', ['controller' => 'Auth', 'action' => 'login']);
         $routes->connect('/logout', ['controller' => 'Auth', 'action' => 'logout']);
+        $routes->connect('/billing/plan', ['controller' => 'Billing', 'action' => 'plan']);           // プラン一覧
+        $routes->connect('/billing/checkout/*', ['controller' => 'Billing', 'action' => 'checkout']); // 確認/決済
+        $routes->connect('/billing/success', ['controller' => 'Billing', 'action' => 'success']);     // 成功
+        $routes->connect('/billing/cancel',  ['controller' => 'Billing', 'action' => 'cancel']);      // キャンセル
+        $routes->fallbacks();
         $routes->fallbacks();
     });
     $routes->scope('/', function (\Cake\Routing\RouteBuilder $routes) {
