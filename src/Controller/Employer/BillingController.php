@@ -62,12 +62,12 @@ class BillingController extends AppController
             ],
             'pro' => [
                 'label'    => 'Pro',
-                'price'    => 9800,
+                'price'    => 5000,
                 'features' => ['高度機能', '当月 100ユーザーに先出しメッセージ'],
             ],
             'enterprise' => [
                 'label'    => 'Enterprise',
-                'price'    => null,
+                'price'    => 20000,
                 'features' => ['無制限', 'SLA/請求書対応'],
             ],
         ];
@@ -199,7 +199,7 @@ class BillingController extends AppController
         }
 
         // 単発課金の金額マップ（例）
-        $amountMap = ['pro' => 9800, 'enterprise' => 20000]; // JPY
+        $amountMap = ['pro' => 5000, 'enterprise' => 20000]; // JPY
         $amount = $amountMap[$planKey] ?? null;
         if (!$amount) {
             return $this->response->withStatus(400);
