@@ -172,7 +172,7 @@ $logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
                 'action' => 'add',
                 $companyId
               ]) ?>">
-                投稿するよ！！！！！！！
+                投稿する
               </a>
             </li>
           <?php else: ?>
