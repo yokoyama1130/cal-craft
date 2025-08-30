@@ -20,7 +20,7 @@
               <?php if ($company->plan === $key): ?>
                 <button class="btn btn-secondary w-100" disabled>現在のプラン</button>
               <?php else: ?>
-                <?= $this->Html->link('選択する', ['action' => 'checkout', $key], ['class'=>'btn btn-primary w-100']) ?>
+                <?= $this->Html->link('選択する', ['prefix'=>'Employer','controller'=>'Billing','action'=>'pay', $key], ['class'=>'btn btn-primary w-100']) ?>
               <?php endif; ?>
             </div>
           </div>
