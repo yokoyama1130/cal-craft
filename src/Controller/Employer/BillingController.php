@@ -5,6 +5,7 @@ namespace App\Controller\Employer;
 
 use App\Controller\AppController;
 use Cake\Core\Configure;
+use Cake\Event\EventInterface;
 use Cake\Http\Exception\BadRequestException;
 use Stripe\StripeClient;
 
@@ -13,9 +14,18 @@ class BillingController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        // Employer認証必須（= identity は Company）
         $this->Authentication->addUnauthenticatedActions([]);
         $this->viewBuilder()->setTemplatePath('Employer/Billing');
+    }
+
+    // CSRFの影響を避けたいAPIは除外
+    public function beforeFilter(EventInterface $event)
+    {
+        parent::beforeFilter($event);
+        // FormProtection/Csrf を使っている場合は intent/webhook を除外
+        if (property_exists($this, 'FormProtection')) {
+            $this->FormProtection->setConfig('unlockedActions', ['intent']);
+        }
     }
 
     public function plan()
@@ -124,9 +134,111 @@ class BillingController extends AppController
         return $this->redirect($session->url);
     }
 
+    /**
+     * カード入力画面（Payment Element）
+     * /employer/billing/pay/{planKey}
+     */
+    public function pay(string $planKey)
+    {
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) return $this->redirect('/employer/login');
+
+        $valid = ['pro','enterprise'];
+        if (!in_array($planKey, $valid, true)) {
+            throw new BadRequestException('Invalid plan.');
+        }
+
+        // publishable key をビューへ
+        $pk = (string)(Configure::read('Stripe.publishable') ?? '');
+        if (!$pk) {
+            $this->Flash->error('Stripeの公開鍵が未設定です。');
+            return $this->redirect(['action'=>'plan']);
+        }
+
+        $this->set([
+            'planKey' => $planKey,
+            'publishableKey' => $pk,
+        ]);
+    }
+
+    /**
+     * クライアントへ PaymentIntent（最新請求書のもの）の client_secret を返すAPI
+     * /employer/billing/intent/{planKey}  [POST]
+     *
+     * - サブスクを incomplete で仮作成し、latest_invoice.payment_intent の client_secret を返す
+     * - フロントは confirmCardPayment で確定
+     */
+    public function intent(string $planKey)
+    {
+        $this->request->allowMethod(['post']);
+
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) {
+            return $this->response->withStatus(401);
+        }
+
+        $valid = ['pro','enterprise'];
+        if (!in_array($planKey, $valid, true)) {
+            return $this->response->withStatus(400);
+        }
+
+        $secret   = (string)(Configure::read('Stripe.secret') ?? '');
+        $priceMap = (array)(Configure::read('Stripe.price_map') ?? []);
+        $priceId  = $priceMap[$planKey] ?? null;
+        if (!$secret || !$priceId) {
+            return $this->response->withStatus(500)->withStringBody('Stripe config missing');
+        }
+
+        $Companies = $this->fetchTable('Companies');
+        $company   = $Companies->get($auth->id);
+
+        $stripe = new StripeClient($secret);
+
+        // Customer を作成/再利用
+        $customerId = $company->stripe_customer_id ?: null;
+        if (!$customerId) {
+            $customer = $stripe->customers->create([
+                'name'  => (string)$company->name,
+                'email' => $company->auth_email ?: null,
+                'metadata' => ['company_id' => (string)$company->id],
+            ]);
+            $customerId = $customer->id;
+            $company->stripe_customer_id = $customerId;
+            $Companies->save($company);
+        }
+
+        // サブスクを incomplete で作成 → latest_invoice.payment_intent を返す
+        $subscription = $stripe->subscriptions->create([
+            'customer' => $customerId,
+            'items'    => [[ 'price' => $priceId ]],
+            'payment_behavior' => 'default_incomplete',
+            'expand' => ['latest_invoice.payment_intent'],
+            'metadata' => [
+                'company_id'  => (string)$company->id,
+                'target_plan' => $planKey,
+            ],
+        ]);
+
+        $pi = $subscription->latest_invoice->payment_intent ?? null;
+        if (!$pi || empty($pi->client_secret)) {
+            return $this->response->withStatus(500)->withStringBody('No client_secret');
+        }
+
+        // 進行中の subscription id を一旦保存（任意）
+        $company->stripe_subscription_id = $subscription->id;
+        $Companies->save($company);
+
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody(json_encode([
+                'clientSecret'   => $pi->client_secret,
+                'subscriptionId' => $subscription->id,
+            ]));
+    }
+
     public function success()
     {
-        $this->Flash->success('決済が完了（反映には数秒〜数分かかることがあります）');
+        $this->Flash->success('決済が完了しました（反映には数秒かかることがあります）');
         return $this->redirect(['action' => 'plan']);
     }
 
