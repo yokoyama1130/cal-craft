@@ -103,4 +103,15 @@ return [
             'headerCharset' => 'utf-8',
         ],
     ],
+
+    'Stripe' => [
+        'secret' => env('STRIPE_SECRET', 'sk_test_xxx'),
+        'price_map' => [ // Stripe上のPrice ID
+            'pro'        => env('STRIPE_PRICE_PRO', 'price_pro_xxx'),
+            'enterprise' => env('STRIPE_PRICE_ENT', 'price_ent_xxx'),
+        ],
+        'success_url' => env('STRIPE_SUCCESS_URL', 'http://localhost:8765/employer/billing/success?session_id={CHECKOUT_SESSION_ID}'),
+        'cancel_url'  => env('STRIPE_CANCEL_URL',  'http://localhost:8765/employer/billing/cancel'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', 'whsec_xxx'),
+    ],
 ];
