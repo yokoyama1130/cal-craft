@@ -219,6 +219,127 @@ class BillingController extends AppController
         return $this->response->withStringBody(json_encode(['clientSecret' => $pi->client_secret]));
     }
 
+    /**
+     * Webhook エンドポイント（Stripe -> あなたのサーバー）
+     * - ここは CSRF をスキップし、認証も不要
+     * - Application の CsrfProtectionMiddleware で skip する設定も下に例を記載
+     */
+    public function webhook()
+    {
+        $this->request->allowMethod(['post']);
+
+        $secret = (string)Configure::read('Stripe.secret');
+        $whSecret = (string)Configure::read('Stripe.webhook_secret');
+        if (!$secret || !$whSecret) {
+            // 署名検証できないなら 400
+            return $this->response->withStatus(400)->withStringBody('Stripe keys not configured');
+        }
+
+        $payload = (string)$this->request->getBody()->getContents();
+        $sig = $this->request->getHeaderLine('Stripe-Signature');
+
+        try {
+            $event = Webhook::constructEvent($payload, $sig, $whSecret);
+        } catch (\Throwable $e) {
+            return $this->response->withStatus(400)->withStringBody('Invalid signature');
+        }
+
+        $Companies = $this->fetchTable('Companies');
+        $Invoices  = $this->fetchTable('CompanyInvoices');
+
+        // 共通：監査用にレコード保存する小ヘルパ
+        $saveInvoice = function(array $data) use ($Invoices, $payload) {
+            $rec = $Invoices->newEmptyEntity();
+            $rec = $Invoices->patchEntity($rec, $data + ['raw_payload' => $payload]);
+            $Invoices->save($rec);
+            return $rec;
+        };
+
+        switch ($event->type) {
+            /**
+             * Payment Element での都度決済が成功
+             */
+            case 'payment_intent.succeeded':
+            {
+                /** @var \Stripe\PaymentIntent $pi */
+                $pi = $event->data->object;
+
+                $companyId  = (int)($pi->metadata['company_id'] ?? 0);
+                $targetPlan = (string)($pi->metadata['target_plan'] ?? '');
+                if ($companyId && $targetPlan) {
+                    // プラン更新
+                    $company = $Companies->get($companyId);
+                    $company->plan = $targetPlan;
+                    $Companies->save($company);
+
+                    // 請求履歴を保存
+                    $saveInvoice([
+                        'company_id' => $companyId,
+                        'stripe_customer_id' => (string)$pi->customer,
+                        'stripe_payment_intent_id' => (string)$pi->id,
+                        'plan' => $targetPlan,
+                        'amount' => (int)$pi->amount,
+                        'currency' => (string)$pi->currency,
+                        'status' => 'paid',
+                        'paid_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+                break;
+            }
+
+            /**
+             * （サブスク運用時用）請求書が支払われた
+             */
+            case 'invoice.payment_succeeded':
+            {
+                /** @var \Stripe\Invoice $inv */
+                $inv = $event->data->object;
+
+                // 顧客から会社を引く
+                $company = $Companies->find()->where(['stripe_customer_id' => $inv->customer])->first();
+                if ($company) {
+                    $saveInvoice([
+                        'company_id' => (int)$company->id,
+                        'stripe_customer_id' => (string)$inv->customer,
+                        'stripe_subscription_id' => (string)($inv->subscription ?? ''),
+                        'stripe_invoice_id' => (string)$inv->id,
+                        'plan' => (string)($inv->lines->data[0]->plan->nickname ?? ''), // 任意
+                        'amount' => (int)$inv->amount_paid,
+                        'currency' => (string)$inv->currency,
+                        'status' => 'paid',
+                        'paid_at' => date('Y-m-d H:i:s'),
+                    ]);
+                }
+                break;
+            }
+
+            default:
+                // 他イベントは 200 で黙ってOK
+                break;
+        }
+
+        return $this->response->withStatus(200)->withStringBody('ok');
+    }
+
+    /**
+     * 請求履歴（会社側）
+     */
+    public function history()
+    {
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) return $this->redirect('/employer/login');
+
+        $Invoices = $this->fetchTable('CompanyInvoices');
+        $q = $Invoices->find()
+            ->where(['company_id' => (int)$auth->id])
+            ->order(['created' => 'DESC']);
+
+        $this->paginate = ['limit' => 20];
+        $invoices = $this->paginate($q);
+
+        $this->set(compact('invoices'));
+    }
+
     public function success()
     {
         $this->request->allowMethod(['get']);
