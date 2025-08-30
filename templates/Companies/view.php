@@ -69,6 +69,7 @@
                 'confirm' => __('本当に削除しますか？')
               ]) ?>
           <?= $this->Html->link('一覧へ', ['action' => 'index'], ['class' => 'btn btn-outline-dark']) ?>
+          <?= $this->Html->link('プラン変更', '/employer/billing/plan', ['class'=>'btn btn-outline-primary']) ?>
         </div>
       </div>
     </div>
