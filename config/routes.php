@@ -55,9 +55,10 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/billing/plan',     ['controller'=>'Billing','action'=>'plan']);
         $routes->connect('/billing/pay/:plan',    ['controller' => 'Billing', 'action' => 'pay'])
             ->setPass(['plan'])->setPatterns(['plan' => '[a-z]+']);
-
         $routes->connect('/billing/intent/:plan', ['controller' => 'Billing', 'action' => 'intent'])
             ->setPass(['plan'])->setPatterns(['plan' => '[a-z]+']);
+        $routes->connect('/billing/history', ['controller' => 'Billing', 'action' => 'history']);
+        $routes->connect('/billing/webhook', ['controller' => 'Billing', 'action' => 'webhook']);
         $routes->connect('/billing/success',  ['controller'=>'Billing','action'=>'success']);
         $routes->connect('/billing/cancel',   ['controller'=>'Billing','action'=>'cancel']);   // キャンセル
         $routes->fallbacks();
