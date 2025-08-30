@@ -12,9 +12,11 @@ use Cake\Utility\Text;
   <!-- ヘッダー（ロゴ＋見出し＋戻る） -->
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
     <div class="d-flex align-items-center gap-3">
-      <img id="cmp-logo-preview" src="<?= h($company->logo_path ?: 'https://placehold.co/100x100?text=Logo') ?>"
-           class="rounded shadow-sm border" style="width:80px;height:80px;object-fit:contain;background:#fff"
-           onerror="this.src='https://placehold.co/100x100?text=Logo'">
+      <img id="cmp-logo-preview"
+        src="<?= h($company->logo_path ?: 'https://placehold.co/100x100?text=Logo') ?>"
+        class="shadow-sm border"
+        style="width:80px;height:80px;object-fit:cover;background:#fff;border-radius:50%;"
+        onerror="this.src='https://placehold.co/100x100?text=Logo'">
       <div>
         <h2 class="mb-1"><?= h($company->name ?: 'Company') ?> <span class="text-muted fs-6">/ 編集</span></h2>
         <div class="text-muted small">
