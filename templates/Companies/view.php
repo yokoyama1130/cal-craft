@@ -70,6 +70,7 @@
               ]) ?>
           <?= $this->Html->link('一覧へ', ['action' => 'index'], ['class' => 'btn btn-outline-dark']) ?>
           <?= $this->Html->link('プラン変更', '/employer/billing/plan', ['class'=>'btn btn-outline-primary']) ?>
+          <?= $this->Html->link('請求履歴', '/employer/billing/history', ['class'=>'btn btn-outline-primary']) ?>
         </div>
       </div>
     </div>
