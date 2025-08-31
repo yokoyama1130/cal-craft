@@ -57,11 +57,13 @@
         </div>
 
         <!-- アクション -->
-        <div class="d-flex gap-2">
-          <?= $this->Html->link('<i class="fa-regular fa-pen-to-square me-1"></i> 編集', ['action' => 'edit', $company->id], ['escape' => false, 'class' => 'btn btn-primary']) ?>
-          <?= $this->Html->link('プラン変更', '/employer/billing/plan', ['class'=>'btn btn-outline-primary']) ?>
-          <?= $this->Html->link('請求履歴', '/employer/billing/history', ['class'=>'btn btn-outline-primary']) ?>
-        </div>
+        <?php if ($this->Identity->isLoggedIn() && $this->Identity->get('id') === $company->user_id): ?>
+          <div class="d-flex gap-2">
+            <?= $this->Html->link('<i class="fa-regular fa-pen-to-square me-1"></i> 編集', ['action' => 'edit', $company->id], ['escape' => false, 'class' => 'btn btn-primary']) ?>
+            <?= $this->Html->link('プラン変更', '/employer/billing/plan', ['class'=>'btn btn-outline-primary']) ?>
+            <?= $this->Html->link('請求履歴', '/employer/billing/history', ['class'=>'btn btn-outline-primary']) ?>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
   </div>
