@@ -286,7 +286,9 @@
 
     <!-- 💬 コメントフォーム -->
     <div class="card p-4 comment-form mt-5">
-    <?= $this->Form->create(null, ['url' => ['controller' => 'Comments', 'action' => 'add']]) ?>
+    <?= $this->Form->create(null, [
+  'url' => ['prefix' => false, 'controller' => 'Comments', 'action' => 'add']
+]) ?>
     <?= $this->Form->hidden('portfolio_id', ['value' => $portfolio->id]) ?>
     <?= $this->Form->control('content', [
       'label' => false,
