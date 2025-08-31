@@ -17,6 +17,7 @@ class CompaniesController extends AppController
         $this->Authentication->addUnauthenticatedActions([]); // 全アクション認証必須
         // 既存ビューを流用
         $this->viewBuilder()->setTemplatePath('Companies');
+        $this->loadModel('Portfolios');
     }
 
     /**
@@ -115,6 +116,12 @@ class CompaniesController extends AppController
         $company = $this->Companies->get($id, [
             'contain' => [],
         ]);
-        $this->set(compact('company'));
+
+        $portfolios = $this->Portfolios->find()
+            ->where(['company_id' => $company->id])
+            ->order(['created' => 'DESC'])
+            ->toArray();
+
+        $this->set(compact('company', 'portfolios'));
     }
 }

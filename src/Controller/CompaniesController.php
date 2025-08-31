@@ -14,6 +14,7 @@ class CompaniesController extends AppController
     public function initialize(): void
     {
         parent::initialize();
+        $this->loadModel('Portfolios');
         // 認証コンポーネントが未ロードなら AppController で $this->loadComponent('Authentication.Authentication') を
     }
 
@@ -134,7 +135,13 @@ class CompaniesController extends AppController
         $company = $this->Companies->get($id, [
             'contain' => [],
         ]);
-        $this->set(compact('company'));
+
+        $portfolios = $this->Portfolios->find()
+            ->where(['company_id' => $company->id])
+            ->order(['created' => 'DESC'])
+            ->toArray();
+
+        $this->set(compact('company', 'portfolios'));
     }
 
     /**
