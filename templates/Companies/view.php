@@ -57,7 +57,7 @@
         </div>
 
         <!-- アクション -->
-        <?php if ($this->Identity->isLoggedIn() && $this->Identity->get('id') === $company->user_id): ?>
+        <?php if ($this->Identity->isLoggedIn() && $this->Identity->get('id') === $company->id): ?>
           <div class="d-flex gap-2">
             <?= $this->Html->link('<i class="fa-regular fa-pen-to-square me-1"></i> 編集', ['action' => 'edit', $company->id], ['escape' => false, 'class' => 'btn btn-primary']) ?>
             <?= $this->Html->link('プラン変更', '/employer/billing/plan', ['class'=>'btn btn-outline-primary']) ?>
@@ -175,7 +175,7 @@
                   操作
                 </button>
                 <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="/portfolios/edit/<?= $p->id ?>">編集</a></li>
+                  <li><a class="dropdown-item" href="/employer/portfolios/edit/<?= $p->id ?>">編集</a></li>
                   <li><?= $this->Form->postLink('削除', ['controller' => 'Portfolios', 'action' => 'delete', $p->id], ['class' => 'dropdown-item', 'confirm' => '本当に削除しますか？']) ?></li>
                 </ul>
               </div>
