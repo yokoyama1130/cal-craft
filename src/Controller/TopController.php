@@ -21,34 +21,42 @@ class TopController extends AppController
     {
         $this->loadModel('Likes');
         $this->loadModel('Portfolios');
-
+    
         $identity = $this->request->getAttribute('identity');
-        $userId = $identity ? $identity->get('id') : null;
-
+        $actor = [];
+        if ($identity) {
+            $id = (int)$identity->get('id');
+            // Users or Companies?
+            $this->loadModel('Users');
+            if ($this->Users->exists(['id' => $id])) {
+                $actor = ['user_id' => $id];
+            } else {
+                $this->loadModel('Companies');
+                if ($this->Companies->exists(['id' => $id])) {
+                    $actor = ['company_id' => $id];
+                }
+            }
+        }
+    
         $portfolios = $this->Portfolios->find()
             ->contain(['Users'])
             ->where(['is_public' => true])
             ->order(['created' => 'DESC'])
             ->limit(10)
-            ->toArray(); // ← これ追加することで foreach で扱いやすくなる
-
+            ->toArray();
+    
         foreach ($portfolios as $p) {
-            // いいね数
             $p->like_count = $this->Likes->find()
                 ->where(['portfolio_id' => $p->id])
                 ->count();
-
-            // ✅ ここが抜けてた：ログイン中のユーザーがいいね済みか
+    
             $p->liked_by_me = false;
-            if ($userId !== null) {
-                $p->liked_by_me = $this->Likes->exists([
-                    'user_id' => $userId,
-                    'portfolio_id' => $p->id,
-                ]);
+            if ($actor) {
+                $p->liked_by_me = $this->Likes->exists(array_merge(['portfolio_id' => $p->id], $actor));
             }
         }
-
+    
         $this->set(compact('portfolios'));
-    }
+    }    
 
 }
