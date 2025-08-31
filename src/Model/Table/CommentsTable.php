@@ -50,8 +50,14 @@ class CommentsTable extends Table
 
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
-            'joinType' => 'INNER',
+            'joinType'   => 'LEFT',   // 会社コメント時は NULL なので LEFT
         ]);
+        
+        $this->belongsTo('Companies', [
+            'foreignKey' => 'company_id',
+            'joinType'   => 'LEFT',
+        ]);
+
         $this->belongsTo('Portfolios', [
             'foreignKey' => 'portfolio_id',
             'joinType' => 'INNER',
@@ -64,22 +70,26 @@ class CommentsTable extends Table
      * @param \Cake\Validation\Validator $validator Validator instance.
      * @return \Cake\Validation\Validator
      */
-    public function validationDefault(Validator $validator): Validator
+    public function validationDefault(\Cake\Validation\Validator $v): \Cake\Validation\Validator
     {
-        $validator
-            ->integer('user_id')
-            ->notEmptyString('user_id');
-
-        $validator
-            ->integer('portfolio_id')
-            ->notEmptyString('portfolio_id');
-
-        $validator
-            ->scalar('content')
-            ->requirePresence('content', 'create')
-            ->notEmptyString('content');
-
-        return $validator;
+        $v->integer('portfolio_id')->notEmptyString('portfolio_id');
+        $v->notEmptyString('content');
+    
+        // user/company はどちらか片方だけ必須（アプリ側で担保）
+        $v->allowEmptyString('user_id');
+        $v->allowEmptyString('company_id');
+    
+        // カスタムルール：「user_id XOR company_id」
+        $v->add('user_id', 'xorUserCompany', [
+            'rule' => function ($value, $context) {
+                $u = $value ?? null;
+                $c = $context['data']['company_id'] ?? null;
+                return ($u && !$c) || (!$u && $c);
+            },
+            'message' => 'ユーザーまたは会社のどちらか一方を指定してください。',
+        ]);
+    
+        return $v;
     }
 
     /**
