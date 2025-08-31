@@ -248,16 +248,32 @@
 
     <?php if (!empty($comments)): ?>
       <?php foreach ($comments as $comment): ?>
+        <?php
+          $isCompany  = !empty($comment->company_id);
+          $authorName = $isCompany
+            ? ($comment->company->name ?? '企業')
+            : ($comment->user->name ?? 'ユーザー');
+          $authorIcon = $isCompany
+            ? ($comment->company->logo_path ?? null)
+            : (!empty($comment->user->icon_path) ? '/img/'.$comment->user->icon_path : null);
+        ?>
         <div class="card-comment">
-          <strong><?= h($comment->user->name) ?></strong>
+          <strong><?= h($authorName) ?></strong>
           <p class="mb-1"><?= nl2br(h($comment->content)) ?></p>
           <small class="text-muted"><?= $comment->created->nice() ?></small>
-          <?php if ($comment->user_id === $this->request->getAttribute('identity')->get('id')): ?>
+
+          <?php
+            $me = $this->request->getAttribute('identity');
+            $canEditOrDelete =
+              ($me && $comment->user_id    && $comment->user_id    === $me->get('id')) ||
+              ($me && $comment->company_id && $me->get('company_id') && (int)$comment->company_id === (int)$me->get('company_id'));
+          ?>
+          <?php if ($canEditOrDelete): ?>
             <div class="mt-2">
-              <?= $this->Html->link('編集', ['controller' => 'Comments', 'action' => 'edit', $comment->id], ['class' => 'btn btn-sm btn-outline-secondary me-2']) ?>
-              <?= $this->Form->postLink('削除', ['controller' => 'Comments', 'action' => 'delete', $comment->id], [
-                  'confirm' => '本当に削除しますか？',
-                  'class' => 'btn btn-sm btn-outline-danger'
+              <?= $this->Html->link('編集', ['controller'=>'Comments','action'=>'edit',$comment->id], ['class'=>'btn btn-sm btn-outline-secondary me-2']) ?>
+              <?= $this->Form->postLink('削除', ['controller'=>'Comments','action'=>'delete',$comment->id], [
+                'confirm'=>'本当に削除しますか？',
+                'class'=>'btn btn-sm btn-outline-danger'
               ]) ?>
             </div>
           <?php endif; ?>
