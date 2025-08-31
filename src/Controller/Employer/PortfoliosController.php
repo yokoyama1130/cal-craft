@@ -139,10 +139,13 @@ class PortfoliosController extends AppController
 
         // コメント（新しい順）
         $comments = $this->Comments->find()
-            ->where(['portfolio_id' => $id])
-            ->contain(['Users'])
-            ->order(['created' => 'DESC'])
-            ->toArray();
+            ->where(['portfolio_id' => $portfolio->id])
+            ->contain(['Users','Companies']) // ★会社名/ロゴを出すため
+            ->order(['Comments.created' => 'ASC'])
+            ->all();
+        
+        $currentActor = $this->getActor(); // ★これをビューに渡す
+        $this->set(compact('comments','currentActor'));
 
         $this->set(compact(
             'portfolio',

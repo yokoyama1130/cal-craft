@@ -98,7 +98,8 @@ class PortfoliosController extends AppController
             ->contain(['Users', 'Companies'])
             ->order(['Comments.created' => 'ASC'])
             ->all();
-        $this->set(compact('comments'));
+        $currentActor = $this->getActor();
+        $this->set(compact('comments', 'currentActor'));
 
 
         $this->set(compact(

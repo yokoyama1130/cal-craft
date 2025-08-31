@@ -262,12 +262,13 @@
           <p class="mb-1"><?= nl2br(h($comment->content)) ?></p>
           <small class="text-muted"><?= $comment->created->nice() ?></small>
 
-          <?php
-            $me = $this->request->getAttribute('identity');
-            $canEditOrDelete =
-              ($me && $comment->user_id    && $comment->user_id    === $me->get('id')) ||
-              ($me && $comment->company_id && $me->get('company_id') && (int)$comment->company_id === (int)$me->get('company_id'));
-          ?>
+          <?php $actor = $currentActor ?? ['type'=>null,'id'=>null]; ?>
+            <?php
+              $canEditOrDelete =
+                ($actor['type'] === 'user'    && (int)$comment->user_id    === (int)$actor['id']) ||
+                ($actor['type'] === 'company' && (int)$comment->company_id === (int)$actor['id']);
+            ?>
+
           <?php if ($canEditOrDelete): ?>
             <div class="mt-2">
               <?= $this->Html->link('編集', ['controller'=>'Comments','action'=>'edit',$comment->id], ['class'=>'btn btn-sm btn-outline-secondary me-2']) ?>

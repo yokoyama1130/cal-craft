@@ -37,6 +37,7 @@ class Comment extends Entity
         'created' => true,
         'modified' => true,
         'user' => true,
+        'company' => true,
         'portfolio' => true,
     ];
 }
