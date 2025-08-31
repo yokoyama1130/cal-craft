@@ -7,7 +7,9 @@ use Cake\Utility\Text;
 <!-- プロフィール情報 -->
 <div class="d-flex align-items-center mb-4">
   <?php if (!empty($user->icon_path)): ?>
-    <img src="/img/<?= h($user->icon_path) ?>" class="rounded-circle me-3 shadow-sm border" style="width: 100px; height: 100px; object-fit: cover;">
+    <div class="avatar-circle me-3 shadow-sm border">
+      <img src="/img/<?= h($user->icon_path) ?>" alt="<?= h($user->name) ?>" loading="lazy">
+    </div>
   <?php endif; ?>
   <div>
     <h2 class="mb-1"><?= h($user->name) ?>さんのプロフィール</h2>
@@ -134,6 +136,27 @@ use Cake\Utility\Text;
   font-weight: 600;
   flex: 1;
 }
+/* 真円アバター（どんなグローバルCSSでも崩れない版） */
+.avatar-circle{
+  width: 100px;              /* PCサイズ */
+  aspect-ratio: 1 / 1;       /* 正方形を強制 */
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;            /* flex伸縮で潰されないように */
+  background: #fff;
+}
+.avatar-circle img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;          /* はみ出しトリミング */
+  display: block;             /* 余計な隙間対策 */
+}
+
+/* スマホは少し小さめに */
+@media (max-width: 576px){
+  .avatar-circle{ width: 72px; }
+}
+
 </style>
 
 <script>
