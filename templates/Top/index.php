@@ -8,6 +8,7 @@ use Cake\Utility\Text;
         <input type="text" name="q" class="form-control form-control-lg"
             placeholder="検索..." value="<?= h($keyword ?? '') ?>">
     </form>
+    <meta name="csrfToken" content="<?= h($this->request->getAttribute('csrfToken')) ?>">
 
     <h2 class="mb-4">おすすめ</h2>
 
