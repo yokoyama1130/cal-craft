@@ -92,11 +92,14 @@ class PortfoliosController extends AppController
         // ===== 会社投稿なら上の if に入らないので NULL 条件は一切発生しない =====
 
         // コメント（新しい順）
-        $comments = $this->Comments->find()
-            ->where(['portfolio_id' => $id])
-            ->contain(['Users'])
-            ->order(['created' => 'DESC'])
-            ->toArray();
+        $Comments = $this->fetchTable('Comments');
+        $comments = $Comments->find()
+            ->where(['portfolio_id' => $portfolio->id])
+            ->contain(['Users', 'Companies'])
+            ->order(['Comments.created' => 'ASC'])
+            ->all();
+        $this->set(compact('comments'));
+
 
         $this->set(compact(
             'portfolio',
