@@ -224,6 +224,27 @@ class PortfoliosController extends AppController
         $this->render('add'); // add と同じテンプレを再利用
     }
 
+    public function delete($id)
+    {
+        $portfolio  = $this->Portfolios->get($id);
+        $identity   = $this->request->getAttribute('identity');
+        $authUserId = $identity ? $identity->get('id') : null;
+
+        if ((int)$portfolio->company_id !== (int)$authUserId) {
+            throw new \Cake\Http\Exception\ForbiddenException('この投稿を削除する権限がありません');
+        }
+
+        $this->request->allowMethod(['post', 'delete']);
+
+        if ($this->Portfolios->delete($portfolio)) {
+            $this->Flash->success('投稿を削除しました');
+        } else {
+            $this->Flash->error('投稿の削除に失敗しました');
+        }
+
+        return $this->redirect(['controller' => 'companies', 'action' => 'view', $authUserId]);
+    }
+
     /**
      * 図面PDF（単一）と補足PDF（複数）を保存し、パスをエンティティに反映して再保存する
      */
