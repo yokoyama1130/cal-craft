@@ -29,12 +29,18 @@
             <a href="/users/search" class="btn btn-outline-secondary btn-lg px-4">
               <i class="fa-solid fa-users-viewfinder me-2"></i>エンジニアを探す
             </a>
+            <a href="/employer/login" class="btn btn-outline-dark btn-lg px-4">
+              会社ログイン
+            </a>
           <?php else: ?>
             <a href="/users/register" class="btn btn-warning text-dark btn-lg px-4">
               <i class="fa-solid fa-user-plus me-2"></i>新規登録（無料）
             </a>
             <a href="/users/login" class="btn btn-outline-dark btn-lg px-4">
               ログイン
+            </a>
+            <a href="/employer/login" class="btn btn-outline-dark btn-lg px-4">
+              会社ログイン
             </a>
           <?php endif; ?>
         </div>
