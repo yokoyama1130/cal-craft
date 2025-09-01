@@ -7,64 +7,52 @@ class PortfoliosController extends AppController
 {
     public function index()
     {
-        $this->loadModel('Portfolios');
-        $this->loadModel('Users');
+        $q = $this->request->getQueryParams();
+        $Portfolios = $this->fetchTable('Portfolios');
 
-        // クエリから user_id を取得
-        $userId = $this->request->getQuery('user_id');
+        $query = $Portfolios->find()
+            ->contain(['Users','Companies'])
+            ->order(['Portfolios.created'=>'DESC']);
 
-        // ユーザー一覧配列（セレクトボックス用）
-        $users = $this->Users->find('list', [
-            'keyField' => 'id',
-            'valueField' => 'name'
-        ])->toArray();
-
-        // 投稿の取得（user_id 指定時は絞り込み）
-        $query = $this->Portfolios->find()->contain(['Users']);
-        if (!empty($userId)) {
-            $query->where(['user_id' => $userId]);
+        if (!empty($q['q'])) {
+            $kw = '%' . str_replace('%','\%',$q['q']) . '%';
+            $query->where([
+                'OR' => [
+                    'Portfolios.title LIKE' => $kw,
+                    'Portfolios.description LIKE' => $kw,
+                ]
+            ]);
+        }
+        if ($q['visibility'] ?? '' !== '') {
+            $query->where(['Portfolios.is_public' => (int)$q['visibility']]);
+        }
+        if ($q['owner'] ?? '' === 'user') {
+            $query->where(['Portfolios.user_id IS NOT' => null]);
+        } elseif (($q['owner'] ?? '') === 'company') {
+            $query->where(['Portfolios.company_id IS NOT' => null]);
         }
 
+        $this->paginate = ['limit'=>20];
         $portfolios = $this->paginate($query);
-
-        $this->set(compact('portfolios', 'users', 'userId'));
+        $this->set(compact('portfolios','q'));
     }
 
-    public function toggleVisibility($id = null)
+    public function toggle($id)
     {
         $this->request->allowMethod(['post']);
-        $portfolio = $this->Portfolios->get($id);
-        $portfolio->is_public = !$portfolio->is_public;
-        if ($this->Portfolios->save($portfolio)) {
-            $this->Flash->success('公開状態を切り替えました。');
-        } else {
-            $this->Flash->error('切り替えに失敗しました。');
-        }
-
-        // クエリパラメータを維持してリダイレクト
+        $pf = $this->fetchTable('Portfolios')->get($id);
+        $pf->is_public = (int)!$pf->is_public;
+        $this->fetchTable('Portfolios')->save($pf);
+        $this->Flash->success('公開状態を切り替えました。');
         return $this->redirect($this->referer());
     }
 
-    public function delete($id = null)
+    public function delete($id)
     {
-        $this->request->allowMethod(['post', 'delete']);
-        $portfolio = $this->Portfolios->get($id);
-        if ($this->Portfolios->delete($portfolio)) {
-            $this->Flash->success('投稿を削除しました。');
-        } else {
-            $this->Flash->error('削除に失敗しました。');
-        }
-
-        // クエリパラメータを維持してリダイレクト
+        $this->request->allowMethod(['post','delete']);
+        $pf = $this->fetchTable('Portfolios')->get($id);
+        $this->fetchTable('Portfolios')->delete($pf);
+        $this->Flash->success('削除しました。');
         return $this->redirect($this->referer());
-    }
-
-    public function view($id = null)
-    {
-        $portfolio = $this->Portfolios->get($id, [
-            'contain' => ['Users'], // 必要なら紐づくユーザーも表示
-        ]);
-
-        $this->set(compact('portfolio'));
     }
 }
