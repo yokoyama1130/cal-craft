@@ -14,6 +14,6 @@ return [
         'cancel_url'    => env('STRIPE_CANCEL_URL',  'http://localhost:8765/employer/billing/cancel'),
 
         // Webhook 検証用（ダッシュボードの「Signing secret」）
-        'webhook_secret'=> env('STRIPE_WEBHOOK_SECRET', null),
+        'webhook_secret'=> 'whsec_06b679dd1e4597a7d52cf47cb824c51b3a2974001ddca40860e0c2d4ca2d43fc',
     ],
 ];
