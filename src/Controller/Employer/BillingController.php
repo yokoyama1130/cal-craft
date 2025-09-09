@@ -5,8 +5,9 @@ namespace App\Controller\Employer;
 
 use App\Controller\AppController;
 use Cake\Core\Configure;
-use Cake\Event\EventInterface;
 use Cake\Http\Exception\BadRequestException;
+use Cake\I18n\FrozenTime;
+use Cake\Routing\Router;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
@@ -16,346 +17,418 @@ class BillingController extends AppController
     {
         parent::initialize();
 
-        // Employer 側は通常ログイン必須。Webhook だけは未認証で受ける
-        $this->Authentication->addUnauthenticatedActions(['webhook']);
-
-        // Employer 用テンプレートディレクトリ
-        $this->viewBuilder()->setTemplatePath('Employer/Billing');
+        if ($this->request->getParam('action') === 'webhook') {
+            // webhook はフォーム起源のPOSTではないので両方外す
+            if ($this->components()->has('FormProtection')) {
+                $this->components()->unload('FormProtection');
+            }
+            if ($this->components()->has('Security')) {
+                $this->components()->unload('Security');
+            }
+        }
     }
 
-    /**
-     * CSRF/FormProtection の影響を避けたいアクションを除外
-     *  - intent: JS fetch から叩く（Cookie 無しを想定することがある）
-     *  - webhook: 外部（Stripe）から POST
-     */
-    public function beforeFilter(EventInterface $event)
+    public function beforeFilter(\Cake\Event\EventInterface $event)
     {
         parent::beforeFilter($event);
 
-        // FormProtection（フォーム改ざん防止）の除外
-        if (property_exists($this, 'FormProtection')) {
-            $this->FormProtection->setConfig('unlockedActions', ['intent', 'webhook']);
+        if ($this->request->getParam('action') === 'webhook') {
+            // 念のためこちらでも
+            if ($this->components()->has('FormProtection')) {
+                $this->FormProtection->disable();
+            }
+            if ($this->components()->has('Security')) {
+                // もし unload ではなく設定で回避したい場合はこちらでも可
+                $this->Security->setConfig('validatePost', false);
+                $this->Security->setConfig('unlockedActions', ['webhook']);
+            }
+            $this->Authentication->allowUnauthenticated(['webhook']);
         }
-        // CsrfProtectionMiddleware の除外は Application 側で
-        // ->add(new CsrfProtectionMiddleware([... 'whitelistCallback' => fn($req) => $req->getPath()==='/employer/billing/webhook' ]))
     }
 
-    /**
-     * プラン一覧
-     */
     public function plan()
     {
         $auth = $this->Authentication->getIdentity();
-        if (!$auth) {
-            return $this->redirect('/employer/login');
-        }
+        if (!$auth) return $this->redirect('/employer/login');
 
-        // Identity の古さ対策で取り直し
         $Companies = $this->fetchTable('Companies');
-        $company   = $Companies->get($auth->id);
+        $company   = $Companies->get((int)$auth->id);
 
         $plans = [
-            'free' => [
-                'label'    => 'Free',
-                'price'    => 0,
-                'features' => ['基本機能', '当月 1ユーザーに先出しメッセージ'],
-            ],
-            'pro' => [
-                'label'    => 'Pro',
-                'price'    => 5000,
-                'features' => ['高度機能', '当月 100ユーザーに先出しメッセージ'],
-            ],
-            'enterprise' => [
-                'label'    => 'Enterprise',
-                'price'    => 20000,
-                'features' => ['無制限', 'SLA/請求書対応'],
-            ],
+            'free'       => ['label'=>'Free','price'=>0,'features'=>['基本機能','当月 1ユーザーに先出しメッセージ']],
+            'pro'        => ['label'=>'Pro','price'=>5000,'features'=>['高度機能','当月 100ユーザーに先出しメッセージ']],
+            'enterprise' => ['label'=>'Enterprise','price'=>50000,'features'=>['無制限','SLA/請求書対応']],
         ];
 
         $this->set(compact('company', 'plans'));
     }
 
-    /**
-     * プラン変更開始（Free は即時・有料は Stripe Checkout）
-     * /employer/billing/checkout/{planKey}
-     */
-    public function checkout(string $planKey)
+    public function checkout(string $plan)
     {
-        $auth = $this->Authentication->getIdentity();
-        if (!$auth) {
-            return $this->redirect('/employer/login');
+        $this->request->allowMethod(['post']);
+        $this->disableAutoRender();
+
+        $priceMap = (array)Configure::read('Stripe.price_map');
+        $hasPrice = isset($priceMap[$plan]) && str_starts_with($priceMap[$plan], 'price_');
+
+        $amountMap = ['pro' => 5000, 'enterprise' => 50000];
+        if (!$hasPrice && !isset($amountMap[$plan])) {
+            throw new BadRequestException('invalid plan');
         }
 
-        $valid = ['free','pro','enterprise'];
-        if (!in_array($planKey, $valid, true)) {
-            throw new BadRequestException('Invalid plan.');
-        }
+        \Stripe\Stripe::setApiKey((string)Configure::read('Stripe.secret_key'));
+
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) throw new BadRequestException('auth required');
+        $companyId = (int)$auth->id;
 
         $Companies = $this->fetchTable('Companies');
-        $company   = $Companies->get($auth->id);
+        $c = $Companies->get($companyId);
 
-        // Free は即時反映
-        if ($planKey === 'free') {
-            $company->plan = 'free';
-            $company->stripe_subscription_id = null;
-            if ($Companies->save($company)) {
-                $this->Authentication->setIdentity($Companies->get($auth->id));
-                $this->Flash->success('Freeプランに変更しました。');
-            } else {
-                $this->Flash->error('プラン変更に失敗しました。');
-            }
-            return $this->redirect(['action' => 'plan']);
-        }
-
-        // 有料：Stripe Checkout（定期課金も想定）
-        $cfg        = (array)Configure::read('Stripe');
-        $secret     = $cfg['secret']      ?? null;
-        $priceMap   = $cfg['price_map']   ?? [];
-        $successUrl = $cfg['success_url'] ?? null;
-        $cancelUrl  = $cfg['cancel_url']  ?? null;
-
-        $priceId = $priceMap[$planKey] ?? null;
-        if (!$secret || !$priceId || !$successUrl || !$cancelUrl) {
-            // 設定不足 → 開発モードとして即時反映
-            $company->plan = $planKey;
-            if ($Companies->save($company)) {
-                $this->Authentication->setIdentity($Companies->get($auth->id));
-                $this->Flash->success("（開発モード）プランを {$planKey} に変更しました。");
-            } else {
-                $this->Flash->error('プラン変更に失敗しました。');
-            }
-            return $this->redirect(['action' => 'plan']);
-        }
-
-        $stripe = new StripeClient($secret);
-
-        // Customer 再利用/作成
-        $customerId = $company->stripe_customer_id ?: null;
-        if (!$customerId) {
-            $customer = $stripe->customers->create([
-                'name'     => (string)$company->name,
-                'email'    => $company->auth_email ?: null,
-                'metadata' => ['company_id' => (string)$company->id],
+        if (empty($c->stripe_customer_id)) {
+            $customer = \Stripe\Customer::create([
+                'name'     => $c->name ?? ('Company#'.$c->id),
+                'metadata' => ['company_id' => (string)$c->id],
             ]);
-            $customerId = $customer->id;
-            $company->stripe_customer_id = $customerId;
-            $Companies->save($company);
+            $c->stripe_customer_id = $customer->id;
+            $Companies->save($c);
         }
 
-        $session = $stripe->checkout->sessions->create([
-            'mode'        => 'subscription',
-            'customer'    => $customerId,
-            'line_items'  => [[ 'price' => $priceId, 'quantity' => 1 ]],
-            'success_url' => $successUrl,
-            'cancel_url'  => $cancelUrl,
-            'metadata'    => [
-                'company_id'  => (string)$company->id,
-                'target_plan' => $planKey,
-            ],
+        $successUrl = Router::url(['prefix'=>'Employer','controller'=>'Billing','action'=>'success'], true) . '?session_id={CHECKOUT_SESSION_ID}';
+        $cancelUrl  = Router::url(['prefix'=>'Employer','controller'=>'Billing','action'=>'cancel'], true);
+
+        $lineItem = $hasPrice
+            ? ['price' => $priceMap[$plan], 'quantity' => 1]
+            : [
+                'price_data'=>[
+                    'currency'=>'jpy',
+                    'unit_amount'=>$amountMap[$plan],
+                    'recurring'=>['interval'=>'month'],
+                    'product_data'=>['name'=>"Calcraft {$plan} plan"],
+                ],
+                'quantity'=>1,
+            ];
+
+        $session = \Stripe\Checkout\Session::create([
+            'mode' => 'subscription',
+            'customer' => $c->stripe_customer_id,
+            'line_items'=>[$lineItem],
+            'success_url'=>$successUrl,
+            'cancel_url'=>$cancelUrl,
+            'allow_promotion_codes'=>true,
+            'client_reference_id'=>(string)$companyId,
+            'metadata'=>['company_id'=>(string)$companyId,'target_plan'=>$plan],
         ]);
 
-        return $this->redirect($session->url);
+        return $this->redirect($session->url, 303);
     }
 
-    /**
-     * カード入力ページ（Payment Element）
-     * /employer/billing/pay/{planKey}
-     */
-    public function pay(string $planKey)
+    public function success()
     {
-        $auth = $this->Authentication->getIdentity();
-        if (!$auth) return $this->redirect('/employer/login');
+        $this->request->allowMethod(['get']);
 
-        // ★ Free はカード不要。checkout に逃がす
-        if ($planKey === 'free') {
-            return $this->redirect(['action' => 'checkout', 'free']);
-        }
+        $secret = (string)Configure::read('Stripe.secret_key');
+        $stripe = new StripeClient($secret);
 
-        $valid = ['pro','enterprise'];
-        if (!in_array($planKey, $valid, true)) {
-            throw new BadRequestException('Invalid plan.');
-        }
-
-        $pk = (string)(\Cake\Core\Configure::read('Stripe.publishable') ?? '');
-        if (!$pk) {
-            $this->Flash->error('Stripeの公開鍵が未設定です。');
+        $sid = (string)$this->request->getQuery('session_id');
+        if ($sid === '') {
+            $this->Flash->error('セッションIDが見つかりません。');
             return $this->redirect(['action'=>'plan']);
         }
 
-        $this->set([
-            'planKey'        => $planKey,
-            'publishableKey' => $pk,
-        ]);
-    }
-
-    /**
-     * JS から呼ぶ PaymentIntent 発行 API
-     * /employer/billing/intent/{planKey} [POST]
-     */
-    public function intent(string $planKey)
-    {
-        $this->request->allowMethod(['post']);
-
-        $company = $this->Authentication->getIdentity();
-        if (!$company) {
-            return $this->response->withStatus(401);
+        try {
+            $sess = $stripe->checkout->sessions->retrieve(
+                $sid,
+                ['expand' => ['subscription']]
+            );
+        } catch (\Throwable $e) {
+            $this->log("Checkout session retrieve failed: ".$e->getMessage(), 'error');
+            $this->Flash->error('セッションの確認に失敗しました。');
+            return $this->redirect(['action'=>'plan']);
         }
 
-        // 単発課金の金額マップ（例）
-        $amountMap = ['pro' => 5000, 'enterprise' => 20000]; // JPY
-        $amount = $amountMap[$planKey] ?? null;
-        if (!$amount) {
-            return $this->response->withStatus(400);
-        }
+        $companyId = (int)($sess->metadata->company_id ?? $sess->client_reference_id ?? 0);
+        $plan      = (string)($sess->metadata->target_plan ?? '');
+        $customer  = (string)($sess->customer ?? '');
+        $subId     = is_object($sess->subscription) ? $sess->subscription->id : (string)$sess->subscription;
 
-        $cfg = (array)Configure::read('Stripe');
-        $secret = $cfg['secret'] ?? null;
-        if (!$secret) {
-            return $this->response->withStatus(500);
-        }
-
-        $stripe = new StripeClient($secret);
-
-        // 顧客作成/再利用
-        $customerId = $company->stripe_customer_id ?: null;
-        if (!$customerId) {
-            $c = $stripe->customers->create([
-                'name'     => (string)$company->name,
-                'email'    => $company->auth_email ?: null,
-                'metadata' => ['company_id' => (string)$company->id],
-            ]);
-            $customerId = $c->id;
-
+        if ($companyId && $subId) {
             $Companies = $this->fetchTable('Companies');
-            $rec = $Companies->get($company->id);
-            $rec->stripe_customer_id = $customerId;
-            $Companies->save($rec);
+            $c = $Companies->get($companyId);
+            if ($customer) $c->stripe_customer_id = $customer;
+            $c->stripe_subscription_id = $subId;
+            if ($plan) $c->plan = $plan;
+            if (is_object($sess->subscription) && !empty($sess->subscription->current_period_end)) {
+                $c->paid_until = FrozenTime::createFromTimestamp($sess->subscription->current_period_end);
+            }
+            $Companies->save($c);
+
+            $this->Flash->success('処理が完了しました。プランは反映に数秒かかる場合があります。');
+            return $this->redirect(['action'=>'plan']);
         }
 
-        // PaymentIntent 作成（3DS 対応）
-        $pi = $stripe->paymentIntents->create([
-            'amount'   => $amount,
-            'currency' => 'jpy',
-            'customer' => $customerId,
-            'automatic_payment_methods' => ['enabled' => true],
-            'metadata' => [
-                'company_id'  => (string)$company->id,
-                'target_plan' => $planKey,
-                'type'        => 'one_time_upgrade',
-            ],
-        ]);
-
-        return $this->response
-            ->withType('application/json')
-            ->withStringBody(json_encode(['clientSecret' => $pi->client_secret]));
+        $this->Flash->error('セッション情報が不完全です。');
+        return $this->redirect(['action'=>'plan']);
     }
 
     /**
-     * Stripe Webhook（外部からの POST）
-     * /employer/billing/webhook
+     * Stripe Webhook
+     * POST /employer/billing/webhook
      */
     public function webhook()
     {
         $this->request->allowMethod(['post']);
 
-        $secret   = (string)(Configure::read('Stripe.secret') ?? '');
-        $whSecret = (string)(Configure::read('Stripe.webhook_secret') ?? '');
-        if (!$secret || !$whSecret) {
-            return $this->response->withStatus(400)->withStringBody('Stripe keys not configured');
+        // ---- まず到達＆設定の健全性を軽くログ ----
+        $req = $this->request;
+        $sig = $req->getHeaderLine('Stripe-Signature');
+        $raw = file_get_contents('php://input') ?: '';
+        $wh  = (string)(\Cake\Core\Configure::read('Stripe.webhook_secret') ?? '');
+
+        file_put_contents(LOGS.'webhook_debug.log', json_encode([
+            'arrived'       => true,
+            'path'          => $req->getPath(),
+            'has_sig'       => $sig !== '',
+            'raw_len'       => strlen($raw),
+            'whsec_len'     => strlen($wh),
+            'whsec_preview' => $wh ? (substr($wh, 0, 6) . '...' . substr($wh, -6)) : null, // 秘匿した確認だけ
+        ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+
+        if ($wh === '') {
+            return $this->response->withStatus(400)->withStringBody('Webhook secret not configured');
         }
-
-        $payload  = (string)$this->request->getBody()->getContents();
-        $sig      = $this->request->getHeaderLine('Stripe-Signature');
-
-        try {
-            $event = Webhook::constructEvent($payload, $sig, $whSecret);
-        } catch (\Throwable $e) {
+        if ($sig === '' || $raw === '') {
+            file_put_contents(LOGS.'webhook_debug.log', "missing header/body\n", FILE_APPEND);
             return $this->response->withStatus(400)->withStringBody('Invalid signature');
         }
 
+        // ---- Stripe 署名を検証（ここでだけ raw を使う）----
+        try {
+            $event = \Stripe\Webhook::constructEvent($raw, $sig, $wh);
+        } catch (\Throwable $e) {
+            file_put_contents(LOGS.'webhook_debug.log', json_encode([
+                'verify_error' => $e->getMessage(),
+            ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+            return $this->response->withStatus(400)->withStringBody('Invalid signature');
+        }
+
+        // 署名OKの最小ログ
+        file_put_contents(LOGS.'webhook_debug.log', json_encode([
+            'verified' => true,
+            'type'     => $event->type ?? null,
+            'id'       => $event->id ?? null,
+        ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
+
+        // ---- 以降アプリの処理 ----
         $Companies = $this->fetchTable('Companies');
         $Invoices  = $this->fetchTable('CompanyInvoices');
 
-        // 請求履歴保存の小ヘルパ
-        $saveInvoice = function(array $data) use ($Invoices, $payload) {
+        // 請求レコード保存（リトライに備え重複防止）
+        $saveInvoice = function(array $data) use ($Invoices, $raw) {
+            if (!empty($data['stripe_invoice_id'])
+                && $Invoices->exists(['stripe_invoice_id' => $data['stripe_invoice_id']])) {
+                return;
+            }
+            if (!empty($data['stripe_payment_intent_id'])
+                && $Invoices->exists(['stripe_payment_intent_id' => $data['stripe_payment_intent_id']])) {
+                return;
+            }
             $rec = $Invoices->newEmptyEntity();
-            $rec = $Invoices->patchEntity($rec, $data + ['raw_payload' => $payload]);
+            $rec = $Invoices->patchEntity($rec, $data + ['raw_payload' => $raw]);
             $Invoices->save($rec);
-            return $rec;
         };
 
-        switch ($event->type) {
-            // Payment Element 都度課金の成功
-            case 'payment_intent.succeeded':
-                /** @var \Stripe\PaymentIntent $pi */
-                $pi = $event->data->object;
-                $companyId  = (int)($pi->metadata->company_id ?? 0);
-                $targetPlan = (string)($pi->metadata->target_plan ?? '');
+        switch ($event->type ?? '') {
+            case 'checkout.session.completed': {
+                $sess = $event->data->object ?? null;
+                if ($sess) {
+                    $companyId = (int)($sess->metadata->company_id ?? $sess->client_reference_id ?? 0);
+                    $plan      = (string)($sess->metadata->target_plan ?? 'pro');
+                    $customer  = (string)($sess->customer ?? '');
+                    $subId     = is_object($sess->subscription) ? $sess->subscription->id : (string)($sess->subscription ?? '');
 
-                if ($companyId && $targetPlan) {
-                    $company = $Companies->get($companyId);
-                    $company->plan = $targetPlan;
-                    $Companies->save($company);
+                    if ($companyId && $subId) {
+                        $c = $Companies->get($companyId);
+                        if ($customer) $c->stripe_customer_id = $customer;
+                        $c->stripe_subscription_id = $subId;
+                        $c->plan = $plan;
 
-                    $saveInvoice([
-                        'company_id'              => $companyId,
-                        'stripe_customer_id'      => (string)$pi->customer,
-                        'stripe_payment_intent_id'=> (string)$pi->id,
-                        'plan'                    => $targetPlan,
-                        'amount'                  => (int)$pi->amount,
-                        'currency'                => (string)$pi->currency,
-                        'status'                  => 'paid',
-                        'paid_at'                 => date('Y-m-d H:i:s'),
-                    ]);
+                        try {
+                            \Stripe\Stripe::setApiKey((string)\Cake\Core\Configure::read('Stripe.secret_key'));
+                            $sub = \Stripe\Subscription::retrieve($subId);
+                            if (!empty($sub->current_period_end)) {
+                                $c->paid_until = \Cake\I18n\FrozenTime::createFromTimestamp($sub->current_period_end);
+                            }
+                        } catch (\Throwable $e) {
+                            // 読み取り失敗は無視（最低限の更新は済んでいるため）
+                        }
+                        $Companies->save($c);
+                    }
                 }
                 break;
+            }
 
-            // サブスク運用の場合（必要に応じて運用）
-            case 'invoice.payment_succeeded':
-                /** @var \Stripe\Invoice $inv */
-                $inv = $event->data->object;
+            case 'invoice.payment_succeeded': {
+                $inv = $event->data->object ?? null;
+                if ($inv) {
+                    $customer = (string)($inv->customer ?? '');
+                    $company = $customer ? $Companies->find()->where(['stripe_customer_id' => $customer])->first() : null;
 
-                $company = $Companies->find()
-                    ->where(['stripe_customer_id' => $inv->customer])
-                    ->first();
+                    if ($company) {
+                        $saveInvoice([
+                            'company_id'             => (int)$company->id,
+                            'stripe_customer_id'     => $customer,
+                            'stripe_subscription_id' => (string)($inv->subscription ?? ''),
+                            'stripe_invoice_id'      => (string)($inv->id ?? ''),
+                            'plan'                   => (string)($inv->lines->data[0]->price->nickname ?? ''),
+                            'amount'                 => (int)($inv->amount_paid ?? 0),
+                            'currency'               => (string)($inv->currency ?? 'jpy'),
+                            'status'                 => 'paid',
+                            'paid_at'                => date('Y-m-d H:i:s'),
+                        ]);
 
-                if ($company) {
-                    $saveInvoice([
-                        'company_id'              => (int)$company->id,
-                        'stripe_customer_id'      => (string)$inv->customer,
-                        'stripe_subscription_id'  => (string)($inv->subscription ?? ''),
-                        'stripe_invoice_id'       => (string)$inv->id,
-                        'plan'                    => (string)($inv->lines->data[0]->plan->nickname ?? ''),
-                        'amount'                  => (int)$inv->amount_paid,
-                        'currency'                => (string)$inv->currency,
-                        'status'                  => 'paid',
-                        'paid_at'                 => date('Y-m-d H:i:s'),
-                    ]);
+                        $periodEndTs = (int)($inv->lines->data[0]->period->end ?? $inv->period_end ?? 0);
+                        if ($periodEndTs) {
+                            $company->paid_until = \Cake\I18n\FrozenTime::createFromTimestamp($periodEndTs);
+                            $Companies->save($company);
+                        }
+                    }
                 }
                 break;
+            }
+
+            case 'customer.subscription.updated': {
+                $sub = $event->data->object ?? null;
+                if ($sub) {
+                    $c = $Companies->find()->where(['stripe_subscription_id' => $sub->id])->first();
+                    if ($c) {
+                        if (!empty($sub->current_period_end)) {
+                            $c->paid_until = \Cake\I18n\FrozenTime::createFromTimestamp($sub->current_period_end);
+                        }
+                        if (in_array((string)$sub->status, ['canceled','unpaid'], true)) {
+                            $c->plan = 'free';
+                            $c->stripe_subscription_id = null;
+                        }
+                        $Companies->save($c);
+                    }
+                }
+                break;
+            }
+
+            case 'customer.subscription.deleted': {
+                $sub = $event->data->object ?? null;
+                if ($sub) {
+                    $c = $Companies->find()->where(['stripe_subscription_id' => $sub->id])->first();
+                    if ($c) {
+                        $c->plan = 'free';
+                        $c->stripe_subscription_id = null;
+                        $Companies->save($c);
+                    }
+                }
+                break;
+            }
+
+            case 'payment_intent.succeeded': {
+                $pi = $event->data->object ?? null;
+                if ($pi) {
+                    $companyId  = (int)($pi->metadata->company_id ?? 0);
+                    $targetPlan = (string)($pi->metadata->target_plan ?? '');
+                    if ($companyId && $targetPlan) {
+                        $company = $Companies->get($companyId);
+                        $company->plan = $targetPlan;
+                        $Companies->save($company);
+
+                        $saveInvoice([
+                            'company_id'               => $companyId,
+                            'stripe_customer_id'       => (string)($pi->customer ?? ''),
+                            'stripe_payment_intent_id' => (string)($pi->id ?? ''),
+                            'plan'                     => $targetPlan,
+                            'amount'                   => (int)($pi->amount ?? 0),
+                            'currency'                 => (string)($pi->currency ?? 'jpy'),
+                            'status'                   => 'paid',
+                            'paid_at'                  => date('Y-m-d H:i:s'),
+                        ]);
+                    }
+                }
+                break;
+            }
 
             default:
-                // 他イベントは何もしない
+                // 他イベントは現状スルー
                 break;
         }
 
-        return $this->response->withStringBody('ok');
+        // Stripe には 2xx を返す
+        return $this->response
+            ->withType('text/plain')
+            ->withStringBody('ok');
     }
 
-    /**
-     * 請求履歴
-     */
+
+    public function cancel()
+    {
+        $this->Flash->error('決済をキャンセルしました。');
+        return $this->redirect(['action' => 'plan']);
+    }
+
+    public function cancelAtPeriodEnd()
+    {
+        $this->request->allowMethod(['post']);
+        \Stripe\Stripe::setApiKey((string)Configure::read('Stripe.secret_key'));
+
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) throw new BadRequestException('auth required');
+
+        $Companies = $this->fetchTable('Companies');
+        $company   = $Companies->get((int)$auth->id);
+
+        if (empty($company->stripe_subscription_id)) throw new BadRequestException('no subscription');
+
+        $sub = \Stripe\Subscription::update($company->stripe_subscription_id, [
+            'cancel_at_period_end' => true,
+        ]);
+
+        if (!empty($sub->current_period_end)) {
+            $company->paid_until = FrozenTime::createFromTimestamp($sub->current_period_end);
+            $Companies->save($company);
+        }
+
+        $this->Flash->success('今期末で解約を予約しました。');
+        return $this->redirect(['action' => 'plan']);
+    }
+
+    public function cancelNow()
+    {
+        $this->request->allowMethod(['post']);
+        \Stripe\Stripe::setApiKey((string)Configure::read('Stripe.secret_key'));
+
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) throw new BadRequestException('auth required');
+
+        $Companies = $this->fetchTable('Companies');
+        $company   = $Companies->get((int)$auth->id);
+
+        if (empty($company->stripe_subscription_id)) throw new BadRequestException('no subscription');
+
+        \Stripe\Subscription::cancel($company->stripe_subscription_id, []);
+
+        $company->plan = 'free';
+        $company->stripe_subscription_id = null;
+        $Companies->save($company);
+
+        $this->Flash->success('サブスクリプションを即時解約しました。');
+        return $this->redirect(['action' => 'plan']);
+    }
+
     public function history()
     {
         $auth = $this->Authentication->getIdentity();
-        if (!$auth) {
-            return $this->redirect('/employer/login');
-        }
+        if (!$auth) return $this->redirect('/employer/login');
 
         $Invoices = $this->fetchTable('CompanyInvoices');
         $q = $Invoices->find()
             ->where(['company_id' => (int)$auth->id])
-            ->order(['created' => 'DESC']);
+            ->order(['paid_at' => 'DESC', 'created' => 'DESC']);
 
         $this->paginate = ['limit' => 20];
         $invoices = $this->paginate($q);
@@ -363,104 +436,85 @@ class BillingController extends AppController
         $this->set(compact('invoices'));
     }
 
-    /**
-     * Stripe の return_url から戻る成功ページ
-     *  - Webhook が最終確定だが、保険として PI を検証して即反映も可能
-     */
-    public function success()
+    public function receipt(string $kind, string $id)
     {
         $this->request->allowMethod(['get']);
-    
-        $piId  = (string)$this->request->getQuery('payment_intent');
-        if (!$piId) {
-            $this->Flash->error('決済情報が見つかりません（payment_intent 不足）。');
-            return $this->redirect(['action' => 'plan']);
-        }
-    
-        $cfg = (array)\Cake\Core\Configure::read('Stripe');
-        $secret = $cfg['secret'] ?? null;
-        if (!$secret) {
-            $this->Flash->error('Stripe シークレットキーが未設定です。');
-            return $this->redirect(['action' => 'plan']);
-        }
-    
-        $stripe = new \Stripe\StripeClient($secret);
-    
-        try {
-            /** @var \Stripe\PaymentIntent $pi */
-            $pi = $stripe->paymentIntents->retrieve($piId, []);
-        } catch (\Throwable $e) {
-            $this->Flash->error('決済の確認に失敗しました。');
-            return $this->redirect(['action' => 'plan']);
-        }
-    
-        if (($pi->status ?? '') !== 'succeeded') {
-            $this->Flash->error('決済が完了していません。（status=' . ($pi->status ?? 'unknown') . '）');
-            return $this->redirect(['action' => 'plan']);
-        }
-    
-        // メタデータ
-        $companyId  = (int)($pi->metadata['company_id']  ?? 0);
-        $targetPlan = (string)($pi->metadata['target_plan'] ?? '');
-        if ($companyId <= 0 || $targetPlan === '') {
-            $this->Flash->error('決済メタデータが不正です。');
-            return $this->redirect(['action' => 'plan']);
-        }
-    
-        // ログイン会社一致チェック
+
         $auth = $this->Authentication->getIdentity();
-        if (!$auth || (int)$auth->id !== $companyId) {
-            $this->Flash->error('不正なアクセスです。');
-            return $this->redirect(['action' => 'plan']);
+        if (!$auth) return $this->redirect('/employer/login');
+
+        $Invoices = $this->fetchTable('CompanyInvoices');
+
+        if ($kind === 'invoice') {
+            $rec = $Invoices->find()->where(['company_id' => (int)$auth->id, 'stripe_invoice_id' => $id])->first();
+        } elseif ($kind === 'pi') {
+            $rec = $Invoices->find()->where(['company_id' => (int)$auth->id, 'stripe_payment_intent_id' => $id])->first();
+        } else {
+            throw new BadRequestException('invalid kind');
         }
-    
-        $Companies = $this->fetchTable('Companies');
-        $Invoices  = $this->fetchTable('CompanyInvoices');
-    
-        $company   = $Companies->get($companyId);
-    
-        // 顧客IDの整合（任意）
-        if (!empty($company->stripe_customer_id) && !empty($pi->customer) && $company->stripe_customer_id !== $pi->customer) {
-            $this->Flash->error('決済情報と会社情報が一致しません。');
-            return $this->redirect(['action' => 'plan']);
+
+        if (!$rec) {
+            $this->Flash->error('対象の履歴が見つかりません。');
+            return $this->redirect(['action' => 'history']);
         }
-    
-        // ★ Webhook未着でも請求履歴を保存（同じ PI で重複しないようガード）
-        $exists = $Invoices->find()
-            ->where(['stripe_payment_intent_id' => (string)$pi->id])
-            ->count();
-    
-        if (!$exists) {
-            $rec = $Invoices->newEmptyEntity();
-            $rec = $Invoices->patchEntity($rec, [
-                'company_id'               => $companyId,
-                'stripe_customer_id'       => (string)$pi->customer,
-                'stripe_payment_intent_id' => (string)$pi->id,
-                'plan'                     => $targetPlan,
-                'amount'                   => (int)$pi->amount,
-                'currency'                 => (string)$pi->currency, // jpy
-                'status'                   => 'paid',
-                'paid_at'                  => date('Y-m-d H:i:s'),
-                'raw_payload'              => json_encode($pi, JSON_UNESCAPED_UNICODE),
-            ]);
-            $Invoices->save($rec);
+
+        $secret = (string)(Configure::read('Stripe.secret_key') ?? '');
+        if ($secret === '') {
+            $this->Flash->error('Stripeの設定が未構成です。');
+            return $this->redirect(['action' => 'history']);
         }
-    
-        // プラン更新
-        $company->plan = $targetPlan;
-        if ($Companies->save($company)) {
-            $this->Authentication->setIdentity($Companies->get($companyId));
-            $this->Flash->success('決済が完了しました。プランを「' . h($targetPlan) . '」に更新しました。');
-            return $this->redirect('/employer/companies/view/' . $companyId);
+
+        $stripe = new StripeClient($secret);
+
+        try {
+            if ($kind === 'invoice') {
+                $inv = $stripe->invoices->retrieve($id, []);
+                $url = $inv->invoice_pdf ?: $inv->hosted_invoice_url ?: null;
+                if ($url) return $this->redirect($url, 302);
+            } else {
+                $pi = $stripe->paymentIntents->retrieve($id, ['expand' => ['latest_charge']]);
+                $url = $pi->latest_charge->receipt_url ?? null;
+                if ($url) return $this->redirect($url, 302);
+            }
+        } catch (\Throwable $e) {
+            $this->log('Stripe receipt redirect failed: '.$e->getMessage(), 'error');
         }
-    
-        $this->Flash->error('プランの更新に失敗しました。');
-        return $this->redirect(['action' => 'plan']);
+
+        $this->Flash->error('領収書のURLが見つかりません。');
+        return $this->redirect(['action' => 'history']);
     }
 
-    public function cancel()
+    public function changePlan(string $plan)
     {
-        $this->Flash->error('決済をキャンセルしました。');
+        $this->request->allowMethod(['post']);
+        \Stripe\Stripe::setApiKey((string)Configure::read('Stripe.secret_key'));
+
+        $priceMap = (array)Configure::read('Stripe.price_map');
+        if (!isset($priceMap[$plan])) throw new BadRequestException('invalid plan');
+
+        $auth = $this->Authentication->getIdentity();
+        if (!$auth) throw new BadRequestException('auth required');
+
+        $Companies = $this->fetchTable('Companies');
+        $company   = $Companies->get((int)$auth->id);
+
+        if (empty($company->stripe_subscription_id)) throw new BadRequestException('no active subscription');
+
+        $sub = \Stripe\Subscription::retrieve($company->stripe_subscription_id);
+        $itemId = $sub->items->data[0]->id ?? null;
+        if (!$itemId) throw new BadRequestException('subscription item not found');
+
+        $updated = \Stripe\Subscription::update($company->stripe_subscription_id, [
+            'items' => [[ 'id' => $itemId, 'price' => $priceMap[$plan] ]],
+        ]);
+
+        $company->plan = $plan;
+        if (!empty($updated->current_period_end)) {
+            $company->paid_until = FrozenTime::createFromTimestamp($updated->current_period_end);
+        }
+        $Companies->save($company);
+
+        $this->Flash->success('プランを変更しました。');
         return $this->redirect(['action' => 'plan']);
     }
 }
