@@ -25,7 +25,7 @@ return [
      *   You should treat it as extremely sensitive data.
      */
     'Security' => [
-        'salt' => env('SECURITY_SALT', '__SALT__'),
+        'salt' => env('SECURITY_SALT', '9dbad9e7194584ef919d740d3576e2248413aafc5da247e11c22613d6626846c'),
     ],
 
     /*
@@ -36,27 +36,10 @@ return [
      */
     'Datasources' => [
         'default' => [
-            'host' => 'localhost',
-            /*
-             * CakePHP will use the default DB port based on the driver selected
-             * MySQL on MAMP uses port 8889, MAMP users will want to uncomment
-             * the following line and set the port accordingly
-             */
-            //'port' => 'non_standard_port_number',
-
-            'username' => 'my_app',
-            'password' => 'secret',
-
-            'database' => 'my_app',
-            /*
-             * If not using the default 'public' schema with the PostgreSQL driver
-             * set it here.
-             */
-            //'schema' => 'myapp',
-
-            /*
-             * You can use a DSN string to set the entire configuration
-             */
+            'host' => 'db',
+            'username' => 'cakephp',
+            'password' => 'cakephp',
+            'database' => 'link_app',
             'url' => env('DATABASE_URL', null),
         ],
 
@@ -64,7 +47,7 @@ return [
          * The test connection is used during the test suite.
          */
         'test' => [
-            'host' => 'localhost',
+            'host' => 'db',
             //'port' => 'non_standard_port_number',
             'username' => 'my_app',
             'password' => 'secret',
@@ -80,6 +63,7 @@ return [
      * Host and credential configuration in case you are using SmtpTransport
      *
      * See app.php for more configuration options.
+     * 
      * ここのメールアドレスを変えて、そのGmailからパスワード取得すれば送信先を変えられるんだと思う
      * 公式のメールアドレスを作ったらここ修正する
      */
@@ -88,16 +72,15 @@ return [
             'className' => 'Smtp',
             'host' => 'smtp.gmail.com',
             'port' => 587,
-            'username' => 'your_email@gmail.com',
-            'password' => 'pddujvzacfnphbif',
+            'username' => env('SMTP_USERNAME', ''),
+            'password' => env('SMTP_PASSWORD', ''),
             'tls' => true,
         ],
     ],
-
     'Email' => [
         'default' => [
             'transport' => 'default',
-            'from' => ['your_email@gmail.com' => 'Calcraft'],
+            'from' => [env('SMTP_FROM', 'no-reply@your-domain.tld') => 'OrcaFront'],
             'emailFormat' => 'text',
             'charset' => 'utf-8',
             'headerCharset' => 'utf-8',
@@ -105,13 +88,22 @@ return [
     ],
 
     'Stripe' => [
-        'secret' => env('STRIPE_SECRET', 'sk_test_xxx'),
-        'price_map' => [ // Stripe上のPrice ID
-            'pro'        => env('STRIPE_PRICE_PRO', 'price_pro_xxx'),
-            'enterprise' => env('STRIPE_PRICE_ENT', 'price_ent_xxx'),
+        // ← ここを追加
+        'publishable_key' => env('STRIPE_PUBLISHABLE_KEY', 'pk_test_51S1k1sCgJxKS2UMCXMdmrELYuleNq9CPeBrdt8fHsY5YQL9azD0SNSc2ksWJzfT25P22f0WpAayWKWlvoj8zXHDE00LraoHPvf'),
+        // secret → secret_key に変更（コントローラ側と揃える）
+        'secret_key'      => env('STRIPE_SECRET_KEY', 'sk_test_51S1k1sCgJxKS2UMCu4ZaIM0WiCeYmKfx8IJtXzywNcNSaEKpk6CfMwrw6lKLIbrlwmAMgLSDoanOfiRhraEmxC7n00mUCG10Az'),
+
+        // 価格ID（Stripeダッシュボードで作った “月額” Price のID）
+        'price_map' => [
+            'pro'        => env('STRIPE_PRICE_PRO'),
+            'enterprise' => env('STRIPE_PRICE_ENT'),
         ],
-        'success_url' => env('STRIPE_SUCCESS_URL', 'http://localhost:8765/employer/billing/success?session_id={CHECKOUT_SESSION_ID}'),
-        'cancel_url'  => env('STRIPE_CANCEL_URL',  'http://localhost:8765/employer/billing/cancel'),
-        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET', 'whsec_xxx'),
+
+        // 成功/キャンセルURL（{CHECKOUT_SESSION_ID} を含める）
+        'success_url' => 'http://localhost:8765/employer/billing/success?session_id={CHECKOUT_SESSION_ID}',
+        'cancel_url'  => 'http://localhost:8765/employer/billing/cancel',
+
+        // Webhookシークレット（ダッシュボードで /webhooks/stripe を登録して得た whsec_...）
+        'webhook_secret'=> 'whsec_06b679dd1e4597a7d52cf47cb824c51b3a2974001ddca40860e0c2d4ca2d43fc',
     ],
 ];
