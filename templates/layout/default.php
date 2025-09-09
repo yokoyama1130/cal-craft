@@ -1,5 +1,5 @@
 <?php
-$cakeDescription = 'Calcraft';
+$cakeDescription = 'OrcaFront';
 ?>
 <?php
 $isLoggedIn  = $this->Identity->isLoggedIn();
@@ -107,7 +107,7 @@ $logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
     <!-- 中央ロゴ（常に中央固定） -->
     <div class="position-absolute top-50 start-50 translate-middle">
       <a class="navbar-brand fw-bold text-dark m-0" href="<?= $this->Url->build('/') ?>">
-        Calcraft
+        OrcaFront
       </a>
     </div>
 
