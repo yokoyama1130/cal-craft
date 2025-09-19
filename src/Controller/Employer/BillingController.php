@@ -104,7 +104,7 @@ class BillingController extends AppController
                     'currency'=>'jpy',
                     'unit_amount'=>$amountMap[$plan],
                     'recurring'=>['interval'=>'month'],
-                    'product_data'=>['name'=>"Calcraft {$plan} plan"],
+                    'product_data'=>['name'=>"OrcaFolio {$plan} plan"],
                 ],
                 'quantity'=>1,
             ];

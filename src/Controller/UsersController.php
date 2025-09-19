@@ -69,6 +69,8 @@ class UsersController extends AppController
 
             if ($this->Users->save($user)) {
                 $mailer = new Mailer('default');
+
+                // 一旦この下のコード消して動くか確認
                 // $mailer->setTo('nunouvlog@gmail.com')
                 //     ->setSubject('テスト送信')
                 //     ->deliver('CakePHPから送ったテストメールです。');
