@@ -17,7 +17,7 @@ class UserMailer extends Mailer
 
         // 念のため既定Fromも明示（プロバイダで認証済みドメインにする）
         if (!$this->getFrom()) {
-            $this->setFrom('no-reply@your-domain.tld', 'OrcaFront');
+            $this->setFrom('no-reply@your-domain.tld', 'OrcaFolio');
         }
     }
 
@@ -32,7 +32,7 @@ class UserMailer extends Mailer
         $this
             ->setEmailFormat('text')
             ->setTo($user->new_email)
-            ->setSubject('【OrcaFront】メールアドレス確認のお願い')
+            ->setSubject('【OrcaFolio】メールアドレス確認のお願い')
             ->setViewVars(compact('user', 'confirmUrl'))
             ->viewBuilder()->setTemplate('email_change_confirm');
 
@@ -50,7 +50,7 @@ class UserMailer extends Mailer
         $this
             ->setEmailFormat('text')
             ->setTo($user->email)
-            ->setSubject('【OrcaFront】メール変更のリクエストがありました')
+            ->setSubject('【OrcaFolio】メール変更のリクエストがありました')
             ->setViewVars(compact('user'))
             ->viewBuilder()->setTemplate('email_change_notice_old');
 

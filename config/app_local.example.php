@@ -80,7 +80,7 @@ return [
     'Email' => [
         'default' => [
             'transport' => 'default',
-            'from' => [env('SMTP_FROM', 'no-reply@your-domain.tld') => 'OrcaFront'],
+            'from' => [env('SMTP_FROM', 'no-reply@your-domain.tld') => 'OrcaFolio'],
             'emailFormat' => 'text',
             'charset' => 'utf-8',
             'headerCharset' => 'utf-8',

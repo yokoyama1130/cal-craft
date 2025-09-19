@@ -46,7 +46,7 @@ use Cake\Utility\Text;
             <label class="form-label fw-semibold"><i class="fa-solid fa-building me-2 text-primary"></i>会社名</label>
             <?= $this->Form->text('name', [
               'class'=>'form-control form-control-lg',
-              'placeholder'=>'例）株式会社OrcaFront',
+              'placeholder'=>'例）株式会社OrcaFolio',
               'required'=>true,
               'id'=>'cmp-name'
             ]) ?>
@@ -58,7 +58,7 @@ use Cake\Utility\Text;
               <span class="input-group-text">/c/</span>
               <?= $this->Form->text('slug', [
                 'class'=>'form-control',
-                'placeholder'=>'例）OrcaFront',
+                'placeholder'=>'例）OrcaFolio',
                 'id'=>'cmp-slug',
                 'maxlength'=>160
               ]) ?>

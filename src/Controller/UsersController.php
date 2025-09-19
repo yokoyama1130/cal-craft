@@ -76,7 +76,7 @@ class UsersController extends AppController
                 // 認証メール送信
                 $mailer = new Mailer('default');
                 $mailer->setTo($user->email)
-                    ->setSubject('【OrcaFront】メール認証のお願い')
+                    ->setSubject('【OrcaFolio】メール認証のお願い')
                     ->deliver("以下のURLをクリックしてメール認証を完了してください：\n\n" .
                         Router::url(['controller' => 'Users', 'action' => 'verifyEmail', $user->email_token], true));
     
@@ -314,7 +314,7 @@ class UsersController extends AppController
             if ($this->Users->save($user)) {
                 $mailer = new \Cake\Mailer\Mailer('default');
                 $mailer->setTo($user->email)
-                    ->setSubject('【OrcaFront】メール認証の再送')
+                    ->setSubject('【OrcaFolio】メール認証の再送')
                     ->deliver("以下のURLから認証を完了してください：\n\n" .
                         \Cake\Routing\Router::url(['controller' => 'Users', 'action' => 'verifyEmail', $user->email_token], true));
 
