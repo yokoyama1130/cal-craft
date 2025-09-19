@@ -80,6 +80,8 @@ return [
     'Email' => [
         'default' => [
             'transport' => 'default',
+            // ここ変えなくても動くと思うけど、本番環境では一応修正だけしとくか。
+            // あとこのファイルと.envのexampleとか、exampleがついているのを消して良いのかも確認したい。
             'from' => [env('SMTP_FROM', 'no-reply@your-domain.tld') => 'OrcaFolio'],
             'emailFormat' => 'text',
             'charset' => 'utf-8',
