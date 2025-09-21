@@ -34,7 +34,7 @@
               <i class="fa-solid fa-user-plus me-2"></i>無料ではじめる
             </a>
             <a href="/users/login" class="btn btn-outline-dark btn-lg px-4">ログイン</a><br>
-            <a href="/employer/login" class="btn btn-outline-dark btn-lg px-4">企業の方はこちら</a>
+            <a href="/companies/add" class="btn btn-outline-dark btn-lg px-4">企業の方はこちら</a>
           <?php endif; ?>
         </div>
 

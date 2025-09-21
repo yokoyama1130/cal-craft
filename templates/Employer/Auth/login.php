@@ -36,4 +36,13 @@
   </div>
 
   <?= $this->Form->end() ?>
+  <p class="mt-3">
+    会員登録がまだの方は
+    <?= $this->Html->link('こちら', [
+        'prefix' => false,           // ← これが大事
+        'controller' => 'Companies',
+        'action' => 'add',
+    ]) ?>
+    から新規登録をお願いいたします。
+  </p>
 </div>
