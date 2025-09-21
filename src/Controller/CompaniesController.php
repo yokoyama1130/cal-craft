@@ -217,8 +217,8 @@ class CompaniesController extends AppController
 
             $company = $this->Companies->patchEntity($company, $data);
             if ($this->Companies->save($company)) {
-                $this->Flash->success('Company updated.');
-                return $this->redirect(['action' => 'edit', $company->id]); // or view
+                $this->Flash->success('会社情報を編集しました。');
+                return $this->redirect(['action' => 'view', $company->id]); // or view
             }
             $this->Flash->error('Update failed. Please try again.');
         }

@@ -147,24 +147,6 @@ use Cake\Utility\Text;
             ]) ?>
           </div>
 
-          <!-- プラン / 認証 -->
-          <div class="row g-3 mt-1">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="fa-solid fa-crown me-2 text-warning"></i>プラン</label>
-              <?= $this->Form->select('plan', [
-                'free'=>'Free','pro'=>'Pro','enterprise'=>'Enterprise'
-              ], ['class'=>'form-select']) ?>
-            </div>
-            <div class="col-md-6 d-flex align-items-center">
-              <div class="form-check mt-4">
-                <?= $this->Form->control('verified', [
-                  'type'=>'checkbox', 'label'=>'Verified にする', 'templates'=>['inputContainer'=>'{{content}}']
-                ]) ?>
-                <div class="form-text">ドメイン確認後にON推奨。</div>
-              </div>
-            </div>
-          </div>
-
           <?php /* owner_user_id はフォームに出さない（コントローラで固定） */ ?>
 
           <div class="mt-4 d-flex gap-2">
