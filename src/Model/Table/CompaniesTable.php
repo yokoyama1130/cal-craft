@@ -128,11 +128,18 @@ class CompaniesTable extends Table
             ->notEmptyString('owner_user_id')
             ->add('owner_user_id', 'unique', ['rule' => 'validateUnique', 'provider' => 'table']);
 
-        return $validator
-            ->email('auth_email', false, 'Invalid email')
-            ->allowEmptyString('auth_email') // 必須化はコントローラ側の運用に合わせて
-            ->minLength('auth_password', 8, 'Min 8 chars')
-            ->allowEmptyString('auth_password'); // 未入力→自動発行なら allow
+            $validator
+                ->requirePresence('auth_email', 'create')
+                ->email('auth_email')
+                ->notEmptyString('auth_email', 'メールは必須です。');
+
+            // 作成時はパスワード必須、8文字以上
+            $validator
+                ->requirePresence('auth_password', 'create')
+                ->notEmptyString('auth_password', 'パスワードは必須です。')
+                ->minLength('auth_password', 8, '8文字以上にしてください。');
+
+        return $validator;
     }
 
     /**
