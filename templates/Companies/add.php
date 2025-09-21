@@ -28,6 +28,10 @@ use Cake\Utility\Text;
 
 <section class="container py-4">
   <div class="card border-0 shadow-lg glass2 overflow-hidden">
+
+    <!-- ★ フォームは左右カラムを丸ごと囲む -->
+    <?= $this->Form->create($company, ['class'=>'needs-validation', 'novalidate'=>true, 'type' => 'file']) ?>
+
     <div class="row g-0">
       <!-- 左：主要入力 -->
       <div class="col-lg-8 p-4 p-md-5">
@@ -37,8 +41,6 @@ use Cake\Utility\Text;
           </span>
           <h3 class="fw-bold mb-0">会社プロフィール</h3>
         </div>
-
-        <?= $this->Form->create($company, ['class'=>'needs-validation', 'novalidate'=>true, 'type' => 'file']) ?>
 
         <!-- 会社名 / スラッグ -->
         <div class="row g-3">
@@ -70,30 +72,30 @@ use Cake\Utility\Text;
         <hr class="my-4">
 
         <div class="row g-3 mt-1">
-            <div class="col-md-7">
-                <label class="form-label fw-semibold">
-                <i class="fa-solid fa-user-shield me-2 text-primary"></i>
-                オーナー用メール（未ログイン時）
-                </label>
-                <?= $this->Form->email('owner_email', [
-                'class' => 'form-control',
-                'placeholder' => 'owner@example.com'
-                ]) ?>
-                <div class="form-text">未ログインで作成する場合は必須です（ログイン中なら無視されます）。</div>
-            </div>
-            <div class="col-md-5">
-                <label class="form-label fw-semibold">
-                <i class="fa-solid fa-key me-2 text-secondary"></i>
-                オーナー用パスワード（任意）
-                </label>
-                <?= $this->Form->password('owner_password', [
-                  'class' => 'form-control',
-                  'placeholder' => '8文字以上',
-                  'required' => true,            // ★必須
-                  'minlength' => 8,              // ★最低8文字（任意だが推奨）
-                  'autocomplete' => 'new-password'
-                ]) ?>
-            </div>
+          <div class="col-md-7">
+            <label class="form-label fw-semibold">
+              <i class="fa-solid fa-user-shield me-2 text-primary"></i>
+              オーナー用メール（未ログイン時）
+            </label>
+            <?= $this->Form->email('owner_email', [
+              'class' => 'form-control',
+              'placeholder' => 'owner@example.com'
+            ]) ?>
+            <div class="form-text">未ログインで作成する場合は必須です（ログイン中なら無視されます）。</div>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">
+              <i class="fa-solid fa-key me-2 text-secondary"></i>
+              オーナー用パスワード（必須）
+            </label>
+            <?= $this->Form->password('owner_password', [
+              'class' => 'form-control',
+              'placeholder' => '8文字以上',
+              'required' => true,
+              'minlength' => 8,
+              'autocomplete' => 'new-password'
+            ]) ?>
+          </div>
         </div>
 
         <!-- Web / 請求メール -->
@@ -140,7 +142,7 @@ use Cake\Utility\Text;
           </div>
         </div>
 
-        <!-- ドメイン / ロゴパス -->
+        <!-- ドメイン -->
         <div class="row g-3 mt-1">
           <div class="col-md-6">
             <label class="form-label fw-semibold"><i class="fa-solid fa-at me-2 text-secondary"></i>メールドメイン（任意）</label>
@@ -153,20 +155,6 @@ use Cake\Utility\Text;
               ]) ?>
             </div>
             <div class="form-text">後のドメイン認証で活用できます。</div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold"><i class="fa-solid fa-image me-2 text-secondary"></i>ロゴ（画像アップロード）</label>
-            <div class="input-group">
-              <span class="input-group-text"><i class="fa-regular fa-image"></i></span>
-              <?= $this->Form->file('logo_file', [
-                'accept' => 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml',
-                'id' => 'cmp-logo-file',
-                'class' => 'form-control'
-              ]) ?>
-            </div>
-            <div class="form-text">PNG/JPG/WEBP/GIF/SVG、最大 2MB 推奨。</div>
-            <?= $this->Form->hidden('logo_path') // サーバ側で上書きするために保持 ?>
           </div>
         </div>
 
@@ -186,8 +174,6 @@ use Cake\Utility\Text;
           ]) ?>
           <?= $this->Html->link('キャンセル', ['action'=>'index'], ['class'=>'btn btn-outline-secondary btn-lg px-4']) ?>
         </div>
-
-        <?= $this->Form->end() ?>
       </div>
 
       <!-- 右：ロゴ/プラン/認証 -->
@@ -200,12 +186,29 @@ use Cake\Utility\Text;
             </h6>
             <div class="logo-preview-wrap rounded-circle d-flex align-items-center justify-content-center mx-auto">
               <img id="cmp-logo-preview"
-                  src="<?= h($company->logo_path ?? '') ?>"
-                  alt="logo preview"
-                  class="rounded-circle"
-                  onerror="this.src='https://placehold.co/240x240?text=Logo';">
+                   src="<?= h($company->logo_path ?? '') ?>"
+                   alt="logo preview"
+                   class="rounded-circle"
+                   onerror="this.src='https://placehold.co/240x240?text=Logo';">
             </div>
-            <div class="form-text mt-2">ロゴパスを入力すると自動プレビューします。</div>
+
+            <!-- ★ プレビューの下にアップロードボタン（実体inputは非表示） -->
+            <div class="mt-3">
+              <?= $this->Form->file('logo_file', [
+                'accept' => 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml',
+                'id' => 'cmp-logo-file',
+                'class' => 'd-none'
+              ]) ?>
+
+              <label for="cmp-logo-file" class="btn btn-outline-primary">
+                <i class="fa-regular fa-image me-2"></i>ロゴをアップロード
+              </label>
+
+              <!-- サーバ側で上書きする hidden（JSで参照するので id 付与） -->
+              <?= $this->Form->hidden('logo_path', ['id' => 'cmp-logo-path']) ?>
+            </div>
+
+            <div class="form-text mt-2">PNG/JPG/WEBP/GIF/SVG、最大 2MB 推奨。</div>
           </div>
         </div>
 
@@ -218,7 +221,6 @@ use Cake\Utility\Text;
               <button type="button" class="btn btn-outline-primary plan-btn" data-value="pro">Pro</button>
               <button type="button" class="btn btn-outline-primary plan-btn" data-value="enterprise">Enterprise</button>
             </div>
-            <!-- 実体は元のフォームのselect -->
             <input type="hidden" id="cmp-plan-hidden" value="<?= h($company->plan ?? 'free') ?>">
           </div>
         </div>
@@ -236,6 +238,10 @@ use Cake\Utility\Text;
         </div>
       </div>
     </div>
+
+    <?= $this->Form->end() ?>
+    <!-- ★ フォームここまで -->
+
   </div>
 </section>
 
@@ -246,6 +252,13 @@ use Cake\Utility\Text;
 .btn-gradient:hover{opacity:.92;color:#fff}
 .logo-preview-wrap{width:100%;height:120px;border:1px dashed #d9d9d9;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
 #cmp-logo-preview{max-height:100%;max-width:100%;object-fit:contain}
+.hero-wrap{min-height:48vh;display:flex;align-items:center}
+.hero-bg-gradient{background:radial-gradient(1200px 600px at 20% 10%,#fff2bd 0%,rgba(255,242,189,0) 50%), radial-gradient(900px 500px at 85% 20%,#cfe8ff 0%,rgba(207,232,255,0) 60%),linear-gradient(180deg,#fff,#f7f9fc)}
+.hero-wave{height:100px}
+.text-gradient{background:linear-gradient(90deg,#eab308,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.glass{background:rgba(255,255,255,.75);backdrop-filter: blur(6px);border:1px solid rgba(0,0,0,.05)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.animate-rise{animation:fadeIn .6s ease both}
 </style>
 <?php $this->end(); ?>
 
@@ -279,7 +292,7 @@ use Cake\Utility\Text;
   }
 })();
 
-// ロゴプレビュー
+// ロゴパスの手動入力に備えたプレビュー（必要なら保持）
 (() => {
   const path = document.getElementById('cmp-logo-path');
   const img = document.getElementById('cmp-logo-preview');
@@ -289,10 +302,25 @@ use Cake\Utility\Text;
   }
 })();
 
+// アップロード即時プレビュー
+(() => {
+  const file = document.getElementById('cmp-logo-file');
+  const preview = document.getElementById('cmp-logo-preview');
+  if (file && preview) {
+    file.addEventListener('change', () => {
+      const f = file.files?.[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = e => { preview.src = e.target.result; };
+      reader.readAsDataURL(f);
+    });
+  }
+})();
+
 // プラン ボタングループと hidden select 同期
 (() => {
   const hidden = document.getElementById('cmp-plan-hidden');
-  const planSelect = document.getElementById('plan'); // Cakeのselect
+  const planSelect = document.getElementById('plan'); // Cakeのselect（あれば）
   const btns = document.querySelectorAll('.plan-btn');
   const apply = (val) => {
     hidden.value = val;
@@ -303,10 +331,10 @@ use Cake\Utility\Text;
   apply(hidden.value || (planSelect ? planSelect.value : 'free'));
 })();
 
-// Verified スイッチと hidden checkbox 同期
+// Verified スイッチと hidden checkbox 同期（hidden側が存在するなら）
 (() => {
   const sw = document.getElementById('cmp-verified-switch');
-  const chk = document.getElementById('verified'); // Cakeのcheckbox
+  const chk = document.getElementById('verified'); // Cakeのcheckboxをフォーム側で用意している前提なら
   if(sw && chk){
     const sync = (fromSwitch) => {
       if(fromSwitch){ chk.checked = sw.checked; }
@@ -326,52 +354,6 @@ use Cake\Utility\Text;
       f.classList.add('was-validated');
     });
   });
-})();
-</script>
-<?php $this->end(); ?>
-
-
-<?php $this->start('css'); ?>
-<style>
-.hero-wrap{min-height:48vh;display:flex;align-items:center}
-.hero-bg-gradient{background:radial-gradient(1200px 600px at 20% 10%,#fff2bd 0%,rgba(255,242,189,0) 50%), radial-gradient(900px 500px at 85% 20%,#cfe8ff 0%,rgba(207,232,255,0) 60%),linear-gradient(180deg,#fff,#f7f9fc)}
-.hero-wave{height:100px}
-.text-gradient{background:linear-gradient(90deg,#eab308,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent}
-.glass{background:rgba(255,255,255,.75);backdrop-filter: blur(6px);border:1px solid rgba(0,0,0,.05)}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.animate-rise{animation:fadeIn .6s ease both}
-</style>
-<?php $this->end(); ?>
-
-<?php $this->start('script'); ?>
-<script>
-// slug 自動生成（slugが空の時だけ）
-(() => {
-  const name = document.getElementById('name');
-  const slug = document.getElementById('slug');
-  if(!name || !slug) return;
-  const toSlug = (s) => s
-    .toLowerCase()
-    .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/[^a-z0-9]+/g,'-')
-    .replace(/^-+|-+$/g,'')
-    .substring(0,160);
-  name.addEventListener('input', () => { if(!slug.value) slug.value = toSlug(name.value || ''); });
-})();
-</script>
-<script>
-(() => {
-  const file = document.getElementById('cmp-logo-file');
-  const preview = document.getElementById('cmp-logo-preview');
-  if (file && preview) {
-    file.addEventListener('change', () => {
-      const f = file.files?.[0];
-      if (!f) return;
-      const reader = new FileReader();
-      reader.onload = e => { preview.src = e.target.result; };
-      reader.readAsDataURL(f);
-    });
-  }
 })();
 </script>
 <?php $this->end(); ?>
