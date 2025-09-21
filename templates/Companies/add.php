@@ -212,19 +212,6 @@ use Cake\Utility\Text;
           </div>
         </div>
 
-        <!-- プラン -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-body">
-            <h6 class="fw-semibold mb-3"><i class="fa-solid fa-crown me-2 text-warning"></i>プラン</h6>
-            <div class="btn-group w-100" role="group">
-              <button type="button" class="btn btn-outline-primary plan-btn" data-value="free">Free</button>
-              <button type="button" class="btn btn-outline-primary plan-btn" data-value="pro">Pro</button>
-              <button type="button" class="btn btn-outline-primary plan-btn" data-value="enterprise">Enterprise</button>
-            </div>
-            <input type="hidden" id="cmp-plan-hidden" value="<?= h($company->plan ?? 'free') ?>">
-          </div>
-        </div>
-
         <!-- 認証 -->
         <div class="card border-0 shadow-sm">
           <div class="card-body">
