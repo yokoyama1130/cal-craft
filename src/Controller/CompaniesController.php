@@ -8,6 +8,8 @@ use Cake\Event\EventInterface;
 use Cake\Datasource\ConnectionManager;
 use Psr\Http\Message\UploadedFileInterface;
 use Cake\Filesystem\Folder;
+use Cake\Mailer\Mailer;
+use Cake\Routing\Router;
 
 class CompaniesController extends AppController
 {
@@ -15,6 +17,8 @@ class CompaniesController extends AppController
     {
         parent::initialize();
         $this->loadModel('Portfolios');
+        $this->loadModel('Companies');
+        $this->Authentication->addUnauthenticatedActions([]); // すべて認証必須
         // 認証コンポーネントが未ロードなら AppController で $this->loadComponent('Authentication.Authentication') を
     }
 
@@ -84,17 +88,30 @@ class CompaniesController extends AppController
         $ownerEmail    = trim((string)($data['owner_email'] ?? $data['billing_email'] ?? ''));
         $ownerPassword = (string)($data['owner_password'] ?? '');
 
+        // ★ 必須チェック（未入力はエラー）
         if ($ownerEmail === '') {
-            throw new \RuntimeException('Owner email is required.');
+            $this->Flash->error('オーナー用メールは必須です。');
+            $this->set(compact('company'));
+            return;
         }
         if ($ownerPassword === '') {
-            $ownerPassword = bin2hex(random_bytes(8)); // 最低8文字以上に
+            $this->Flash->error('オーナー用パスワードは必須です。');
+            $this->set(compact('company'));
+            return;
+        }
+        if (mb_strlen($ownerPassword) < 8) { // 任意
+            $this->Flash->error('パスワードは8文字以上にしてください。');
+            $this->set(compact('company'));
+            return;
         }
         $data['auth_email']    = $ownerEmail;
         $data['auth_password'] = $ownerPassword; // ★エンティティでハッシュされる
 
         // もし “一般ユーザーIDをオーナーとして保持したい”なら、別カラムに保持（任意）
         // $data['owner_user_id'] = $this->getIdentity() ?? null;
+
+        $data['email_verified'] = false;
+        $data['email_token']    = Text::uuid();
 
         // 保存
         $company = $this->Companies->patchEntity($company, $data /* , ['validate' => 'employerLogin'] */);
@@ -105,11 +122,33 @@ class CompaniesController extends AppController
             return;
         }
 
-        // 作成完了 → 企業ログイン画面へ誘導（email を自動入力したいならクエリで渡す）
-        $this->Flash->success(__('Company has been created. Please sign in to Employer Console.'));
-        // ★ いったんEmployerセッションを破棄してからログイン画面へ
+        $mailer = new Mailer('default');
+        $mailer->setTo($ownerEmail)
+            ->setSubject('【OrcaFolio】企業メール認証のお願い')
+            ->deliver(
+                "以下のURLをクリックしてメール認証を完了してください：\n\n" .
+                Router::url(
+                [
+                    'prefix' => 'Employer',
+                    'controller' => 'Auth',
+                    'action' => 'verifyEmail',
+                    $company->email_token
+                ],
+                true
+                )
+            );
+
+        $this->Flash->success(__('確認メールを送信しました。メールをご確認ください。'));
+        // 企業ログインページへ誘導
         $this->Authentication->logout();
         return $this->redirect('/employer/login?auth_email=' . urlencode($ownerEmail));
+
+
+        // // 作成完了 → 企業ログイン画面へ誘導（email を自動入力したいならクエリで渡す）
+        // $this->Flash->success(__('Company has been created. Please sign in to Employer Console.'));
+        // // ★ いったんEmployerセッションを破棄してからログイン画面へ
+        // $this->Authentication->logout();
+        // return $this->redirect('/employer/login?auth_email=' . urlencode($ownerEmail));
     }
 
 
@@ -151,18 +190,19 @@ class CompaniesController extends AppController
      */
     public function edit($id = null)
     {
-        $identity = $this->getIdentity();
+        // Employer の identity は「Companies の認証ID = company.id」を想定
+        $identity = $this->Authentication->getIdentity();
         if (!$identity) {
-            $this->Flash->error(__('Please sign in.'));
-            return $this->redirect(['controller' => 'Users', 'action' => 'login']);
+            $this->Flash->error('Please sign in as Employer.');
+            return $this->redirect(['prefix'=>'Employer','controller'=>'Auth','action'=>'login']);
         }
-        $userId = (int)$identity;
+        $authedCompanyId = (int)$identity->get('id');
 
         $company = $this->Companies->get($id);
 
-        if ((int)$company->owner_user_id !== $userId) {
-            $this->Flash->error(__('Not authorized.'));
-            return $this->redirect(['action' => 'view', $company->id]);
+        if ((int)$company->id !== $authedCompanyId) {
+            $this->Flash->error('Not authorized.');
+            return $this->redirect(['prefix'=>'Employer','controller'=>'Dashboard','action'=>'index']);
         }
 
         if ($this->request->is(['patch','post','put'])) {
@@ -172,15 +212,15 @@ class CompaniesController extends AppController
                 $data['slug'] = Text::slug((string)$data['name']);
             }
 
-            // セキュリティ：owner_user_id を外部から書き換えられないように除外
+            // 会社編集で外から owner_user_id を書き換えられないように
             unset($data['owner_user_id']);
 
             $company = $this->Companies->patchEntity($company, $data);
             if ($this->Companies->save($company)) {
-                $this->Flash->success(__('Company updated.'));
-                return $this->redirect(['action' => 'view', $company->id]);
+                $this->Flash->success('Company updated.');
+                return $this->redirect(['action' => 'edit', $company->id]); // or view
             }
-            $this->Flash->error(__('Update failed. Please try again.'));
+            $this->Flash->error('Update failed. Please try again.');
         }
 
         $this->set(compact('company'));
