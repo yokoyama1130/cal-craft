@@ -23,7 +23,7 @@
             <a href="/portfolios/add" class="btn btn-primary btn-lg px-4">
               <i class="fa-solid fa-rocket-launch me-2"></i>課題 / 作品を投稿
             </a>
-            <a href="/feed" class="btn btn-outline-secondary btn-lg px-4">
+            <a href="/top" class="btn btn-outline-secondary btn-lg px-4">
               <i class="fa-solid fa-waveform me-2"></i>タイムラインを見る
             </a>
             <a href="/users/search" class="btn btn-outline-secondary btn-lg px-4">
@@ -157,7 +157,7 @@
           <div class="icon-lg bg-success-subtle text-success-emphasis"><i class="fa-solid fa-people-arrows"></i></div>
           <h5 class="fw-semibold mt-3">SNSライクな交流</h5>
           <p class="text-secondary small mb-3">フォロー・コメント・DMでフラットにつながる。肩書きより「やったこと」。</p>
-          <a href="/feed" class="link-underline link-underline-opacity-0">タイムラインをのぞく →</a>
+          <a href="/top" class="link-underline link-underline-opacity-0">タイムラインをのぞく →</a>
         </div>
       </div>
       <div class="col-lg-4">
