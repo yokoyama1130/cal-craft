@@ -19,6 +19,9 @@ use Cake\Utility\Text;
         <h1 class="display-6 fw-bold lh-sm mb-2"><span class="text-gradient">Company</span> を作成</h1>
         <p class="text-secondary mb-0">オーナーはログイン中のユーザーに自動で割当てられます。</p>
       </div>
+      <div class="col-lg-5 mt-4 mt-lg-0 text-lg-end">
+        <?= $this->Html->link('← ' . __('ログイン画面へ'), ['controller' => 'Employer/Auth', 'action' => 'login'], ['class'=>'btn btn-outline-secondary btn-lg']) ?>
+      </div>
     </div>
   </div>
 </div>
