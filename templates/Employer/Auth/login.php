@@ -9,7 +9,7 @@
  */
 ?>
 <div class="container py-5" style="max-width:520px;">
-  <h1 class="h4 mb-3">Employer Login</h1>
+  <h2 class="mb-4 fw-semibold text-center">会社アカウントログイン</h2>
 
     <?= $this->Form->create(null, [
         // ここを controller 付きにしない
