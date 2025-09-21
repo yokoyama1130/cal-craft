@@ -34,4 +34,9 @@
     </div>
 
     <?= $this->Form->end() ?>
+    <p class="mt-3">
+        法人の方は
+        <?= $this->Html->link('こちら', ['controller' => 'Companies', 'action' => 'add']) ?>
+        から新規登録をお願いいたします。
+    </p>
 </div>
