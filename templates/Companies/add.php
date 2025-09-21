@@ -87,8 +87,11 @@ use Cake\Utility\Text;
                 オーナー用パスワード（任意）
                 </label>
                 <?= $this->Form->password('owner_password', [
-                'class' => 'form-control',
-                'placeholder' => '未入力なら自動発行'
+                  'class' => 'form-control',
+                  'placeholder' => '8文字以上',
+                  'required' => true,            // ★必須
+                  'minlength' => 8,              // ★最低8文字（任意だが推奨）
+                  'autocomplete' => 'new-password'
                 ]) ?>
             </div>
         </div>
