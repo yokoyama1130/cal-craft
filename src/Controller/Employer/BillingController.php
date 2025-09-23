@@ -44,22 +44,42 @@ class BillingController extends AppController
         }
     }
 
-    public function plan()
-    {
-        $auth = $this->Authentication->getIdentity();
-        if (!$auth) return $this->redirect('/employer/login');
+public function plan()
+{
+    $auth = $this->Authentication->getIdentity();
+    if (!$auth) return $this->redirect('/employer/login');
 
-        $Companies = $this->fetchTable('Companies');
-        $company   = $Companies->get((int)$auth->id);
+    $Companies = $this->fetchTable('Companies');
+    $company   = $Companies->get((int)$auth->id);
 
-        $plans = [
-            'free'       => ['label'=>'Free','price'=>0,'features'=>['基本機能','当月 1ユーザーに先出しメッセージ']],
-            'pro'        => ['label'=>'Pro','price'=>5000,'features'=>['高度機能','当月 100ユーザーに先出しメッセージ']],
-            'enterprise' => ['label'=>'Enterprise','price'=>50000,'features'=>['無制限','SLA/請求書対応']],
-        ];
+    $plans = [
+        'free'       => ['label'=>'Free','price'=>0,'features'=>['基本機能','当月 1ユーザーに先出しメッセージ']],
+        'pro'        => ['label'=>'Pro','price'=>5000,'features'=>['高度機能','当月 100ユーザーに先出しメッセージ']],
+        'enterprise' => ['label'=>'Enterprise','price'=>50000,'features'=>['無制限','SLA/請求書対応']],
+    ];
 
-        $this->set(compact('company', 'plans'));
+    // ★ サブスクの次回更新情報を取得
+    $hasSub = !empty($company->stripe_subscription_id);
+    $nextRenewAt = null;         // FrozenTime|null
+    $willAutoRenew = null;       // bool|null（サブスク無い場合は null）
+
+    if ($hasSub) {
+        try {
+            \Stripe\Stripe::setApiKey((string)\Cake\Core\Configure::read('Stripe.secret_key'));
+            $sub = \Stripe\Subscription::retrieve($company->stripe_subscription_id);
+            if (!empty($sub->current_period_end)) {
+                $nextRenewAt = \Cake\I18n\FrozenTime::createFromTimestamp($sub->current_period_end);
+            }
+            $willAutoRenew = !((bool)($sub->cancel_at_period_end ?? false)) && ((string)$sub->status === 'active');
+        } catch (\Throwable $e) {
+            // 失敗しても画面表示は継続
+            $this->log('Stripe Subscription retrieve failed: '.$e->getMessage(), 'warning');
+        }
     }
+
+    $this->set(compact('company', 'plans', 'hasSub', 'nextRenewAt', 'willAutoRenew'));
+}
+
 
     public function checkout(string $plan)
     {
@@ -446,17 +466,17 @@ class BillingController extends AppController
     public function cancelNow()
     {
         $this->request->allowMethod(['post']);
-        \Stripe\Stripe::setApiKey((string)Configure::read('Stripe.secret_key'));
 
         $auth = $this->Authentication->getIdentity();
         if (!$auth) throw new BadRequestException('auth required');
 
         $Companies = $this->fetchTable('Companies');
         $company   = $Companies->get((int)$auth->id);
-
         if (empty($company->stripe_subscription_id)) throw new BadRequestException('no subscription');
 
-        \Stripe\Subscription::cancel($company->stripe_subscription_id, []);
+        $stripe = new \Stripe\StripeClient((string)Configure::read('Stripe.secret_key'));
+        // ここが修正ポイント：静的呼び出しではなくクライアント経由
+        $stripe->subscriptions->cancel($company->stripe_subscription_id, []);
 
         $company->plan = 'free';
         $company->stripe_subscription_id = null;
