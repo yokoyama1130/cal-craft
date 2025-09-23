@@ -93,6 +93,18 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/billing/checkout/:plan', ['controller' => 'Billing', 'action' => 'checkout'], ['pass' => ['plan'], '_method' => 'POST']);
 
         $routes->fallbacks(DashedRoute::class);
+
+        // Settings
+        $routes->connect('/settings', ['controller' => 'Settings', 'action' => 'index']);
+        $routes->get('/settings/email', ['controller' => 'Settings', 'action' => 'editEmail']);
+        $routes->post('/settings/email', ['controller' => 'Settings', 'action' => 'updateEmail']);
+        $routes->get('/settings/password', ['controller' => 'Settings', 'action' => 'editPassword']);
+        $routes->post('/settings/password', ['controller' => 'Settings', 'action' => 'updatePassword']);
+        $routes->get('/settings/email/confirm/*', ['controller' => 'Settings', 'action' => 'confirmEmail']);
+        $routes->get('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteConfirm']);
+        $routes->post('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteAccount']);
+
+        $routes->fallbacks(\Cake\Routing\Route\DashedRoute::class);
     });
 
     // Public webhooks
