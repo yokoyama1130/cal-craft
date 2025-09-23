@@ -189,7 +189,26 @@ $logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
             通知<?= isset($unreadCount) && $unreadCount > 0 ? "（{$unreadCount}）" : '' ?>
           </a>
         </li>
-        <li><a href="/settings/index">設定</a></li>
+        <?php if ($isLoggedIn): ?>
+          <?php if ($isEmployer): ?>
+            <li>
+              <a href="<?= $this->Url->build([
+                'prefix' => 'Employer',
+                'controller' => 'Settings',
+                'action' => 'index',
+                $companyId
+              ]) ?>">
+                会社アカウント設定
+              </a>
+            </li>
+          <?php else: ?>
+            <li>
+              <a href="<?= $this->Url->build(['controller' => 'Settings', 'action' => 'index']) ?>">
+                設定
+              </a>
+            </li>
+          <?php endif; ?>
+        <?php endif; ?>
     </ul>
   </div>
 </div>
