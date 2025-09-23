@@ -45,8 +45,8 @@ return function (RouteBuilder $routes): void {
     // お気に入り
     $routes->connect('/favorites', ['controller' => 'Likes', 'action' => 'favorites']);
 
-    // Admin prefix（重複していたので1つに統合）
-    $routes->prefix('admin', function (RouteBuilder $routes) {
+    // Admin prefix
+    $routes->prefix('Admin', function (RouteBuilder $routes) {
         $routes->connect('/', ['controller' => 'Dashboard', 'action' => 'index']);
         $routes->fallbacks(DashedRoute::class);
     });
@@ -95,9 +95,19 @@ return function (RouteBuilder $routes): void {
         $routes->fallbacks(DashedRoute::class);
     });
 
-    // Public webhooks（必要ならどちらか一方でOK）
-    $routes->connect('/stripe/webhook', ['controller' => 'Stripe', 'action' => 'webhook', 'prefix' => false]);
-    $routes->connect('/webhooks/stripe', ['controller' => 'Webhooks', 'action' => 'stripe'], ['_method' => 'POST']);
+    // Public webhooks
+    // ─ CLI の forward 先（単数形）
+    $routes->connect(
+        '/webhook/stripe',
+        ['controller' => 'Webhooks', 'action' => 'stripe'],
+        ['_method' => 'POST']
+    );
+    // ─ 互換の複数形（必要なければ消してOK）
+    $routes->connect(
+        '/webhooks/stripe',
+        ['controller' => 'Webhooks', 'action' => 'stripe'],
+        ['_method' => 'POST']
+    );
 
     // Conversations
     $routes->scope('/', function (RouteBuilder $routes) {

@@ -41,39 +41,52 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
     public function middleware(MiddlewareQueue $q): MiddlewareQueue
     {
-        // 共通の判定クロージャ（認証/CSRF の両方で使う）
+        /**
+         * Stripe Webhook を CSRF / 認証チェックから除外する共通判定
+         * - /webhook/stripe（単数）
+         * - /webhooks/stripe（複数：互換で残す）
+         * - /employer/billing/webhook（Employer配下を使う場合）
+         */
         $isStripeWebhook = function ($request): bool {
-            $p = (array)$request->getAttribute('params');
-            $path = strtolower($request->getUri()->getPath() ?? '');
+            $params = (array)$request->getAttribute('params');
+            $path   = strtolower($request->getUri()->getPath() ?? '');
 
+            // ルーティング解決済みの controller/action でも拾う
+            $isAltByParams = (
+                (strtolower((string)($params['controller'] ?? '')) === 'webhooks') &&
+                (strtolower((string)($params['action'] ?? '')) === 'stripe')
+            );
+
+            // パスでの直叩きも拾う（CLI の forward はここに該当）
+            $isAltByPath =
+                ($path === '/webhook/stripe') ||     // ★ CLI の既定（今回の本命）
+                ($path === '/webhooks/stripe');      // 互換
+
+            // Employer 側の別口を使う場合（前方一致でケア）
             $isEmployerWebhook =
-                ((($p['prefix'] ?? '') === 'Employer') &&
-                 (($p['controller'] ?? '') === 'Billing') &&
-                 (($p['action'] ?? '') === 'webhook'))
-                || $path === '/employer/billing/webhook';
+                (strtolower((string)($params['prefix'] ?? '')) === 'employer' &&
+                 strtolower((string)($params['controller'] ?? '')) === 'billing' &&
+                 strtolower((string)($params['action'] ?? '')) === 'webhook')
+                || str_starts_with($path, '/employer/billing/webhook');
 
-            $isAltStripe =
-                (($p['controller'] ?? '') === 'Webhooks' && ($p['action'] ?? '') === 'stripe')
-                || $path === '/webhooks/stripe';
-
-            return $isEmployerWebhook || $isAltStripe;
+            return $isAltByParams || $isAltByPath || $isEmployerWebhook;
         };
 
-        // CSRF は “インスタンス生成 → skipCheckCallback 呼び出し” が必須
-        $csrf = new CsrfProtectionMiddleware();
+        // CSRF はインスタンス化してから skipCheckCallback を設定する
+        $csrf = new CsrfProtectionMiddleware([
+            'httponly' => true,
+        ]);
         $csrf->skipCheckCallback($isStripeWebhook);
 
-        $q
+        return $q
             ->add(new ErrorHandlerMiddleware(Configure::read('Error'), $this))
             ->add(new AssetMiddleware(['cacheTime' => Configure::read('Asset.cacheTime')]))
-            ->add(new RoutingMiddleware($this))        // params を解決
-            ->add(new BodyParserMiddleware())          // JSON 等のボディ解析
+            ->add(new RoutingMiddleware($this))     // params を解決
+            ->add(new BodyParserMiddleware())       // JSON / x-www-form-urlencoded などを解析
             ->add(new AuthenticationMiddleware($this, [
-                'skipCheckCallback' => $isStripeWebhook // 認証は配列で OK
+                'skipCheckCallback' => $isStripeWebhook, // ★ Webhook は認証スキップ
             ]))
-            ->add($csrf);                               // ← ここはインスタンスを add
-
-        return $q;
+            ->add($csrf);                            // ★ Webhook は CSRF スキップ
     }
 
     public function services(ContainerInterface $container): void
@@ -89,7 +102,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
         $service = new AuthenticationService();
-        $prefix = $request->getParam('prefix');
+        $prefix  = $request->getParam('prefix');
 
         if ($prefix === 'Employer') {
             $service->loadIdentifier('Authentication.Password', [

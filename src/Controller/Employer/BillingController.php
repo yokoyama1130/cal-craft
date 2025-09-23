@@ -9,7 +9,6 @@ use Cake\Http\Exception\BadRequestException;
 use Cake\I18n\FrozenTime;
 use Cake\Routing\Router;
 use Stripe\StripeClient;
-use Stripe\Webhook;
 
 class BillingController extends AppController
 {
@@ -18,7 +17,6 @@ class BillingController extends AppController
         parent::initialize();
 
         if ($this->request->getParam('action') === 'webhook') {
-            // webhook はフォーム起源のPOSTではないので両方外す
             if ($this->components()->has('FormProtection')) {
                 $this->components()->unload('FormProtection');
             }
@@ -33,16 +31,16 @@ class BillingController extends AppController
         parent::beforeFilter($event);
 
         if ($this->request->getParam('action') === 'webhook') {
-            // 念のためこちらでも
             if ($this->components()->has('FormProtection')) {
                 $this->FormProtection->disable();
             }
             if ($this->components()->has('Security')) {
-                // もし unload ではなく設定で回避したい場合はこちらでも可
                 $this->Security->setConfig('validatePost', false);
                 $this->Security->setConfig('unlockedActions', ['webhook']);
             }
-            $this->Authentication->allowUnauthenticated(['webhook']);
+            if (property_exists($this, 'Authentication')) {
+                $this->Authentication->allowUnauthenticated(['webhook']);
+            }
         }
     }
 
@@ -179,11 +177,11 @@ class BillingController extends AppController
     {
         $this->request->allowMethod(['post']);
 
-        // ---- まず到達＆設定の健全性を軽くログ ----
+        // 到達ログ
         $req = $this->request;
         $sig = $req->getHeaderLine('Stripe-Signature');
         $raw = file_get_contents('php://input') ?: '';
-        $wh  = (string)(\Cake\Core\Configure::read('Stripe.webhook_secret') ?? '');
+        $wh  = (string)(Configure::read('Stripe.webhook_secret') ?? '');
 
         file_put_contents(LOGS.'webhook_debug.log', json_encode([
             'arrived'       => true,
@@ -191,51 +189,59 @@ class BillingController extends AppController
             'has_sig'       => $sig !== '',
             'raw_len'       => strlen($raw),
             'whsec_len'     => strlen($wh),
-            'whsec_preview' => $wh ? (substr($wh, 0, 6) . '...' . substr($wh, -6)) : null, // 秘匿した確認だけ
+            'whsec_preview' => $wh ? (substr($wh, 0, 6) . '...' . substr($wh, -6)) : null,
         ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
 
-        if ($wh === '') {
-            return $this->response->withStatus(400)->withStringBody('Webhook secret not configured');
-        }
-        if ($sig === '' || $raw === '') {
-            file_put_contents(LOGS.'webhook_debug.log', "missing header/body\n", FILE_APPEND);
-            return $this->response->withStatus(400)->withStringBody('Invalid signature');
+        if ($wh === '' || $sig === '' || $raw === '') {
+            file_put_contents(LOGS.'webhook_debug.log', "missing config/header/body\n", FILE_APPEND);
+            return $this->response->withStatus(400)->withStringBody('invalid');
         }
 
-        // ---- Stripe 署名を検証（ここでだけ raw を使う）----
         try {
             $event = \Stripe\Webhook::constructEvent($raw, $sig, $wh);
         } catch (\Throwable $e) {
-            file_put_contents(LOGS.'webhook_debug.log', json_encode([
-                'verify_error' => $e->getMessage(),
-            ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
-            return $this->response->withStatus(400)->withStringBody('Invalid signature');
+            file_put_contents(LOGS.'webhook_debug.log', json_encode(['verify_error' => $e->getMessage()], JSON_PRETTY_PRINT)."\n", FILE_APPEND);
+            return $this->response->withStatus(400)->withStringBody('bad sig');
         }
 
-        // 署名OKの最小ログ
         file_put_contents(LOGS.'webhook_debug.log', json_encode([
             'verified' => true,
             'type'     => $event->type ?? null,
             'id'       => $event->id ?? null,
         ], JSON_PRETTY_PRINT) . "\n", FILE_APPEND);
 
-        // ---- 以降アプリの処理 ----
         $Companies = $this->fetchTable('Companies');
         $Invoices  = $this->fetchTable('CompanyInvoices');
 
-        // 請求レコード保存（リトライに備え重複防止）
+        // upsert 用クロージャ
         $saveInvoice = function(array $data) use ($Invoices, $raw) {
-            if (!empty($data['stripe_invoice_id'])
-                && $Invoices->exists(['stripe_invoice_id' => $data['stripe_invoice_id']])) {
+            $existing = null;
+
+            if (!empty($data['stripe_invoice_id'])) {
+                $existing = $Invoices->find()->where(['stripe_invoice_id' => $data['stripe_invoice_id']])->first();
+            }
+            if (!$existing && !empty($data['stripe_payment_intent_id'])) {
+                $existing = $Invoices->find()->where(['stripe_payment_intent_id' => $data['stripe_payment_intent_id']])->first();
+            }
+
+            // 0円ならログ
+            if (isset($data['amount']) && (int)$data['amount'] === 0) {
+                \Cake\Log\Log::warning('[CompanyInvoices upsert] amount=0 data='.json_encode($data, JSON_UNESCAPED_UNICODE));
+            }
+
+            if ($existing) {
+                $existing = $Invoices->patchEntity($existing, $data + ['raw_payload' => $raw]);
+                if (!$Invoices->save($existing)) {
+                    \Cake\Log\Log::error('CompanyInvoice update failed: ' . json_encode($existing->getErrors(), JSON_UNESCAPED_UNICODE));
+                }
                 return;
             }
-            if (!empty($data['stripe_payment_intent_id'])
-                && $Invoices->exists(['stripe_payment_intent_id' => $data['stripe_payment_intent_id']])) {
-                return;
-            }
+
             $rec = $Invoices->newEmptyEntity();
             $rec = $Invoices->patchEntity($rec, $data + ['raw_payload' => $raw]);
-            $Invoices->save($rec);
+            if (!$Invoices->save($rec)) {
+                \Cake\Log\Log::error('CompanyInvoice create failed: ' . json_encode($rec->getErrors(), JSON_UNESCAPED_UNICODE));
+            }
         };
 
         switch ($event->type ?? '') {
@@ -254,13 +260,13 @@ class BillingController extends AppController
                         $c->plan = $plan;
 
                         try {
-                            \Stripe\Stripe::setApiKey((string)\Cake\Core\Configure::read('Stripe.secret_key'));
+                            \Stripe\Stripe::setApiKey((string)Configure::read('Stripe.secret_key'));
                             $sub = \Stripe\Subscription::retrieve($subId);
                             if (!empty($sub->current_period_end)) {
-                                $c->paid_until = \Cake\I18n\FrozenTime::createFromTimestamp($sub->current_period_end);
+                                $c->paid_until = FrozenTime::createFromTimestamp($sub->current_period_end);
                             }
                         } catch (\Throwable $e) {
-                            // 読み取り失敗は無視（最低限の更新は済んでいるため）
+                            // 読み取り失敗は無視
                         }
                         $Companies->save($c);
                     }
@@ -268,6 +274,33 @@ class BillingController extends AppController
                 break;
             }
 
+            // 確定時に open で upsert（あとで paid で上書き）
+            case 'invoice.finalized': {
+                $inv = $event->data->object ?? null;
+                if ($inv) {
+                    $customer = (string)($inv->customer ?? '');
+                    $company = $customer ? $Companies->find()->where(['stripe_customer_id' => $customer])->first() : null;
+                    if ($company) {
+                        $amount = $this->resolveInvoiceAmount($inv, /*allowLineSum=*/true);
+                        $plan   = $this->resolvePlanFromInvoice($inv);
+
+                        $saveInvoice([
+                            'company_id'             => (int)$company->id,
+                            'stripe_customer_id'     => $customer,
+                            'stripe_subscription_id' => (string)($inv->subscription ?? ''),
+                            'stripe_invoice_id'      => (string)($inv->id ?? ''),
+                            'plan'                   => $plan,
+                            'amount'                 => $amount,
+                            'currency'               => (string)($inv->currency ?? 'jpy'),
+                            'status'                 => 'open',
+                            'paid_at'                => null,
+                        ]);
+                    }
+                }
+                break;
+            }
+
+            case 'invoice.paid':
             case 'invoice.payment_succeeded': {
                 $inv = $event->data->object ?? null;
                 if ($inv) {
@@ -275,21 +308,29 @@ class BillingController extends AppController
                     $company = $customer ? $Companies->find()->where(['stripe_customer_id' => $customer])->first() : null;
 
                     if ($company) {
+                        $amount = $this->resolveInvoiceAmount($inv, /*allowLineSum=*/true);
+                        if ($amount === 0) {
+                            \Cake\Log\Log::warning('[invoice.payment_succeeded] amount=0 dump: '.json_encode($inv->toArray()));
+                        }
+
+                        $plan = $this->resolvePlanFromInvoice($inv);
+
                         $saveInvoice([
                             'company_id'             => (int)$company->id,
                             'stripe_customer_id'     => $customer,
                             'stripe_subscription_id' => (string)($inv->subscription ?? ''),
                             'stripe_invoice_id'      => (string)($inv->id ?? ''),
-                            'plan'                   => (string)($inv->lines->data[0]->price->nickname ?? ''),
-                            'amount'                 => (int)($inv->amount_paid ?? 0),
+                            'plan'                   => $plan,
+                            'amount'                 => $amount,
                             'currency'               => (string)($inv->currency ?? 'jpy'),
                             'status'                 => 'paid',
                             'paid_at'                => date('Y-m-d H:i:s'),
                         ]);
 
-                        $periodEndTs = (int)($inv->lines->data[0]->period->end ?? $inv->period_end ?? 0);
+                        $firstLine   = $inv->lines->data[0] ?? null;
+                        $periodEndTs = (int)($firstLine->period->end ?? $inv->period_end ?? 0);
                         if ($periodEndTs) {
-                            $company->paid_until = \Cake\I18n\FrozenTime::createFromTimestamp($periodEndTs);
+                            $company->paid_until = FrozenTime::createFromTimestamp($periodEndTs);
                             $Companies->save($company);
                         }
                     }
@@ -303,7 +344,7 @@ class BillingController extends AppController
                     $c = $Companies->find()->where(['stripe_subscription_id' => $sub->id])->first();
                     if ($c) {
                         if (!empty($sub->current_period_end)) {
-                            $c->paid_until = \Cake\I18n\FrozenTime::createFromTimestamp($sub->current_period_end);
+                            $c->paid_until = FrozenTime::createFromTimestamp($sub->current_period_end);
                         }
                         if (in_array((string)$sub->status, ['canceled','unpaid'], true)) {
                             $c->plan = 'free';
@@ -328,11 +369,20 @@ class BillingController extends AppController
                 break;
             }
 
+            // 単発（今は使わないかもだが堅牢に）
             case 'payment_intent.succeeded': {
                 $pi = $event->data->object ?? null;
                 if ($pi) {
                     $companyId  = (int)($pi->metadata->company_id ?? 0);
-                    $targetPlan = (string)($pi->metadata->target_plan ?? '');
+                    $targetPlan = (string)($pi->metadata->target_plan ?? ($pi->metadata->plan ?? ''));
+
+                    $amount = isset($pi->amount_received) ? (int)$pi->amount_received :
+                              (isset($pi->amount) ? (int)$pi->amount : 0);
+
+                    if ($amount === 0) {
+                        $this->log('[payment_intent.succeeded] amount=0 payload='.json_encode($pi->toArray()), 'warning');
+                    }
+
                     if ($companyId && $targetPlan) {
                         $company = $Companies->get($companyId);
                         $company->plan = $targetPlan;
@@ -343,7 +393,7 @@ class BillingController extends AppController
                             'stripe_customer_id'       => (string)($pi->customer ?? ''),
                             'stripe_payment_intent_id' => (string)($pi->id ?? ''),
                             'plan'                     => $targetPlan,
-                            'amount'                   => (int)($pi->amount ?? 0),
+                            'amount'                   => $amount,
                             'currency'                 => (string)($pi->currency ?? 'jpy'),
                             'status'                   => 'paid',
                             'paid_at'                  => date('Y-m-d H:i:s'),
@@ -354,16 +404,12 @@ class BillingController extends AppController
             }
 
             default:
-                // 他イベントは現状スルー
+                // noop
                 break;
         }
 
-        // Stripe には 2xx を返す
-        return $this->response
-            ->withType('text/plain')
-            ->withStringBody('ok');
+        return $this->response->withType('text/plain')->withStringBody('ok');
     }
-
 
     public function cancel()
     {
@@ -484,37 +530,39 @@ class BillingController extends AppController
         return $this->redirect(['action' => 'history']);
     }
 
-    public function changePlan(string $plan)
+    /**
+     * Invoice の金額を安全に解決（最小通貨単位：JPYなら円）
+     */
+    protected function resolveInvoiceAmount(object $inv, bool $allowLineSum = true): int
     {
-        $this->request->allowMethod(['post']);
-        \Stripe\Stripe::setApiKey((string)Configure::read('Stripe.secret_key'));
+        $amount = 0;
+        if (isset($inv->amount_paid))        $amount = (int)$inv->amount_paid;
+        elseif (isset($inv->total))          $amount = (int)$inv->total;
+        elseif (isset($inv->amount_due))     $amount = (int)$inv->amount_due;
 
-        $priceMap = (array)Configure::read('Stripe.price_map');
-        if (!isset($priceMap[$plan])) throw new BadRequestException('invalid plan');
-
-        $auth = $this->Authentication->getIdentity();
-        if (!$auth) throw new BadRequestException('auth required');
-
-        $Companies = $this->fetchTable('Companies');
-        $company   = $Companies->get((int)$auth->id);
-
-        if (empty($company->stripe_subscription_id)) throw new BadRequestException('no active subscription');
-
-        $sub = \Stripe\Subscription::retrieve($company->stripe_subscription_id);
-        $itemId = $sub->items->data[0]->id ?? null;
-        if (!$itemId) throw new BadRequestException('subscription item not found');
-
-        $updated = \Stripe\Subscription::update($company->stripe_subscription_id, [
-            'items' => [[ 'id' => $itemId, 'price' => $priceMap[$plan] ]],
-        ]);
-
-        $company->plan = $plan;
-        if (!empty($updated->current_period_end)) {
-            $company->paid_until = FrozenTime::createFromTimestamp($updated->current_period_end);
+        if ($amount === 0 && $allowLineSum && isset($inv->lines->data) && is_array($inv->lines->data)) {
+            foreach ($inv->lines->data as $line) {
+                $amount += (int)($line->amount_total ?? $line->amount ?? 0);
+            }
         }
-        $Companies->save($company);
+        return $amount;
+    }
 
-        $this->Flash->success('プランを変更しました。');
-        return $this->redirect(['action' => 'plan']);
+    /**
+     * Invoice の1行目からプラン名を推定
+     */
+    protected function resolvePlanFromInvoice(object $inv): string
+    {
+        $plan = 'pro';
+        $firstLine = $inv->lines->data[0] ?? null;
+        if ($firstLine) {
+            $price = $firstLine->price ?? null;
+            if (is_object($price)) {
+                $plan = (string)($price->nickname ?? $price->lookup_key ?? $price->product ?? $plan);
+            } elseif (is_string($price) && $price !== '') {
+                $plan = $price;
+            }
+        }
+        return $plan;
     }
 }
