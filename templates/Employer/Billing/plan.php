@@ -1,13 +1,21 @@
 <?php $hasSub = !empty($company->stripe_subscription_id); ?>
 <div class="container py-4">
-  <h1 class="h4 mb-3">プラン変更</h1>
-  <p class="text-muted">
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h4 mb-0">プラン変更</h1>
+</div>
+<div class="d-flex align-items-center mb-2">
+  <p class="text-muted mb-0">
     現在のプラン：<strong><?= h($company->plan ?: 'free') ?></strong>
     <?php if (!empty($company->paid_until)): ?>
       <span class="ms-2 small">(有効期限：<?= h($company->paid_until->i18nFormat('yyyy-MM-dd HH:mm')) ?>)</span>
     <?php endif; ?>
   </p>
-
+  <?php if ($this->Identity->isLoggedIn() && $this->Identity->get('id') === $company->id): ?>
+    <?= $this->Html->link('請求履歴', '/employer/billing/history', [
+      'class' => 'btn btn-outline-primary ms-auto'
+    ]) ?>
+  <?php endif; ?>
+</div>
   <div class="row g-3">
     <?php foreach ($plans as $key => $p): ?>
       <div class="col-md-4">
