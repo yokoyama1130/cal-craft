@@ -40,10 +40,6 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         } else {
             FactoryLocator::add('Table', (new TableLocator())->allowFallbackClass(false));
         }
-
-        if (Configure::read('debug')) {
-            $this->addPlugin('DebugKit');
-        }
     }
 
     /**
@@ -92,14 +88,11 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             return $isAltByParams || $isAltByPath || $isEmployerWebhook;
         };
 
+        // CSRF はインスタンス化してから skipCheckCallback を設定する
         $csrf = new CsrfProtectionMiddleware([
             'httponly' => true,
         ]);
-
-        $csrf->skipCheckCallback(function ($request) {
-            return $request->getParam('controller') === 'Employer/Billing'
-                && $request->getParam('action') === 'webhook';
-        });
+        $csrf->skipCheckCallback($isStripeWebhook);
 
         return $q
             ->add(new ErrorHandlerMiddleware(Configure::read('Error'), $this))
