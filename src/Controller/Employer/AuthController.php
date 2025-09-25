@@ -15,7 +15,7 @@ class AuthController extends AppController
     {
         parent::initialize();
         $this->Authentication->allowUnauthenticated(['login', 'verifyEmail', 'resendVerification']); // 必要分
-        $this->loadModel('Companies'); // ★ これがないと $this->Companies が未定義
+        $this->Companies = $this->fetchTable('Companies');
     }
 
     public function beforeFilter(EventInterface $event) // ★ 型は Cake\Event\EventInterface
