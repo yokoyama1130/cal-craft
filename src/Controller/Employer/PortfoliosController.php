@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace App\Controller\Employer;
 
 use App\Controller\AppController;
-use Cake\Utility\Text;
 use Cake\Filesystem\Folder;
-use Psr\Http\Message\UploadedFileInterface;
 use Cake\Log\Log;
+use Cake\Utility\Text;
+use Psr\Http\Message\UploadedFileInterface;
 
 class PortfoliosController extends AppController
 {
@@ -19,7 +19,7 @@ class PortfoliosController extends AppController
 
         // セレクト用: id => name
         $categoryOptions = $Categories->find('list', [
-            'keyField'   => 'id',
+            'keyField' => 'id',
             'valueField' => 'name',
         ])->toArray();
 
@@ -32,7 +32,7 @@ class PortfoliosController extends AppController
             ->toArray();
 
         $Portfolios = $this->fetchTable('Portfolios');
-        $portfolio  = $Portfolios->newEmptyEntity();
+        $portfolio = $Portfolios->newEmptyEntity();
 
         if ($this->request->is('post')) {
             $data = $this->request->getData();
@@ -40,21 +40,21 @@ class PortfoliosController extends AppController
             // サムネイル（任意）
             $thumbnailFile = $this->request->getData('thumbnail_file');
             if ($thumbnailFile && $thumbnailFile->getError() === UPLOAD_ERR_OK) {
-                $ext     = strtolower(pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION));
+                $ext = strtolower(pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION));
                 $safeExt = in_array($ext, ['jpg','jpeg','png','webp'], true) ? $ext : 'jpg';
-                $filename   = Text::uuid() . '.' . $safeExt;
+                $filename = Text::uuid() . '.' . $safeExt;
                 $uploadPath = WWW_ROOT . 'uploads' . DS . $filename;
                 $thumbnailFile->moveTo($uploadPath);
                 $data['thumbnail'] = '/uploads/' . $filename;
             }
 
             // 会社認証での投稿（user_id は null）
-            $identity  = $this->Authentication->getIdentity();
+            $identity = $this->Authentication->getIdentity();
             $companyId = $identity ? ($identity->get('company_id') ?? ($identity->get('company')['id'] ?? $identity->get('id'))) : null;
 
             $portfolio = $Portfolios->patchEntity($portfolio, $data);
             $portfolio->company_id = $companyId;
-            $portfolio->user_id    = null;
+            $portfolio->user_id = null;
 
             if ($Portfolios->save($portfolio)) {
                 try {
@@ -92,9 +92,9 @@ class PortfoliosController extends AppController
         ]);
 
         // 認証情報
-        $identity       = $this->request->getAttribute('identity');
-        $authUserId     = $identity ? $identity->get('id') : null;
-        $authCompanyId  = $identity ? ($identity->get('company_id') ?? null) : null;
+        $identity = $this->request->getAttribute('identity');
+        $authUserId = $identity ? $identity->get('id') : null;
+        $authCompanyId = $identity ? ($identity->get('company_id') ?? null) : null;
 
         // 非公開なら本人（ユーザーor会社）だけOK
         if (!$portfolio->is_public) {
@@ -107,15 +107,16 @@ class PortfoliosController extends AppController
             }
             if (!$isOwner) {
                 $this->Flash->error('この投稿にはアクセスできません。');
+
                 return $this->redirect(['action' => 'index']); // index が無いならトップ等に変更
             }
         }
 
         // ===== ユーザー投稿のときだけフォロー情報を出す =====
-        $showFollowUi   = false;
-        $followerCount  = 0;
+        $showFollowUi = false;
+        $followerCount = 0;
         $followingCount = 0;
-        $isFollowing    = false;
+        $isFollowing = false;
 
         if (!empty($portfolio->user_id)) {
             $showFollowUi = true;
@@ -143,9 +144,9 @@ class PortfoliosController extends AppController
             ->contain(['Users','Companies']) // ★会社名/ロゴを出すため
             ->order(['Comments.created' => 'ASC'])
             ->all();
-        
+
         $currentActor = $this->getActor(); // ★これをビューに渡す
-        $this->set(compact('comments','currentActor'));
+        $this->set(compact('comments', 'currentActor'));
 
         $this->set(compact(
             'portfolio',
@@ -170,11 +171,12 @@ class PortfoliosController extends AppController
         ]);
 
         // 会社オーナーのみ編集可
-        $identity  = $this->Authentication->getIdentity();
+        $identity = $this->Authentication->getIdentity();
         $companyId = $identity ? ($identity->get('company_id') ?? $identity->get('id')) : null;
 
         if (!$companyId || (int)$portfolio->company_id !== (int)$companyId) {
             $this->Flash->error('この投稿を編集する権限がありません。');
+
             return $this->redirect(['action' => 'view', $id]);
         }
 
@@ -184,9 +186,9 @@ class PortfoliosController extends AppController
             // サムネ差し替え（任意）
             $thumbnailFile = $this->request->getData('thumbnail_file');
             if ($thumbnailFile && $thumbnailFile->getError() === UPLOAD_ERR_OK) {
-                $ext       = strtolower(pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION));
-                $safeExt   = in_array($ext, ['jpg','jpeg','png','webp'], true) ? $ext : 'jpg';
-                $filename  = Text::uuid() . '.' . $safeExt;
+                $ext = strtolower(pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION));
+                $safeExt = in_array($ext, ['jpg','jpeg','png','webp'], true) ? $ext : 'jpg';
+                $filename = Text::uuid() . '.' . $safeExt;
                 $uploadPath = WWW_ROOT . 'uploads' . DS . $filename;
                 $thumbnailFile->moveTo($uploadPath);
                 $data['thumbnail'] = '/uploads/' . $filename;
@@ -202,6 +204,7 @@ class PortfoliosController extends AppController
                 }
 
                 $this->Flash->success('投稿を更新しました。');
+
                 return $this->redirect(['action' => 'view', $id]);
             }
 
@@ -210,7 +213,7 @@ class PortfoliosController extends AppController
 
         // セレクト用カテゴリ
         $categoryOptions = $Categories->find('list', [
-            'keyField'   => 'id',
+            'keyField' => 'id',
             'valueField' => 'name',
         ])->toArray();
 
@@ -229,8 +232,8 @@ class PortfoliosController extends AppController
 
     public function delete($id)
     {
-        $portfolio  = $this->Portfolios->get($id);
-        $identity   = $this->request->getAttribute('identity');
+        $portfolio = $this->Portfolios->get($id);
+        $identity = $this->request->getAttribute('identity');
         $authUserId = $identity ? $identity->get('id') : null;
 
         if ((int)$portfolio->company_id !== (int)$authUserId) {
@@ -253,9 +256,9 @@ class PortfoliosController extends AppController
      */
     private function handlePdfUploads(\App\Model\Entity\Portfolio $portfolio): void
     {
-        $req     = $this->request;
+        $req = $this->request;
         $drawing = $req->getData('drawing_pdf');
-        $supps   = (array)$req->getData('supplement_pdfs');
+        $supps = (array)$req->getData('supplement_pdfs');
 
         if (!$drawing && empty(array_filter($supps))) {
             return;
@@ -279,7 +282,7 @@ class PortfoliosController extends AppController
             }
         }
         if ($suppPaths) {
-            $current    = $portfolio->supplement_pdf_paths;
+            $current = $portfolio->supplement_pdf_paths;
             $currentArr = is_string($current) ? (array)json_decode($current, true) : (array)$current;
             $portfolio->supplement_pdf_paths = array_values(array_merge($currentArr, $suppPaths));
         }
@@ -305,12 +308,12 @@ class PortfoliosController extends AppController
             throw new \RuntimeException('PDFのみアップロードできます。');
         }
 
-        $stream   = $file->getStream();
+        $stream = $file->getStream();
         $contents = $stream->getContents();
         $stream->rewind();
 
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime  = $finfo->buffer($contents);
+        $mime = $finfo->buffer($contents);
         if (!in_array($mime, ['application/pdf', 'application/x-pdf'], true)) {
             throw new \RuntimeException('PDF以外のファイルです。');
         }
