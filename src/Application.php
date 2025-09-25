@@ -49,7 +49,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
          */
         $isStripeWebhook = function ($request): bool {
             $params = (array)$request->getAttribute('params');
-            $path   = strtolower($request->getUri()->getPath() ?? '');
+            $path = strtolower($request->getUri()->getPath() ?? '');
 
             // ルーティング解決済みの controller/action でも拾う
             $isAltByParams = (
@@ -59,8 +59,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
             // パスでの直叩きも拾う（CLI の forward はここに該当）
             $isAltByPath =
-                ($path === '/webhook/stripe') ||     // ★ CLI の既定（今回の本命）
-                ($path === '/webhooks/stripe');      // 互換
+                ($path === '/webhook/stripe') || // ★ CLI の既定（今回の本命）
+                ($path === '/webhooks/stripe'); // 互換
 
             // Employer 側の別口を使う場合（前方一致でケア）
             $isEmployerWebhook =
@@ -84,12 +84,12 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         return $q
             ->add(new ErrorHandlerMiddleware(Configure::read('Error'), $this))
             ->add(new AssetMiddleware(['cacheTime' => Configure::read('Asset.cacheTime')]))
-            ->add(new RoutingMiddleware($this))     // params を解決
-            ->add(new BodyParserMiddleware())       // JSON / x-www-form-urlencoded などを解析
+            ->add(new RoutingMiddleware($this)) // params を解決
+            ->add(new BodyParserMiddleware()) // JSON / x-www-form-urlencoded などを解析
             ->add(new AuthenticationMiddleware($this, [
                 'skipCheckCallback' => $isStripeWebhook, // ★ Webhook は認証スキップ
             ]))
-            ->add($csrf);                            // ★ Webhook は CSRF スキップ
+            ->add($csrf); // ★ Webhook は CSRF スキップ
     }
 
     public function services(ContainerInterface $container): void
@@ -105,7 +105,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
         $service = new AuthenticationService();
-        $prefix  = $request->getParam('prefix');
+        $prefix = $request->getParam('prefix');
 
         if ($prefix === 'Employer') {
             $service->loadIdentifier('Authentication.Password', [
@@ -119,7 +119,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             $service->loadAuthenticator('Authentication.Session');
             $service->loadAuthenticator('Authentication.Form', [
                 'loginUrl' => '/employer/login',
-                'fields'   => ['username' => 'auth_email', 'password' => 'auth_password'],
+                'fields' => ['username' => 'auth_email', 'password' => 'auth_password'],
             ]);
 
             $service->setConfig([
@@ -138,7 +138,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             $service->loadAuthenticator('Authentication.Session');
             $service->loadAuthenticator('Authentication.Form', [
                 'loginUrl' => '/users/login',
-                'fields'   => ['username' => 'email', 'password' => 'password'],
+                'fields' => ['username' => 'email', 'password' => 'password'],
             ]);
 
             $service->setConfig([
