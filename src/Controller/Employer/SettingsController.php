@@ -17,7 +17,7 @@ class SettingsController extends AppController
         parent::initialize();
 
         // 会社側は Companies テーブルを使う
-        $this->loadModel('Companies');
+        $this->Companies = $this->fetchTable('Companies');
         $this->loadComponent('Flash');
 
         // メール確認リンクは未ログインでも叩けるように

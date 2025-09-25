@@ -21,7 +21,7 @@ class SettingsController extends AppController
             $this->Authentication->allowUnauthenticated(['confirmEmail']);
         }
 
-        $this->loadModel('Users');
+        $this->Users = $this->fetchTable('users');
         $this->loadComponent('Flash');
         // CSRF はミドルウェア想定。使っていなければ FormProtection を有効に
         // $this->loadComponent('FormProtection');
