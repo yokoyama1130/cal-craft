@@ -10,6 +10,11 @@ use Psr\Http\Message\UploadedFileInterface;
 
 class CompaniesController extends AppController
 {
+    /**
+     * イニシャライズ
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
