@@ -5,6 +5,19 @@ namespace App\Controller\Admin;
 
 class PortfoliosController extends AppController
 {
+    /**
+     * ポートフォリオ一覧を表示する管理画面アクション。
+     *
+     * - クエリパラメータに応じて絞り込み・検索を実行
+     *   - q: タイトル・説明文の部分一致検索
+     *   - visibility: 公開 / 非公開の絞り込み
+     *   - owner: user → ユーザー所有, company → 企業所有
+     * - Users, Companies を contain して取得
+     * - 作成日の降順で並べ替え
+     * - ページネーション（1ページ20件）
+     *
+     * @return void
+     */
     public function index()
     {
         $q = $this->request->getQueryParams();
@@ -37,6 +50,17 @@ class PortfoliosController extends AppController
         $this->set(compact('portfolios', 'q'));
     }
 
+    /**
+     * ポートフォリオの公開状態をトグル（ON/OFF 切り替え）する。
+     *
+     * - POST リクエストのみ許可
+     * - 指定 ID のポートフォリオを取得
+     * - is_public を反転させて保存
+     * - 成功メッセージを表示し、直前のページにリダイレクト
+     *
+     * @param int $id ポートフォリオID
+     * @return \Cake\Http\Response リダイレクトレスポンス
+     */
     public function toggle($id)
     {
         $this->request->allowMethod(['post']);
@@ -48,6 +72,16 @@ class PortfoliosController extends AppController
         return $this->redirect($this->referer());
     }
 
+    /**
+     * ポートフォリオ削除処理（管理者用）。
+     *
+     * - POST または DELETE リクエストのみ許可
+     * - 指定 ID のポートフォリオを取得して削除
+     * - 成功メッセージを表示し、直前のページにリダイレクト
+     *
+     * @param int $id ポートフォリオID
+     * @return \Cake\Http\Response リダイレクトレスポンス
+     */
     public function delete($id)
     {
         $this->request->allowMethod(['post','delete']);
