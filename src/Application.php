@@ -41,6 +41,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             FactoryLocator::add('Table', (new TableLocator())->allowFallbackClass(false));
         }
 
+        // [直し]debugだから情報漏洩の可能性あり。消したいけど、消すとブラウザでエラー文が見える🥹
         if (Configure::read('debug')) {
             $this->addPlugin('DebugKit');
         }
