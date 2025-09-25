@@ -17,7 +17,7 @@ class CompaniesController extends AppController
         $this->Authentication->addUnauthenticatedActions([]); // 全アクション認証必須
         // 既存ビューを流用
         $this->viewBuilder()->setTemplatePath('Companies');
-        $this->loadModel('Portfolios');
+        $this->Portfolios = $this->fetchTable('Portfolios');
     }
 
     /**
