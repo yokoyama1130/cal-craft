@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
@@ -11,11 +12,11 @@ class UsersController extends AppController
         $q = $this->request->getQuery();
         $Users = $this->fetchTable('Users');
 
-        $query = $Users->find()->order(['id'=>'DESC']);
+        $query = $Users->find()->order(['id' => 'DESC']);
 
         if (!empty($q['q'])) {
-            $kw = '%' . str_replace('%','\%',$q['q']) . '%';
-            $query->where(['OR'=>[
+            $kw = '%' . str_replace('%', '\%', $q['q']) . '%';
+            $query->where(['OR' => [
                 'Users.name LIKE' => $kw,
                 'Users.email LIKE' => $kw,
             ]]);
@@ -25,9 +26,9 @@ class UsersController extends AppController
             else $query->where(['Users.deleted_at IS NOT' => null]);
         }
 
-        $this->paginate = ['limit'=>30];
+        $this->paginate = ['limit' => 30];
         $users = $this->paginate($query);
-        $this->set(compact('users','q'));
+        $this->set(compact('users', 'q'));
     }
 
     public function toggle($id)
@@ -38,6 +39,7 @@ class UsersController extends AppController
         $u->deleted_at = $u->deleted_at ? null : FrozenTime::now();
         $Users->save($u);
         $this->Flash->success('ユーザー状態を切り替えました。');
+
         return $this->redirect($this->referer());
     }
 }
