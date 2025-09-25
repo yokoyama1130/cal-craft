@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace App\Controller\Admin;
 
 use App\Controller\Admin\AppController;
@@ -12,15 +14,15 @@ class PortfoliosController extends AppController
 
         $query = $Portfolios->find()
             ->contain(['Users','Companies'])
-            ->order(['Portfolios.created'=>'DESC']);
+            ->order(['Portfolios.created' => 'DESC']);
 
         if (!empty($q['q'])) {
-            $kw = '%' . str_replace('%','\%',$q['q']) . '%';
+            $kw = '%' . str_replace('%', '\%', $q['q']) . '%';
             $query->where([
                 'OR' => [
                     'Portfolios.title LIKE' => $kw,
                     'Portfolios.description LIKE' => $kw,
-                ]
+                ],
             ]);
         }
         if ($q['visibility'] ?? '' !== '') {
@@ -32,9 +34,9 @@ class PortfoliosController extends AppController
             $query->where(['Portfolios.company_id IS NOT' => null]);
         }
 
-        $this->paginate = ['limit'=>20];
+        $this->paginate = ['limit' => 20];
         $portfolios = $this->paginate($query);
-        $this->set(compact('portfolios','q'));
+        $this->set(compact('portfolios', 'q'));
     }
 
     public function toggle($id)
@@ -44,6 +46,7 @@ class PortfoliosController extends AppController
         $pf->is_public = (int)!$pf->is_public;
         $this->fetchTable('Portfolios')->save($pf);
         $this->Flash->success('公開状態を切り替えました。');
+
         return $this->redirect($this->referer());
     }
 
@@ -53,6 +56,7 @@ class PortfoliosController extends AppController
         $pf = $this->fetchTable('Portfolios')->get($id);
         $this->fetchTable('Portfolios')->delete($pf);
         $this->Flash->success('削除しました。');
+
         return $this->redirect($this->referer());
     }
 }
