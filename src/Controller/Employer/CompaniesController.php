@@ -33,7 +33,7 @@ class CompaniesController extends AppController
 
         // Employer認証のidentityは Companies エンティティ
         $companyId = (int)$identity->id;
-        $company   = $this->fetchTable('Companies')->get($companyId);
+        $company = $this->fetchTable('Companies')->get($companyId);
 
         if ($this->request->is(['patch','post','put'])) {
             $data = $this->request->getData();
@@ -47,10 +47,12 @@ class CompaniesController extends AppController
                 $size = (int)$uploaded->getSize(); // bytes
                 if (!in_array($mime, $allowed, true)) {
                     $this->Flash->error(__('Logo must be an image (png, jpg, webp, gif, svg).'));
+
                     return $this->redirect($this->request->getRequestTarget());
                 }
                 if ($size > 2 * 1024 * 1024) { // 2MB
                     $this->Flash->error(__('Logo is too large (max 2MB).'));
+
                     return $this->redirect($this->request->getRequestTarget());
                 }
 
@@ -95,6 +97,7 @@ class CompaniesController extends AppController
 
             if ($this->fetchTable('Companies')->save($company)) {
                 $this->Flash->success(__('Company updated.'));
+
                 return $this->redirect([
                     'action' => 'view',
                     $company->id,
