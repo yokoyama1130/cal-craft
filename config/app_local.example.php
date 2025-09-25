@@ -63,7 +63,7 @@ return [
      * Host and credential configuration in case you are using SmtpTransport
      *
      * See app.php for more configuration options.
-     * 
+     *
      * ここのメールアドレスを変えて、そのGmailからパスワード取得すれば送信先を変えられるんだと思う
      * 公式のメールアドレスを作ったらここ修正する
      */
@@ -93,19 +93,19 @@ return [
         // ← ここを追加
         'publishable_key' => env('STRIPE_PUBLISHABLE_KEY', 'pk_test_51S1k1sCgJxKS2UMCXMdmrELYuleNq9CPeBrdt8fHsY5YQL9azD0SNSc2ksWJzfT25P22f0WpAayWKWlvoj8zXHDE00LraoHPvf'),
         // secret → secret_key に変更（コントローラ側と揃える）
-        'secret_key'      => env('STRIPE_SECRET_KEY', 'sk_test_51S1k1sCgJxKS2UMCu4ZaIM0WiCeYmKfx8IJtXzywNcNSaEKpk6CfMwrw6lKLIbrlwmAMgLSDoanOfiRhraEmxC7n00mUCG10Az'),
+        'secret_key' => env('STRIPE_SECRET_KEY', 'sk_test_51S1k1sCgJxKS2UMCu4ZaIM0WiCeYmKfx8IJtXzywNcNSaEKpk6CfMwrw6lKLIbrlwmAMgLSDoanOfiRhraEmxC7n00mUCG10Az'),
 
         // 価格ID（Stripeダッシュボードで作った “月額” Price のID）
         'price_map' => [
-            'pro'        => env('STRIPE_PRICE_PRO'),
+            'pro' => env('STRIPE_PRICE_PRO'),
             'enterprise' => env('STRIPE_PRICE_ENT'),
         ],
 
         // 成功/キャンセルURL（{CHECKOUT_SESSION_ID} を含める）
         'success_url' => 'http://localhost:8765/employer/billing/success?session_id={CHECKOUT_SESSION_ID}',
-        'cancel_url'  => 'http://localhost:8765/employer/billing/cancel',
+        'cancel_url' => 'http://localhost:8765/employer/billing/cancel',
 
         // Webhookシークレット（ダッシュボードで /webhooks/stripe を登録して得た whsec_...）
-        'webhook_secret'=> 'whsec_06b679dd1e4597a7d52cf47cb824c51b3a2974001ddca40860e0c2d4ca2d43fc',
+        'webhook_secret' => 'whsec_06b679dd1e4597a7d52cf47cb824c51b3a2974001ddca40860e0c2d4ca2d43fc',
     ],
 ];
