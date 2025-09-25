@@ -31,16 +31,27 @@ class BillingController extends AppController
         parent::beforeFilter($event);
 
         if ($this->request->getParam('action') === 'webhook') {
+            // FormProtection は disable() ではなく「unlockedActions」で回避
             if ($this->components()->has('FormProtection')) {
-                $this->FormProtection->disable();
+                $this->FormProtection->setConfig('unlockedActions', ['webhook']);
             }
+
+            // SecurityComponent も同様に unlockedActions を設定
             if ($this->components()->has('Security')) {
-                $this->Security->setConfig('validatePost', false);
                 $this->Security->setConfig('unlockedActions', ['webhook']);
+                // validatePost を触っていた場合は基本不要。残すなら互換目的でOK
+                // $this->Security->setConfig('validatePost', false);
             }
-            if (property_exists($this, 'Authentication')) {
+
+            // 認証は「未認証で通す」設定に
+            if (method_exists($this->Authentication, 'addUnauthenticatedActions')) {
+                $this->Authentication->addUnauthenticatedActions(['webhook']);
+            } else {
                 $this->Authentication->allowUnauthenticated(['webhook']);
             }
+
+            // ついでにメソッド制限（推奨）
+            $this->request->allowMethod(['post']);
         }
     }
 

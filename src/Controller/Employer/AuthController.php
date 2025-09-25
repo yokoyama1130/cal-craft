@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace App\Controller\Employer;
 
 use App\Controller\AppController;
-use Cake\Event\EventInterface;          // ★ これを追加
-use Cake\Mailer\Mailer;                // 使ってるので追加
-use Cake\Routing\Router;               // 使ってるので追加
-use Cake\Utility\Text;                 // 使ってるので追加
+use Cake\Event\EventInterface; // ★ これを追加
+use Cake\Mailer\Mailer; // 使ってるので追加
+use Cake\Routing\Router; // 使ってるので追加
+use Cake\Utility\Text; // 使ってるので追加
 
 class AuthController extends AppController
 {

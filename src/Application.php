@@ -72,11 +72,14 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             return $isAltByParams || $isAltByPath || $isEmployerWebhook;
         };
 
-        // CSRF はインスタンス化してから skipCheckCallback を設定する
         $csrf = new CsrfProtectionMiddleware([
             'httponly' => true,
         ]);
-        $csrf->skipCheckCallback($isStripeWebhook);
+
+        $csrf->skipCheckCallback(function ($request) {
+            return $request->getParam('controller') === 'Employer/Billing'
+                && $request->getParam('action') === 'webhook';
+        });
 
         return $q
             ->add(new ErrorHandlerMiddleware(Configure::read('Error'), $this))
