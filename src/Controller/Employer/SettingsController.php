@@ -4,11 +4,10 @@ declare(strict_types=1);
 namespace App\Controller\Employer;
 
 use App\Controller\AppController;
+use App\Mailer\UserMailer as CompanyMailer;
+use Authentication\PasswordHasher\DefaultPasswordHasher;
 use Cake\I18n\FrozenTime;
 use Cake\Utility\Text;
-use Authentication\PasswordHasher\DefaultPasswordHasher;
-// 会社用のメール送信クラスを用意できるなら差し替え（UserMailer を流用でも可）
-use App\Mailer\UserMailer as CompanyMailer;
 
 class SettingsController extends AppController
 {
@@ -62,7 +61,7 @@ class SettingsController extends AppController
     {
         $identity = $this->request->getAttribute('identity');
         $company = $this->Companies->get((int)$identity->getIdentifier(), [
-            'fields' => ['id', 'auth_email', 'new_email']
+            'fields' => ['id', 'auth_email', 'new_email'],
         ]);
         $this->set(compact('company'));
         // ビュー: templates/Employer/Settings/edit_email.php （Users版を転用）
@@ -90,6 +89,7 @@ class SettingsController extends AppController
         $lastSent = $session->read('Employer.Settings.lastEmailRequestAt');
         if ($lastSent && (time() - (int)$lastSent) < 60) {
             $this->Flash->error('リクエストが多すぎます。しばらくしてからもう一度お試しください。');
+
             return $this->redirect(['action' => 'editEmail']);
         }
 
@@ -103,15 +103,17 @@ class SettingsController extends AppController
         $hasher = new DefaultPasswordHasher();
         if (!$hasher->check($currentPassword, (string)$company->password)) {
             $this->Flash->error('現在のパスワードが違います。');
+
             return $this->redirect(['action' => 'editEmail']);
         }
 
         // バリデーション名は CompaniesTable 側に emailChange ルールを用意（Users と同じ要領）
         $company = $this->Companies->patchEntity($company, ['new_email' => $newEmail], [
-            'validate' => 'emailChange'
+            'validate' => 'emailChange',
         ]);
         if ($company->getErrors()) {
             $this->Flash->error('メールアドレスが不正か、既に使われています。');
+
             return $this->redirect(['action' => 'editEmail']);
         }
 
@@ -146,17 +148,19 @@ class SettingsController extends AppController
     {
         if (!$token) {
             $this->Flash->error('トークンがありません。');
+
             return $this->redirect(['action' => 'index']);
         }
 
         $company = $this->Companies->find()
             ->where([
                 'email_change_token' => $token,
-                'email_change_expires >' => FrozenTime::now()
+                'email_change_expires >' => FrozenTime::now(),
             ])->first();
 
         if (!$company || empty($company->new_email)) {
             $this->Flash->error('リンクが無効または期限切れです。');
+
             return $this->redirect(['action' => 'index']);
         }
 
@@ -192,20 +196,23 @@ class SettingsController extends AppController
         $hasher = new DefaultPasswordHasher();
         if (!$hasher->check($currentPassword, (string)$company->password)) {
             $this->Flash->error('現在のパスワードが違います。');
+
             return $this->redirect(['action' => 'editPassword']);
         }
 
         if ($newPassword !== $newPassword2) {
             $this->Flash->error('新しいパスワードが一致しません。');
+
             return $this->redirect(['action' => 'editPassword']);
         }
 
         // CompaniesTable 側に Users と同じ validation set（passwordChange）を用意しておく
         $company = $this->Companies->patchEntity($company, ['password' => $newPassword], [
-            'validate' => 'passwordChange'
+            'validate' => 'passwordChange',
         ]);
         if ($company->getErrors()) {
             $this->Flash->error('パスワードがポリシーを満たしていません。');
+
             return $this->redirect(['action' => 'editPassword']);
         }
 
@@ -241,6 +248,7 @@ class SettingsController extends AppController
         $currentPassword = (string)$this->request->getData('current_password');
         if (!$hasher->check($currentPassword, (string)$company->password)) {
             $this->Flash->error('現在のパスワードが違います。');
+
             return $this->redirect(['action' => 'deleteConfirm']);
         }
 
@@ -248,6 +256,7 @@ class SettingsController extends AppController
         $confirm = (string)$this->request->getData('confirm_keyword');
         if (strtoupper(trim($confirm)) !== 'DELETE') {
             $this->Flash->error('確認キーワードが一致しません。DELETE と入力してください。');
+
             return $this->redirect(['action' => 'deleteConfirm']);
         }
 
@@ -266,10 +275,12 @@ class SettingsController extends AppController
             $this->Authentication->logout();
             $this->request->getSession()->destroy();
             $this->Flash->success('会社アカウントを削除（無効化）しました。');
+
             return $this->redirect(['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home']);
         }
 
         $this->Flash->error('削除に失敗しました。時間をおいて再度お試しください。');
+
         return $this->redirect(['action' => 'deleteConfirm']);
     }
 }
