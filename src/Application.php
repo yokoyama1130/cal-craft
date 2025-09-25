@@ -22,6 +22,13 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class Application extends BaseApplication implements AuthenticationServiceProviderInterface
 {
+    /**
+     * アプリケーション全体の初期化処理。
+     *
+     * プラグインのロードや環境依存の設定を行う。
+     *
+     * @return void
+     */
     public function bootstrap(): void
     {
         parent::bootstrap();
@@ -39,6 +46,19 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         }
     }
 
+    /**
+     * アプリケーション全体のミドルウェアを設定する。
+     *
+     * - エラーハンドラ
+     * - 静的アセット
+     * - ルーティング
+     * - JSON / form ボディパーサ
+     * - 認証
+     * - CSRF 保護（Webhook は除外）
+     *
+     * @param \Cake\Http\MiddlewareQueue $q ミドルウェアキュー
+     * @return \Cake\Http\MiddlewareQueue ミドルウェアキュー
+     */
     public function middleware(MiddlewareQueue $q): MiddlewareQueue
     {
         /**
@@ -92,20 +112,48 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             ->add($csrf); // ★ Webhook は CSRF スキップ
     }
 
+    /**
+     * サービスコンテナの定義を行う。
+     *
+     * ここでインターフェイスと具体クラスのバインディングを登録できる。
+     * 現状は特に追加サービスはなし。
+     *
+     * @param \Cake\Core\ContainerInterface $container サービスコンテナ
+     * @return void
+     */
     public function services(ContainerInterface $container): void
     {
     }
 
+    /**
+     * CLI 実行時のブートストラップ処理。
+     *
+     * - Bake プラグインをオプションでロード
+     * - Migrations プラグインをロード
+     *
+     * @return void
+     */
     protected function bootstrapCli(): void
     {
         $this->addOptionalPlugin('Bake');
         $this->addPlugin('Migrations');
     }
 
+    /**
+     * 認証サービスを生成して返す。
+     *
+     * prefix に応じて Employer 用／一般ユーザー用の認証処理を切り替える。
+     * - Employer: Companies テーブルを利用し、auth_email/auth_password を使用
+     * - Users: Users テーブルを利用し、email/password を使用
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request リクエスト
+     * @return \Authentication\AuthenticationServiceInterface 認証サービス
+     */
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
         $service = new AuthenticationService();
-        $prefix = $request->getParam('prefix');
+        $params = (array)$request->getAttribute('params');
+        $prefix = $params['prefix'] ?? null;
 
         if ($prefix === 'Employer') {
             $service->loadIdentifier('Authentication.Password', [
