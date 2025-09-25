@@ -4,13 +4,21 @@ declare(strict_types=1);
 namespace App\Controller\Employer;
 
 use App\Controller\AppController;
-use Cake\Event\EventInterface; // ★ これを追加
+use Cake\Event\EventInterface; // これを追加
 use Cake\Mailer\Mailer; // 使ってるので追加
 use Cake\Routing\Router; // 使ってるので追加
 use Cake\Utility\Text; // 使ってるので追加
 
 class AuthController extends AppController
 {
+    /**
+     * コントローラの初期化処理。
+     *
+     * - 認証不要アクションを設定（login, verifyEmail, resendVerification）
+     * - Companies テーブルをロード
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
@@ -18,6 +26,15 @@ class AuthController extends AppController
         $this->Companies = $this->fetchTable('Companies');
     }
 
+    /**
+     * アクション実行前の共通処理。
+     *
+     * - 親クラスの beforeFilter を実行
+     * - 認証不要アクションを設定（login, verifyEmail, resendVerification）
+     *
+     * @param \Cake\Event\EventInterface $event イベントオブジェクト
+     * @return void
+     */
     public function beforeFilter(EventInterface $event) // ★ 型は Cake\Event\EventInterface
     {
         parent::beforeFilter($event);
@@ -25,12 +42,26 @@ class AuthController extends AppController
         $this->Authentication->allowUnauthenticated(['login', 'verifyEmail', 'resendVerification']);
     }
 
+    /**
+     * 企業ユーザーのメールアドレス認証処理。
+     *
+     * メールリンクに含まれるトークンを検証し、対応する企業の
+     * email_verified を true に設定して保存する。
+     *
+     * - トークン不正 → エラーメッセージを表示し、ログイン画面へリダイレクト
+     * - 成功 → 成功メッセージを表示し、ログイン画面（メール入力済み）へリダイレクト
+     * - 保存失敗 → エラーメッセージを表示し、ログイン画面へリダイレクト
+     *
+     * @param string|null $token メール認証用トークン
+     * @return \Cake\Http\Response|null リダイレクトレスポンス
+     */
     public function verifyEmail($token = null)
     {
         $company = $this->Companies->find()->where(['email_token' => $token])->first();
 
         if (!$company) {
             $this->Flash->error('無効な認証リンクです。');
+
             return $this->redirect('/employer/login');
         }
 
@@ -39,13 +70,28 @@ class AuthController extends AppController
 
         if ($this->Companies->save($company)) {
             $this->Flash->success('企業メールの認証が完了しました。ログインできます。');
+
             return $this->redirect('/employer/login?auth_email=' . urlencode($company->auth_email));
         }
 
         $this->Flash->error('認証処理中にエラーが発生しました。');
+
         return $this->redirect('/employer/login');
     }
 
+    /**
+     * 企業メール認証リンクの再送処理。
+     *
+     * - POST の場合：入力されたメールを確認し、認証未完了なら新しいトークンを発行して
+     *   認証メールを再送信する。
+     *   - 該当ユーザーなし → エラーメッセージを表示し再送フォームへ戻す
+     *   - 既に認証済み → 成功メッセージを表示しログイン画面へリダイレクト
+     *   - 再送成功 → 成功メッセージを表示しログイン画面へリダイレクト
+     *   - 保存または送信失敗 → エラーメッセージを表示
+     * - GET の場合：再送フォームを表示
+     *
+     * @return \Cake\Http\Response|null リダイレクトレスポンス または null
+     */
     public function resendVerification()
     {
         if ($this->request->is('post')) {
@@ -54,10 +100,12 @@ class AuthController extends AppController
 
             if (!$company) {
                 $this->Flash->error('該当するメールアドレスが見つかりません。');
+
                 return $this->redirect(['action' => 'resendVerification']);
             }
             if ($company->email_verified) {
                 $this->Flash->success('既に認証済みです。ログインしてください。');
+
                 return $this->redirect('/employer/login?auth_email=' . urlencode($company->auth_email));
             }
 
@@ -70,16 +118,17 @@ class AuthController extends AppController
                         "以下のURLから認証を完了してください：\n\n" .
                         Router::url(
                             [
-                                'prefix' => 'Employer',           // ★ このコントローラに飛ばすなら prefix を明示
+                                'prefix' => 'Employer', // ★ このコントローラに飛ばすなら prefix を明示
                                 'controller' => 'Auth',
                                 'action' => 'verifyEmail',
-                                $company->email_token
+                                $company->email_token,
                             ],
                             true
                         )
                     );
 
                 $this->Flash->success('認証メールを再送しました。メールをご確認ください。');
+
                 return $this->redirect('/employer/login?auth_email=' . urlencode($company->auth_email));
             }
 
@@ -88,6 +137,16 @@ class AuthController extends AppController
         // GET の場合は再送フォームを表示（省略可）
     }
 
+    /**
+     * 企業ユーザーのログイン処理。
+     *
+     * - GET: ログインフォームを表示
+     * - POST: 認証を試み、成功時には Companies/view へリダイレクト
+     *   - ただしメール未認証の場合はログアウトさせ、再認証を促す
+     * - 認証失敗時: エラーメッセージを表示
+     *
+     * @return \Cake\Http\Response|null ログイン後のリダイレクトレスポンス または null
+     */
     public function login()
     {
         $this->request->allowMethod(['get', 'post']);
@@ -105,7 +164,7 @@ class AuthController extends AppController
                 return $this->redirect([
                     'prefix' => 'Employer',
                     'controller' => 'Auth',
-                    'action' => 'resendVerification'
+                    'action' => 'resendVerification',
                 ]);
             }
 
@@ -113,7 +172,7 @@ class AuthController extends AppController
                 'prefix' => false,
                 'controller' => 'Companies',
                 'action' => 'view',
-                $company->id
+                $company->id,
             ]);
         }
 
@@ -122,9 +181,18 @@ class AuthController extends AppController
         }
     }
 
+    /**
+     * 企業ユーザーのログアウト処理。
+     *
+     * - セッションからログイン情報を破棄
+     * - ログインページへリダイレクト
+     *
+     * @return \Cake\Http\Response ログイン画面へのリダイレクトレスポンス
+     */
     public function logout()
     {
         $this->Authentication->logout();
+
         return $this->redirect('/employer/login');
     }
 }
