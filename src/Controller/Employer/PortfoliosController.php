@@ -61,7 +61,12 @@ class PortfoliosController extends AppController
 
             // 会社認証での投稿（user_id は null）
             $identity = $this->Authentication->getIdentity();
-            $companyId = $identity ? ($identity->get('company_id') ?? ($identity->get('company')['id'] ?? $identity->get('id'))) : null;
+            $companyId = $identity
+                ? (
+                    $identity->get('company_id')
+                    ?? ($identity->get('company')['id'] ?? $identity->get('id'))
+                )
+                : null;
 
             $portfolio = $Portfolios->patchEntity($portfolio, $data);
             $portfolio->company_id = $companyId;
