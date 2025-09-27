@@ -101,7 +101,16 @@ class SettingsController extends AppController
     }
 
     /**
-     * メール更新（POST）: 確認メール送信→リンクで確定
+     * メール更新（POST）処理
+     *
+     * - 現在のパスワードを確認し、本人認証を行う
+     * - 新しいメールアドレスに対して確認メールを送信
+     * - 旧メールアドレス宛にも通知を送信（任意）
+     * - 60秒以内の連続リクエストを拒否する簡易レート制限あり
+     * - CompaniesTable 側に emailChange バリデーションを適用
+     * - トークンを発行して 1 時間有効
+     *
+     * @return \Cake\Http\Response|null 成功・失敗時いずれも editEmail アクションへリダイレクト
      */
     public function updateEmail()
     {
