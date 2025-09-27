@@ -11,6 +11,18 @@ use Psr\Http\Message\UploadedFileInterface;
 
 class PortfoliosController extends AppController
 {
+    /**
+     * 企業によるポートフォリオ投稿を作成するアクション。
+     *
+     * - GET: 投稿フォームを表示
+     * - POST: 入力データを受け取り、新規ポートフォリオを保存
+     *   - サムネイル画像（任意）のアップロード処理
+     *   - 会社認証に基づく company_id の付与（user_id は null）
+     *   - 成功時は PDF アップロード処理も行い、詳細画面へリダイレクト
+     *   - 失敗時はエラーメッセージを表示してフォームに留まる
+     *
+     * @return \Cake\Http\Response|null POST 成功時にリダイレクト、GET や失敗時は null（ビュー描画）
+     */
     public function add()
     {
         $this->request->allowMethod(['get', 'post']);
