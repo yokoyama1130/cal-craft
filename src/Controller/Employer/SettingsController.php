@@ -87,7 +87,12 @@ class SettingsController extends AppController
     }
 
     /**
-     * パスワード編集フォーム（GET）
+     * パスワード編集フォームを表示する（GET）
+     *
+     * - 現在のパスワード、新パスワード入力用のフォームを表示
+     * - ビュー: templates/Employer/Settings/edit_password.php
+     *
+     * @return void
      */
     public function editPassword()
     {
