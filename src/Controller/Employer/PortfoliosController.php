@@ -353,7 +353,19 @@ class PortfoliosController extends AppController
     }
 
     /**
-     * PDF 1ファイルを検証して保存し、保存したファイル名を返す
+     * PDF 1ファイルを検証して保存し、保存したファイル名を返す。
+     *
+     * - 拡張子が PDF であることを確認
+     * - MIME タイプが PDF であることを確認
+     * - サイズが 20MB 以下であることを確認
+     * - 安全なファイル名を生成し、指定ディレクトリへ保存
+     *
+     * @param \Psr\Http\Message\UploadedFileInterface $file アップロードされた PDF ファイル
+     * @param string $baseDir 保存先ディレクトリのパス（末尾に DS を含む）
+     * @param string $kind ファイルの種類（例: drawing, supplement）
+     * @param int $pid ポートフォリオID
+     * @return string 保存されたファイル名
+     * @throws \RuntimeException 不正なファイルや保存エラーが発生した場合
      */
     private function moveOnePdf(UploadedFileInterface $file, string $baseDir, string $kind, int $pid): string
     {
