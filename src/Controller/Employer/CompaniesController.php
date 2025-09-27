@@ -5,7 +5,6 @@ namespace App\Controller\Employer;
 
 use App\Controller\AppController;
 use Cake\Filesystem\Filesystem;
-use Cake\Filesystem\Folder;
 use Cake\Utility\Text;
 use Psr\Http\Message\UploadedFileInterface;
 
