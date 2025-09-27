@@ -108,8 +108,8 @@ class PortfoliosController extends AppController
      */
     public function view($id = null)
     {
-        $this->loadModel('Follows');
-        $this->loadModel('Comments');
+        $this->Follows = $this->fetchTable('Follows');
+        $this->Comments = $this->fetchTable('Comments');
 
         $Portfolios = $this->fetchTable('Portfolios');
 
