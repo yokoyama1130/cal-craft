@@ -121,7 +121,10 @@ class CompaniesController extends AppController
     }
 
     /**
-     * 会社詳細
+     * 会社詳細を表示する
+     *
+     * @param int|null $id 会社ID。null の場合は例外発生。
+     * @return void
      */
     public function view($id = null)
     {
