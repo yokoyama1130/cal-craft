@@ -307,7 +307,10 @@ class PortfoliosController extends AppController
         }
 
         $baseDir = WWW_ROOT . 'files' . DS . 'portfolios' . DS . $portfolio->id . DS;
-        (new Folder($baseDir, true, 0755));
+
+        if (!is_dir($baseDir)) {
+            mkdir($baseDir, 0755, true);
+        }
 
         // 図面（単一）
         if ($drawing && $drawing->getError() === UPLOAD_ERR_OK) {
