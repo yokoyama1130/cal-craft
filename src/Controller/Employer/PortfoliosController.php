@@ -183,6 +183,16 @@ class PortfoliosController extends AppController
         $this->render('view');
     }
 
+    /**
+     * 既存ポートフォリオを編集するアクション。
+     *
+     * - 会社オーナーのみ編集可能
+     * - サムネイル差し替え、カテゴリ選択の更新、PDF ファイルの再アップロードを処理
+     * - 成功時は詳細ページにリダイレクト、失敗時はエラーメッセージを表示
+     *
+     * @param int|null $id ポートフォリオID
+     * @return \Cake\Http\Response|null 成功時にリダイレクト Response、失敗時やGET時は null（ビュー描画）
+     */
     public function edit($id = null)
     {
         $Portfolios = $this->fetchTable('Portfolios');
