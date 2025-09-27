@@ -298,7 +298,12 @@ class PortfoliosController extends AppController
     }
 
     /**
-     * 図面PDF（単一）と補足PDF（複数）を保存し、パスをエンティティに反映して再保存する
+     * 図面PDF（単一）と補足PDF（複数）を保存し、
+     * パスをエンティティに反映して再保存する。
+     *
+     * @param \App\Model\Entity\Portfolio $portfolio 対象のポートフォリオエンティティ
+     * @return void
+     * @throws \RuntimeException ファイルパスの保存に失敗した場合
      */
     private function handlePdfUploads(\App\Model\Entity\Portfolio $portfolio): void
     {
