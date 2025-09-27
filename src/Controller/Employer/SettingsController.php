@@ -37,7 +37,12 @@ class SettingsController extends AppController
     }
 
     /**
-     * 設定トップ：現在メール/パスワード更新時刻を表示（項目が存在すれば）
+     * 設定トップ画面を表示する
+     *
+     * - 現在ログイン中の企業アカウントのメールアドレスを表示
+     * - もしスキーマに `modified` / `password_changed_at` があれば更新時刻も表示
+     *
+     * @return void
      */
     public function index()
     {
