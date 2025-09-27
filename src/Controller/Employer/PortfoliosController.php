@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace App\Controller\Employer;
 
 use App\Controller\AppController;
-use Cake\Filesystem\Folder;
 use Cake\Log\Log;
 use Cake\Utility\Text;
 use Psr\Http\Message\UploadedFileInterface;
