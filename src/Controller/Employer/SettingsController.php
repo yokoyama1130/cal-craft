@@ -267,6 +267,18 @@ class SettingsController extends AppController
         // ビュー: templates/Employer/Settings/delete_confirm.php
     }
 
+    /**
+     * 会社アカウント削除（無効化）
+     *
+     * - POST メソッド専用
+     * - 現在のパスワードによる再認証を行う
+     * - 確認キーワード「DELETE」を要求する
+     * - 削除時はソフトデリート（deleted_at 付与）＋メール匿名化
+     * - パスワードをランダム化して再ログイン不可にする
+     * - 削除成功後はログアウトしてトップページへリダイレクト
+     *
+     * @return \Cake\Http\Response|null 成功時はリダイレクト、失敗時は削除確認画面へ戻る
+     */
     public function deleteAccount()
     {
         $this->request->allowMethod(['post']);
