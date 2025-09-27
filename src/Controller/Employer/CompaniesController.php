@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller\Employer;
 
 use App\Controller\AppController;
+use Cake\Filesystem\Filesystem;
 use Cake\Filesystem\Folder;
 use Cake\Utility\Text;
 use Psr\Http\Message\UploadedFileInterface;
@@ -73,7 +74,8 @@ class CompaniesController extends AppController
 
                 // 保存先（会社IDごとに分けても良い。ここでは単一ディレクトリ）
                 $dir = WWW_ROOT . 'img' . DS . 'companies';
-                (new Folder($dir, true, 0755)); // 無ければ作成
+                $fs = new Filesystem();
+                $fs->mkdir($dir, 0755, true); // 無ければ作成
 
                 // ファイル名は衝突防止のために companyId + タイムスタンプ
                 $filename = sprintf('company_%d_%d.%s', $companyId, time(), $ext);
