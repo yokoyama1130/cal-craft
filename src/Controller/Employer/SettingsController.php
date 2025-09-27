@@ -65,7 +65,6 @@ class SettingsController extends AppController
             ->firstOrFail();
 
         $this->set(compact('company'));
-        // ビュー: templates/Employer/Settings/index.php
     }
 
     /**
