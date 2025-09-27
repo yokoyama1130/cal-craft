@@ -27,7 +27,10 @@ class CompaniesController extends AppController
 
     /**
      * 自社編集（IDパラメータ不要）
+     *
      * /employer/companies/edit
+     *
+     * @return \Cake\Http\Response|null 編集後はリダイレクトを返す。表示時は null。
      */
     public function edit()
     {
