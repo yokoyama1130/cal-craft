@@ -68,7 +68,12 @@ class SettingsController extends AppController
     }
 
     /**
-     * メール編集フォーム（GET）
+     * メール編集フォームを表示する（GET）
+     *
+     * - 現在のメールアドレスと新メールアドレス（未確定のもの）が表示される
+     * - ビュー: templates/Employer/Settings/edit_email.php
+     *
+     * @return void
      */
     public function editEmail()
     {
