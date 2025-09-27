@@ -218,7 +218,15 @@ class SettingsController extends AppController
     }
 
     /**
-     * パスワード更新（POST）
+     * パスワード更新処理（POST）
+     *
+     * - 現在のパスワードを検証
+     * - 新しいパスワードと確認用の一致をチェック
+     * - CompaniesTable 側の `passwordChange` バリデーションで検証
+     * - 成功時は `password_changed_at` を更新（存在する場合）
+     * - セッションを更新して再ログイン状態を維持
+     *
+     * @return \Cake\Http\Response リダイレクトレスポンス（編集フォームに戻る）
      */
     public function updatePassword()
     {
