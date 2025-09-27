@@ -308,9 +308,15 @@ class SettingsController extends AppController
             $company->deleted_at = FrozenTime::now();
         }
         $company->email = sprintf('deleted-company+%d@invalid.example', $company->id);
-        if ($this->Companies->getSchema()->hasColumn('new_email')) $company->set('new_email', null);
-        if ($this->Companies->getSchema()->hasColumn('email_change_token')) $company->set('email_change_token', null);
-        if ($this->Companies->getSchema()->hasColumn('email_change_expires')) $company->set('email_change_expires', null);
+        if ($this->Companies->getSchema()->hasColumn('new_email')) {
+            $company->set('new_email', null);
+        }
+        if ($this->Companies->getSchema()->hasColumn('email_change_token')) {
+            $company->set('email_change_token', null);
+        }
+        if ($this->Companies->getSchema()->hasColumn('email_change_expires')) {
+            $company->set('email_change_expires', null);
+        }
         $company->password = bin2hex(random_bytes(16)); // 再ログイン不能に
 
         if ($this->Companies->save($company)) {
