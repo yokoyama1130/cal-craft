@@ -254,6 +254,14 @@ class SettingsController extends AppController
         return $this->redirect(['action' => 'editPassword']);
     }
 
+    /**
+     * 退会確認画面を表示する（GET）
+     *
+     * - ユーザーにアカウント削除の最終確認を促すページを表示
+     * - ビュー: templates/Employer/Settings/delete_confirm.php
+     *
+     * @return void
+     */
     public function deleteConfirm()
     {
         // ビュー: templates/Employer/Settings/delete_confirm.php
