@@ -11,6 +11,15 @@ use Cake\Utility\Text;
 
 class SettingsController extends AppController
 {
+    /**
+     * コントローラ初期化処理。
+     *
+     * - Companies テーブルを利用できるように設定
+     * - Flash コンポーネントをロード
+     * - メール認証リンク（confirmEmail）は未ログインでもアクセス可能に設定
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
