@@ -262,6 +262,16 @@ class PortfoliosController extends AppController
         $this->render('add'); // add と同じテンプレを再利用
     }
 
+    /**
+     * ポートフォリオを削除するアクション。
+     *
+     * - POST/DELETE メソッドでのみ実行可能
+     * - 所有する企業のみ削除権限を持つ
+     * - 成功時／失敗時ともにフラッシュメッセージを表示し、会社の詳細ページへリダイレクト
+     *
+     * @param int $id ポートフォリオID
+     * @return \Cake\Http\Response 削除後にリダイレクト Response
+     */
     public function delete($id)
     {
         $portfolio = $this->Portfolios->get($id);
