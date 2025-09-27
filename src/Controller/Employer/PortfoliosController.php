@@ -92,6 +92,16 @@ class PortfoliosController extends AppController
         $this->render('add');
     }
 
+    /**
+     * ポートフォリオ詳細を表示するアクション。
+     *
+     * - ユーザー投稿／企業投稿を取得し、関連データ（ユーザー、企業、カテゴリ、コメント）を含めて表示
+     * - 非公開の投稿は、所有者（ユーザー or 企業）のみアクセス可能
+     * - ユーザー投稿の場合はフォロー情報も取得
+     *
+     * @param int|null $id ポートフォリオID
+     * @return \Cake\Http\Response|null ビュー描画時は null、権限がない場合はリダイレクト Response
+     */
     public function view($id = null)
     {
         $this->loadModel('Follows');
