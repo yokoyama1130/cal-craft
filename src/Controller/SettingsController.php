@@ -10,6 +10,15 @@ use Cake\Utility\Text;
 
 class SettingsController extends AppController
 {
+    /**
+     * コントローラ初期化処理
+     *
+     * - confirmEmail アクションは未ログインでもアクセス可能に設定
+     * - Users テーブルおよび Flash コンポーネントをロード
+     * - CSRF 対策はミドルウェア想定（必要に応じて FormProtection を有効化）
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
@@ -34,12 +43,12 @@ class SettingsController extends AppController
     {
         $identity = $this->request->getAttribute('identity');
         $userId = $identity->getIdentifier();
-    
+
         $schema = $this->Users->getSchema();
-    
+
         // 必須の2つだけは確実に
         $fields = ['id', 'email'];
-    
+
         // あれば追加で取る（無ければ無視）
         if ($schema->hasColumn('modified')) {
             $fields[] = 'modified';
@@ -47,14 +56,14 @@ class SettingsController extends AppController
         if ($schema->hasColumn('password_changed_at')) {
             $fields[] = 'password_changed_at';
         }
-    
+
         $user = $this->Users->find()
             ->select($fields)
             ->where(['id' => $userId])
             ->firstOrFail();
-    
+
         $this->set(compact('user'));
-    }    
+    }
 
     /**
      * メール編集フォーム（GET）
