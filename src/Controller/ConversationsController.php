@@ -53,8 +53,12 @@ class ConversationsController extends AppController
             $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === (int)$id);
             $pType = $isP1Me ? $c->p2_type : $c->p1_type;
             $pId = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
-            if ($pType === 'user') $userIds[$pId] = true;
-            if ($pType === 'company') $companyIds[$pId] = true;
+            if ($pType === 'user') {
+                $userIds[$pId] = true;
+            }
+            if ($pType === 'company') {
+                $companyIds[$pId] = true;
+            }
         }
 
         $Users = $this->fetchTable('Users');
