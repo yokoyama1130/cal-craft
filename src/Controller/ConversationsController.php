@@ -108,10 +108,24 @@ class ConversationsController extends AppController
     }
 
     /**
-     * 会話開始
-     *  - /conversations/start/2            → user/2 とみなす（後方互換）
-     *  - /conversations/start/user/2
-     *  - /conversations/start/company/4
+     * 会話開始アクション
+     *
+     * 指定されたユーザーまたは会社との会話を開始します。
+     * - `/conversations/start/2` → user/2 と解釈（後方互換）
+     * - `/conversations/start/user/2`
+     * - `/conversations/start/company/4`
+     *
+     * 主な処理内容:
+     * - パラメータを解析して相手（partnerType, partnerId）を特定
+     * - 不正なパラメータや自分自身を対象とした場合はエラー
+     * - 企業アカウントの場合、プランごとのユーザー接触上限を確認し、超過していればエラー
+     * - 既存の会話があれば再利用、なければ新規に Conversations エンティティを作成
+     * - 作成失敗時はエラーメッセージを表示し、一覧へリダイレクト
+     * - 正常時は会話詳細画面 (view) へリダイレクト
+     *
+     * @param int|string|null $arg1 相手種別またはID（user/company または ID）
+     * @param int|string|null $arg2 相手のID（arg1 が種別の場合に指定）
+     * @return \Cake\Http\Response|null リダイレクトレスポンス
      */
     public function start($arg1 = null, $arg2 = null)
     {
@@ -167,8 +181,18 @@ class ConversationsController extends AppController
         $conv = $Conversations->find()
             ->where([
                 'OR' => [
-                    ['p1_type' => $actor['type'], 'p1_id' => $actor['id'], 'p2_type' => $partnerType, 'p2_id' => $partnerId],
-                    ['p1_type' => $partnerType, 'p1_id' => $partnerId, 'p2_type' => $actor['type'], 'p2_id' => $actor['id']],
+                    [
+                        'p1_type' => $actor['type'],
+                        'p1_id' => $actor['id'],
+                        'p2_type' => $partnerType,
+                        'p2_id' => $partnerId,
+                    ],
+                    [
+                        'p1_type' => $partnerType,
+                        'p1_id' => $partnerId,
+                        'p2_type' => $actor['type'],
+                        'p2_id' => $actor['id'],
+                    ],
                 ],
             ])
             ->first();
@@ -191,7 +215,24 @@ class ConversationsController extends AppController
     }
 
     /**
-     * 会話詳細（相手情報とメッセージ一覧）
+     * 会話詳細アクション
+     *
+     * 指定された会話IDに基づいて会話情報・相手情報・メッセージ一覧を取得し、ビューに渡します。
+     *
+     * 主な処理内容:
+     * - ログインユーザー（または企業）が会話の当事者かをチェック
+     *   - 当事者でなければ ForbiddenException をスロー
+     *   - 未ログインの場合はトップページへリダイレクト
+     * - 相手（ユーザーまたは企業）のプロフィール情報を取得
+     * - 対応するメッセージを作成日時昇順で取得
+     * - ビューに以下を渡す:
+     *   - conversation（会話本体）
+     *   - messages（メッセージ一覧）
+     *   - partner（相手情報）
+     *   - myType / myId（自分の種別とID）
+     *
+     * @param int $id 会話ID
+     * @return \Cake\Http\Response|null レスポンス（未ログイン時はリダイレクト）
      */
     public function view($id)
     {
@@ -251,7 +292,20 @@ class ConversationsController extends AppController
     ];
 
     /**
-     * 当月、会社が“実際に送信した”相手ユーザーIDのユニーク数を返す
+     * 当月に会社が実際に送信した相手ユーザー数（ユニーク）を集計
+     *
+     * - 指定された companyId に基づき、その会社がユーザーとやり取りしている会話を抽出
+     * - 当月に会社が送信したメッセージが存在する会話IDを特定
+     * - その会話に紐づく相手ユーザーIDを取得し、ユニーク数を返します
+     *
+     * 主な処理の流れ:
+     * 1. Conversations テーブルから対象会社とユーザーの会話IDを取得
+     * 2. Messages テーブルから当月に会社が送信した会話IDを抽出
+     * 3. 抽出した会話IDから相手ユーザーIDを集計
+     * 4. 重複を排除した件数を返す
+     *
+     * @param int $companyId 会社ID
+     * @return int 当月に実際に送信したユニークユーザー数
      */
     private function countMonthlyUniqueUsersContacted(int $companyId): int
     {
@@ -309,7 +363,9 @@ class ConversationsController extends AppController
             ])
             ->enableHydration(false)
             ->all();
-        foreach ($rows1 as $r) $partnerUserIds[$r['uid']] = true;
+        foreach ($rows1 as $r) {
+            $partnerUserIds[$r['uid']] = true;
+        }
 
         $rows2 = $Conversations->find()
             ->select(['uid' => 'p1_id'])
@@ -320,7 +376,9 @@ class ConversationsController extends AppController
             ])
             ->enableHydration(false)
             ->all();
-        foreach ($rows2 as $r) $partnerUserIds[$r['uid']] = true;
+        foreach ($rows2 as $r) {
+            $partnerUserIds[$r['uid']] = true;
+        }
 
         return count($partnerUserIds);
     }
