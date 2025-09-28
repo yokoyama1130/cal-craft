@@ -59,7 +59,7 @@ class WebhooksController extends AppController
             return $this->response->withStatus(500);
         }
 
-        $payload = (string)$this->request->input();
+        $payload = (string)$this->request->getBody()->getContents();
         $sigHeader = $this->request->getHeaderLine('Stripe-Signature');
 
         try {
@@ -86,7 +86,7 @@ class WebhooksController extends AppController
             $Invoices = $this->fetchTable('CompanyInvoices');
 
             // Upsert用ヘルパ（invoice_id または pi_id で一意）
-            $upsert = function(array $data) use ($Invoices, $payload) {
+            $upsert = function (array $data) use ($Invoices, $payload) {
                 $existing = null;
 
                 if (!empty($data['stripe_invoice_id'])) {
@@ -101,7 +101,10 @@ class WebhooksController extends AppController
                 }
 
                 if (isset($data['amount']) && (int)$data['amount'] === 0) {
-                    Log::warning('[CompanyInvoices upsert] amount resolved as 0. data=' . json_encode($data, JSON_UNESCAPED_UNICODE));
+                    Log::warning(
+                        '[CompanyInvoices upsert] amount resolved as 0. data=' .
+                        json_encode($data, JSON_UNESCAPED_UNICODE)
+                    );
                 }
 
                 $data['raw_payload'] = $payload;
@@ -109,7 +112,10 @@ class WebhooksController extends AppController
                 if ($existing) {
                     $existing = $Invoices->patchEntity($existing, $data, ['validate' => false]);
                     if (!$Invoices->save($existing)) {
-                        Log::error('CompanyInvoice update failed: ' . json_encode($existing->getErrors(), JSON_UNESCAPED_UNICODE));
+                        Log::error(
+                            'CompanyInvoice update failed: ' .
+                            json_encode($existing->getErrors(), JSON_UNESCAPED_UNICODE)
+                        );
                     }
 
                     return $existing;
@@ -118,7 +124,10 @@ class WebhooksController extends AppController
                 $rec = $Invoices->newEmptyEntity();
                 $rec = $Invoices->patchEntity($rec, $data, ['validate' => false]);
                 if (!$Invoices->save($rec)) {
-                    Log::error('CompanyInvoice create failed: ' . json_encode($rec->getErrors(), JSON_UNESCAPED_UNICODE));
+                    Log::error(
+                        'CompanyInvoice create failed: ' .
+                        json_encode($rec->getErrors(), JSON_UNESCAPED_UNICODE)
+                    );
                 }
 
                 return $rec;
@@ -126,39 +135,50 @@ class WebhooksController extends AppController
 
             switch ($type) {
                 // —— サブスク: 請求書確定（openで先に入れておく）——
-                case 'invoice.finalized': {
+                case 'invoice.finalized':
                     /** @var \Stripe\Invoice $inv */
                     $inv = $event->data->object;
                     $customerId = (string)($inv->customer ?? '');
-                    $company = $customerId ? $Companies->find()->where(['stripe_customer_id' => $customerId])->first() : null;
-                    if (!$company) break;
+                    $company = $customerId
+                        ? $Companies->find()
+                            ->where(['stripe_customer_id' => $customerId])
+                            ->first()
+                        : null;
+                    if (!$company) {
+                        break;
+                    }
 
                     $amount = $this->resolveInvoiceAmount($inv, true);
-                    $plan   = $this->resolvePlanFromInvoice($inv);
+                    $plan = $this->resolvePlanFromInvoice($inv);
 
                     $upsert([
-                        'company_id'             => (int)$company->id,
-                        'stripe_customer_id'     => $customerId,
+                        'company_id' => (int)$company->id,
+                        'stripe_customer_id' => $customerId,
                         'stripe_subscription_id' => (string)($inv->subscription ?? ''),
-                        'stripe_invoice_id'      => (string)($inv->id ?? ''),
+                        'stripe_invoice_id' => (string)($inv->id ?? ''),
                         'stripe_payment_intent_id' => (string)($inv->payment_intent ?? null),
-                        'plan'                   => $plan,
-                        'amount'                 => $amount,
-                        'currency'               => (string)($inv->currency ?? 'jpy'),
-                        'status'                 => 'open',
-                        'paid_at'                => null,
+                        'plan' => $plan,
+                        'amount' => $amount,
+                        'currency' => (string)($inv->currency ?? 'jpy'),
+                        'status' => 'open',
+                        'paid_at' => null,
                     ]);
                     break;
-                }
 
                 // —— サブスク: 支払い完了（paid で上書き）——
                 case 'invoice.paid':
-                case 'invoice.payment_succeeded': {
+                case 'invoice.payment_succeeded':
                     /** @var \Stripe\Invoice $inv */
                     $inv = $event->data->object;
                     $customerId = (string)($inv->customer ?? '');
-                    $company = $customerId ? $Companies->find()->where(['stripe_customer_id' => $customerId])->first() : null;
-                    if (!$company) break;
+                    $company = $customerId
+                        ? $Companies->find()
+                            ->where(['stripe_customer_id' => $customerId])
+                            ->first()
+                        : null;
+                    if (!$company) {
+                        break;
+                    }
 
                     $amount = $this->resolveInvoiceAmount($inv, true);
                     if ($amount === 0) {
@@ -167,37 +187,36 @@ class WebhooksController extends AppController
                     $plan = $this->resolvePlanFromInvoice($inv);
 
                     $upsert([
-                        'company_id'             => (int)$company->id,
-                        'stripe_customer_id'     => $customerId,
+                        'company_id' => (int)$company->id,
+                        'stripe_customer_id' => $customerId,
                         'stripe_subscription_id' => (string)($inv->subscription ?? ''),
-                        'stripe_invoice_id'      => (string)($inv->id ?? ''),
+                        'stripe_invoice_id' => (string)($inv->id ?? ''),
                         'stripe_payment_intent_id' => (string)($inv->payment_intent ?? null),
-                        'plan'                   => $plan,
-                        'amount'                 => $amount,
-                        'currency'               => (string)($inv->currency ?? 'jpy'),
-                        'status'                 => 'paid',
-                        'paid_at'                => new FrozenTime(),
+                        'plan' => $plan,
+                        'amount' => $amount,
+                        'currency' => (string)($inv->currency ?? 'jpy'),
+                        'status' => 'paid',
+                        'paid_at' => new FrozenTime(),
                     ]);
 
                     // paid_until も進める
-                    $firstLine   = $inv->lines->data[0] ?? null;
+                    $firstLine = $inv->lines->data[0] ?? null;
                     $periodEndTs = (int)($firstLine->period->end ?? $inv->period_end ?? 0);
                     if ($periodEndTs) {
                         $company->paid_until = FrozenTime::createFromTimestamp($periodEndTs);
                         $Companies->save($company);
                     }
                     break;
-                }
 
                 // —— 単発決済（都度課金）——
-                case 'payment_intent.succeeded': {
+                case 'payment_intent.succeeded':
                     /** @var \Stripe\PaymentIntent $pi */
                     $pi = $event->data->object;
                     $companyId = (int)($pi->metadata->company_id ?? 0);
-                    $plan      = (string)($pi->metadata->target_plan ?? $pi->metadata->plan ?? 'pro');
-                    $amount    = isset($pi->amount_received) ? (int)$pi->amount_received : ((int)($pi->amount ?? 0));
-                    $currency  = (string)($pi->currency ?? 'jpy');
-                    $piId      = (string)$pi->id;
+                    $plan = (string)($pi->metadata->target_plan ?? $pi->metadata->plan ?? 'pro');
+                    $amount = isset($pi->amount_received) ? (int)$pi->amount_received : (int)($pi->amount ?? 0);
+                    $currency = (string)($pi->currency ?? 'jpy');
+                    $piId = (string)$pi->id;
 
                     if ($amount === 0) {
                         Log::warning('[payment_intent.succeeded] amount=0 dump: ' . json_encode($pi->toArray()));
@@ -205,16 +224,16 @@ class WebhooksController extends AppController
 
                     if ($companyId > 0) {
                         $upsert([
-                            'company_id'               => $companyId,
-                            'stripe_customer_id'       => (string)($pi->customer ?? ''),
-                            'stripe_subscription_id'   => (string)($pi->metadata->subscription_id ?? null),
-                            'stripe_invoice_id'        => null,
+                            'company_id' => $companyId,
+                            'stripe_customer_id' => (string)($pi->customer ?? ''),
+                            'stripe_subscription_id' => (string)($pi->metadata->subscription_id ?? null),
+                            'stripe_invoice_id' => null,
                             'stripe_payment_intent_id' => $piId,
-                            'plan'                     => $plan,
-                            'amount'                   => $amount,
-                            'currency'                 => $currency,
-                            'status'                   => 'paid',
-                            'paid_at'                  => new FrozenTime(),
+                            'plan' => $plan,
+                            'amount' => $amount,
+                            'currency' => $currency,
+                            'status' => 'paid',
+                            'paid_at' => new FrozenTime(),
                         ]);
 
                         // 任意：会社プランも反映
@@ -230,7 +249,6 @@ class WebhooksController extends AppController
                         Log::warning(sprintf('payment_intent.succeeded without company_id (PI %s)', $piId));
                     }
                     break;
-                }
 
                 default:
                     // その他イベントは必要に応じて
@@ -247,8 +265,19 @@ class WebhooksController extends AppController
     }
 
     /**
-     * Invoice の金額を安全に解決（最小通貨単位：JPYは円）
-     * - amount_paid → total → amount_due → 明細行合算（amount_total / amount）
+     * Invoice の金額を安全に解決するヘルパーメソッド
+     *
+     * Stripe の Invoice オブジェクトから金額を取り出す際に利用。
+     * 以下の優先順位で数値を確定する：
+     *   1. amount_paid
+     *   2. total
+     *   3. amount_due
+     *   4. （上記がゼロかつ $allowLineSum が true の場合）
+     *      明細行（lines->data）の amount_total または amount を合算
+     *
+     * @param object $inv Stripe Invoice オブジェクト
+     * @param bool $allowLineSum true の場合、amount が 0 なら明細行合算を利用
+     * @return int 金額（最小通貨単位、JPY なら円単位）
      */
     private function resolveInvoiceAmount(object $inv, bool $allowLineSum = true): int
     {
@@ -266,11 +295,21 @@ class WebhooksController extends AppController
                 $amount += (int)($line->amount_total ?? $line->amount ?? 0);
             }
         }
+
         return $amount;
     }
 
     /**
-     * Invoice の1行目からプラン名を推定（price が object でも string でもOK）
+     * Invoice の 1 行目からプラン名を推定するヘルパーメソッド
+     *
+     * Stripe Invoice オブジェクトの lines->data[0] を参照し、
+     * price フィールドからプランを決定する。
+     * - price がオブジェクトの場合: nickname → lookup_key → product の順に採用
+     * - price が文字列の場合: その値を直接採用
+     * - 該当がない場合: デフォルトで "pro" を返す
+     *
+     * @param object $inv Stripe Invoice オブジェクト
+     * @return string 推定されたプラン名（デフォルトは "pro"）
      */
     private function resolvePlanFromInvoice(object $inv): string
     {
@@ -284,6 +323,7 @@ class WebhooksController extends AppController
                 $plan = $price;
             }
         }
+
         return $plan;
     }
 }
