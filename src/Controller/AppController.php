@@ -67,7 +67,9 @@ class AppController extends Controller
 
         $service->loadAuthenticator('Authentication.Session');
 
-        $prefix = $request->getParam('prefix');
+        // $prefix = $request->getParam('prefix');
+        //上のコードの代わりにしたのコード（4.3~変わったらしい）
+        $prefix = $request->getAttribute('params')['prefix'] ?? null;
 
         if ($prefix === 'Employer') {
             // ★企業ログイン：Companies を使う
