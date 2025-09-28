@@ -295,6 +295,22 @@ class SettingsController extends AppController
         // ビュー: templates/Settings/delete_confirm.php
     }
 
+    /**
+     * アカウント削除（ソフトデリート＋匿名化）
+     *
+     * - POSTリクエスト専用
+     * - 現在のパスワードを再入力させて再認証
+     * - 確認キーワード「DELETE」が入力されていることを確認
+     * - ユーザーを物理削除せず、以下の処理で無効化:
+     *   - deleted_at をセット
+     *   - email を匿名化（無効なアドレスに置換）
+     *   - new_email / email_change_token / email_change_expires をクリア
+     *   - パスワードをランダム文字列にして再ログイン不可にする
+     * - 成功時はログアウトしてトップページへリダイレクト
+     *
+     * @return \Cake\Http\Response|null リダイレクトレスポンス
+     * @throws \Cake\Http\Exception\ForbiddenException パスワード不一致または不正アクセス時
+     */
     public function deleteAccount()
     {
         $this->request->allowMethod(['post']);
@@ -322,9 +338,15 @@ class SettingsController extends AppController
         // ソフトデリート＋匿名化
         $user->deleted_at = new \Cake\I18n\FrozenTime();
         $user->email = sprintf('deleted+%d@invalid.example', $user->id);
-        if ($this->Users->getSchema()->hasColumn('new_email')) $user->set('new_email', null);
-        if ($this->Users->getSchema()->hasColumn('email_change_token')) $user->set('email_change_token', null);
-        if ($this->Users->getSchema()->hasColumn('email_change_expires')) $user->set('email_change_expires', null);
+        if ($this->Users->getSchema()->hasColumn('new_email')) {
+            $user->set('new_email', null);
+        }
+        if ($this->Users->getSchema()->hasColumn('email_change_token')) {
+            $user->set('email_change_token', null);
+        }
+        if ($this->Users->getSchema()->hasColumn('email_change_expires')) {
+            $user->set('email_change_expires', null);
+        }
         $user->password = bin2hex(random_bytes(16)); // 再ログイン不能に
 
         if ($this->Users->save($user)) {
