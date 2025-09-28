@@ -65,11 +65,19 @@ class ConversationsController extends AppController
         $Companies = $this->fetchTable('Companies');
 
         $userMap = $userIds
-            ? $Users->find()->select(['id','name','icon_path'])->where(['id IN' => array_keys($userIds)])->indexBy('id')->toArray()
+            ? $Users->find()
+                ->select(['id', 'name', 'icon_path'])
+                ->where(['id IN' => array_keys($userIds)])
+                ->indexBy('id')
+                ->toArray()
             : [];
 
         $companyMap = $companyIds
-            ? $Companies->find()->select(['id','name','logo_path'])->where(['id IN' => array_keys($companyIds)])->indexBy('id')->toArray()
+            ? $Companies->find()
+                ->select(['id','name','logo_path'])
+                ->where(['id IN' => array_keys($companyIds)])
+                ->indexBy('id')
+                ->toArray()
             : [];
 
         // partner を付与
