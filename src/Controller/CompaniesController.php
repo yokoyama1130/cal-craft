@@ -195,7 +195,13 @@ class CompaniesController extends AppController
     // }
 
     /**
-     * 会社詳細
+     * 会社詳細表示アクション
+     *
+     * 指定された ID の会社情報を取得し、その会社に紐づく
+     * ポートフォリオ一覧を作成日時の降順で取得してビューに渡します。
+     *
+     * @param int|null $id 会社ID
+     * @return void
      */
     public function view($id = null)
     {
@@ -212,9 +218,17 @@ class CompaniesController extends AppController
     }
 
     /**
-     * 会社編集：
-     * - オーナーのみ編集可
-     * - slug 未入力なら name から自動補完
+     * 会社編集アクション
+     *
+     * - 認証済みの企業アカウント本人（Employer）のみ編集可能
+     * - 指定されたIDの会社がログイン中の企業と一致しない場合はエラー
+     * - slug が未入力の場合は name から自動生成して補完
+     * - owner_user_id は外部から改変できないよう除外
+     * - 更新に成功すれば会社詳細ページへリダイレクト
+     * - 更新失敗や認可エラー時はフラッシュメッセージを表示してリダイレクト
+     *
+     * @param int|null $id 会社ID
+     * @return \Cake\Http\Response|null 編集成功時はリダイレクトレスポンス、失敗時はビューを再表示
      */
     public function edit($id = null)
     {
@@ -258,7 +272,15 @@ class CompaniesController extends AppController
     }
 
     /**
-     * 会社削除（必要なら）
+     * 会社削除アクション
+     *
+     * - 認証済みの一般ユーザー（owner_user_id が一致するユーザー）のみ削除可能
+     * - 未ログインの場合はログイン画面へリダイレクト
+     * - 所有者以外がアクセスした場合はエラーメッセージを表示して会社詳細へリダイレクト
+     * - 削除成功時は「index」へリダイレクトし、失敗時は元の会社詳細ページに戻ります
+     *
+     * @param int|null $id 会社ID
+     * @return \Cake\Http\Response|null 削除後のリダイレクトレスポンス
      */
     public function delete($id = null)
     {
@@ -291,9 +313,14 @@ class CompaniesController extends AppController
     }
 
     /**
-     * 自分の会社にショートカット
-     * - 会社があれば view へ
-     * - なければ add へ
+     * 自分の会社ショートカットアクション
+     *
+     * - ログインユーザーが所有する会社を検索し、
+     *   存在すればその会社の詳細ページ (view) へリダイレクト
+     * - 存在しなければ会社作成ページ (add) へリダイレクト
+     * - 未ログインの場合はログインページへリダイレクト
+     *
+     * @return \Cake\Http\Response|null リダイレクトレスポンス
      */
     public function my()
     {
@@ -318,7 +345,17 @@ class CompaniesController extends AppController
     }
 
     /**
-     * Authenticationプラグイン/Request属性の両対応で ID を取り出す小ヘルパ
+     * 現在ログイン中のユーザーIDを取得するヘルパー
+     *
+     * Authentication プラグインの Identity または
+     * Request 属性 `identity` の両方に対応します。
+     *
+     * - Identity オブジェクトが存在すれば getIdentifier() を呼び出し、
+     *   null でなければ int にキャストして返します。
+     * - それ以外の場合は Authentication コンポーネントから Identity を取得します。
+     * - どちらも存在しない場合は null を返します。
+     *
+     * @return int|null ログイン中のユーザーID、未ログイン時は null
      */
     private function getIdentity(): ?int
     {
