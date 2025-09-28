@@ -7,6 +7,13 @@ use Cake\Controller\Controller;
 
 class AppController extends Controller
 {
+    /**
+     * コントローラ初期化処理
+     *
+     * コンポーネントの読み込みなどを行う。
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
