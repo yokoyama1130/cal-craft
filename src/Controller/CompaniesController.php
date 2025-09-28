@@ -13,6 +13,15 @@ use Psr\Http\Message\UploadedFileInterface;
 
 class CompaniesController extends AppController
 {
+    /**
+     * コントローラ初期化処理
+     *
+     * 利用するテーブル（Portfolios, Companies）を読み込み、
+     * 認証コンポーネントの未認証アクションを設定します。
+     * ここではすべてのアクションを認証必須にしています。
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
@@ -22,6 +31,15 @@ class CompaniesController extends AppController
         // 認証コンポーネントが未ロードなら AppController で $this->loadComponent('Authentication.Authentication') を
     }
 
+    /**
+     * コントローラのアクション実行前処理
+     *
+     * 未ログインのユーザーにも一部アクション（ここでは add）を許可します。
+     * Authentication プラグインの allowUnauthenticated を利用して制御します。
+     *
+     * @param \Cake\Event\EventInterface $event イベントオブジェクト
+     * @return void
+     */
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
