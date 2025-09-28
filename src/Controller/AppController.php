@@ -41,7 +41,7 @@ class AppController extends Controller
         $identity = $this->request->getAttribute('identity');
 
         if ($identity) {
-            // $this->Notifications = $this->fetchTable('Notifications');
+            $this->Notifications = $this->fetchTable('Notifications');
 
             $this->loadModel('Notifications');
             $userId = $identity->get('id');
