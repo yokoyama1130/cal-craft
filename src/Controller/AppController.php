@@ -111,7 +111,9 @@ class AppController extends Controller
     protected function getActor(): array
     {
         $idn = $this->request->getAttribute('identity');
-        if (!$idn) return ['type' => null, 'id' => null];
+        if (!$idn) {
+            return ['type' => null, 'id' => null];
+        }
 
         // 企業は auth_email を持ってるという前提
         if ($idn->get('auth_email') !== null) {
