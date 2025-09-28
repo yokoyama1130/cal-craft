@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Authentication\AuthenticationService;
+use Authentication\AuthenticationServiceInterface;
 use Cake\Controller\Controller;
+use Psr\Http\Message\ServerRequestInterface;
 
 class AppController extends Controller
 {
