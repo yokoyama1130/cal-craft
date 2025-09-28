@@ -37,7 +37,6 @@ class ErrorController extends AppController
         $this->loadComponent('RequestHandler');
         $this->loadComponent('Flash');
         $this->loadComponent('Authentication');
-
     }
 
     /**
