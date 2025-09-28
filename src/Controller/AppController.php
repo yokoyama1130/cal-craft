@@ -96,8 +96,18 @@ class AppController extends Controller
         return $service;
     }
 
-    // src/Controller/AppController.php に置くと便利
-    // 「一般ユーザー」か「企業（Employer）」かで current actor を取り出す
+    /**
+     * 現在の認証済みユーザー（actor）の種別とIDを返す
+     *
+     * ログインしているユーザーが「一般ユーザー」か「企業（Employer）」かを判別し、
+     * 配列で種別（type）とIDを返します。
+     *
+     * - 一般ユーザー: ['type' => 'user', 'id' => (int)ユーザーID]
+     * - 企業ユーザー: ['type' => 'company', 'id' => (int)企業ID]
+     * - 未ログイン:   ['type' => null, 'id' => null]
+     *
+     * @return array{type: string|null, id: int|null} actor情報
+     */
     protected function getActor(): array
     {
         $idn = $this->request->getAttribute('identity');
