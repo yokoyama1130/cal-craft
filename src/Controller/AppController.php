@@ -51,6 +51,15 @@ class AppController extends Controller
         }
     }
 
+    /**
+     * 認証サービスの設定
+     *
+     * セッションおよびフォーム認証を利用し、プレフィックスによって
+     * 一般ユーザー（Users）と企業ユーザー（Companies）の認証を切り替えます。
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request リクエストオブジェクト
+     * @return \Authentication\AuthenticationServiceInterface 認証サービス
+     */
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
         $service = new AuthenticationService();
@@ -67,7 +76,7 @@ class AppController extends Controller
             ]);
             $service->loadAuthenticator('Authentication.Form', [
                 'loginUrl' => '/employer/login',
-                'fields'   => ['username' => 'auth_email', 'password' => 'auth_password'],
+                'fields' => ['username' => 'auth_email', 'password' => 'auth_password'],
             ]);
         } else {
             // 既存の一般ユーザー側
@@ -77,7 +86,7 @@ class AppController extends Controller
             ]);
             $service->loadAuthenticator('Authentication.Form', [
                 'loginUrl' => '/users/login',
-                'fields'   => ['username' => 'email', 'password' => 'password'],
+                'fields' => ['username' => 'email', 'password' => 'password'],
             ]);
         }
 
