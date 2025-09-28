@@ -29,22 +29,26 @@ class WebhooksController extends AppController
         $secret = (string)env('STRIPE_WEBHOOK_SECRET', (string)(Configure::read('Stripe.webhook_secret') ?? ''));
         if ($secret === '') {
             Log::error('Stripe webhook secret not set (empty).');
+
             return $this->response->withStatus(500);
         }
 
-        $payload   = (string)$this->request->input();
+        $payload = (string)$this->request->input();
         $sigHeader = $this->request->getHeaderLine('Stripe-Signature');
 
         try {
             $event = \Stripe\Webhook::constructEvent($payload, $sigHeader, $secret);
         } catch (\UnexpectedValueException $e) {
             Log::warning('Stripe webhook invalid payload: ' . $e->getMessage());
+
             return $this->response->withStatus(400);
         } catch (\Stripe\Exception\SignatureVerificationException $e) {
             Log::warning('Stripe webhook signature failed: ' . $e->getMessage());
+
             return $this->response->withStatus(400);
         } catch (\Throwable $e) {
             Log::error('Stripe webhook verify error: ' . $e->getMessage());
+
             return $this->response->withStatus(500);
         }
 
@@ -53,7 +57,7 @@ class WebhooksController extends AppController
 
         try {
             $Companies = $this->fetchTable('Companies');
-            $Invoices  = $this->fetchTable('CompanyInvoices');
+            $Invoices = $this->fetchTable('CompanyInvoices');
 
             // Upsert用ヘルパ（invoice_id または pi_id で一意）
             $upsert = function(array $data) use ($Invoices, $payload) {
@@ -81,6 +85,7 @@ class WebhooksController extends AppController
                     if (!$Invoices->save($existing)) {
                         Log::error('CompanyInvoice update failed: ' . json_encode($existing->getErrors(), JSON_UNESCAPED_UNICODE));
                     }
+
                     return $existing;
                 }
 
@@ -89,6 +94,7 @@ class WebhooksController extends AppController
                 if (!$Invoices->save($rec)) {
                     Log::error('CompanyInvoice create failed: ' . json_encode($rec->getErrors(), JSON_UNESCAPED_UNICODE));
                 }
+
                 return $rec;
             };
 
