@@ -80,8 +80,12 @@ class ConversationsController extends AppController
             $pId = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
 
             $partner = null;
-            if ($pType === 'user') $partner = $userMap[$pId] ?? null;
-            if ($pType === 'company') $partner = $companyMap[$pId] ?? null;
+            if ($pType === 'user') {
+                $partner = $userMap[$pId] ?? null;
+            }
+            if ($pType === 'company') {
+                $partner = $companyMap[$pId] ?? null;
+            }
 
             $c->set('partner_type', $pType);
             $c->set('partner', $partner);
