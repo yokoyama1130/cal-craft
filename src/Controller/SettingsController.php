@@ -106,7 +106,14 @@ class SettingsController extends AppController
     }
 
     /**
-     * メール更新（POST）：確認メールを送信 → 確認リンクで確定
+     * メールアドレス更新処理
+     *
+     * - POST専用
+     * - 現在のパスワードを確認し、新しいメールアドレスを一時的に保存
+     * - トークン付きの確認メールを送信し、リンククリックで変更を完了するフロー
+     * - 連続リクエストは60秒間隔で制限
+     *
+     * @return \Cake\Http\Response|null リダイレクトレスポンス
      */
     public function updateEmail()
     {
