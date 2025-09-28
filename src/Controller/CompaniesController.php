@@ -184,15 +184,15 @@ class CompaniesController extends AppController
      * 会社一覧（必要なければ消してOK）
      * 多分いらないかも
      */
-    public function index()
-    {
-        $companies = $this->paginate($this->Companies->find());
-        $query = $this->Companies->find()
-        ->contain(['Users']); // owner_user_id -> Users との belongsTo
-        $this->paginate = ['limit' => 20, 'order' => ['Companies.modified' => 'DESC']];
-        $companies = $this->paginate($query);
-        $this->set(compact('companies'));
-    }
+    // public function index()
+    // {
+    //     $companies = $this->paginate($this->Companies->find());
+    //     $query = $this->Companies->find()
+    //     ->contain(['Users']); // owner_user_id -> Users との belongsTo
+    //     $this->paginate = ['limit' => 20, 'order' => ['Companies.modified' => 'DESC']];
+    //     $companies = $this->paginate($query);
+    //     $this->set(compact('companies'));
+    // }
 
     /**
      * 会社詳細
