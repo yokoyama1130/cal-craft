@@ -222,7 +222,15 @@ class SettingsController extends AppController
     }
 
     /**
-     * パスワード更新（POST）
+     * パスワード更新処理
+     *
+     * - 現在のパスワードを検証し、新しいパスワードと確認用が一致するかを確認
+     * - バリデーションセット `passwordChange` を用いて新パスワードを検証
+     * - `password_changed_at` カラムが存在する場合は現在時刻を更新
+     * - 成功時にはセッションを再生成し、パスワード変更完了を通知
+     * - 失敗時はエラーメッセージを表示し、再入力画面へリダイレクト
+     *
+     * @return \Cake\Http\Response リダイレクトレスポンス
      */
     public function updatePassword()
     {
@@ -238,19 +246,22 @@ class SettingsController extends AppController
         $hasher = new DefaultPasswordHasher();
         if (!$hasher->check($currentPassword, (string)$user->password)) {
             $this->Flash->error('現在のパスワードが違います。');
+
             return $this->redirect(['action' => 'editPassword']);
         }
 
         if ($newPassword !== $newPassword2) {
             $this->Flash->error('新しいパスワードが一致しません。');
+
             return $this->redirect(['action' => 'editPassword']);
         }
 
         $user = $this->Users->patchEntity($user, ['password' => $newPassword], [
-            'validate' => 'passwordChange'
+            'validate' => 'passwordChange',
         ]);
         if ($user->getErrors()) {
             $this->Flash->error('パスワードがポリシーを満たしていません。');
+
             return $this->redirect(['action' => 'editPassword']);
         }
 
