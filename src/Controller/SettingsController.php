@@ -281,7 +281,14 @@ class SettingsController extends AppController
         return $this->redirect(['action' => 'editPassword']);
     }
 
-    // src/Controller/SettingsController.php
+    /**
+     * アカウント削除確認画面の表示
+     *
+     * - 実際の削除処理は行わず、確認用フォームを表示するだけ
+     * - ビュー: templates/Settings/delete_confirm.php
+     *
+     * @return void
+     */
     public function deleteConfirm()
     {
         // 確認画面（フォームだけ出す）
@@ -300,6 +307,7 @@ class SettingsController extends AppController
         $currentPassword = (string)$this->request->getData('current_password');
         if (!$hasher->check($currentPassword, (string)$user->password)) {
             $this->Flash->error('現在のパスワードが違います。');
+
             return $this->redirect(['action' => 'deleteConfirm']);
         }
 
@@ -307,6 +315,7 @@ class SettingsController extends AppController
         $confirm = (string)$this->request->getData('confirm_keyword');
         if (strtoupper(trim($confirm)) !== 'DELETE') {
             $this->Flash->error('確認キーワードが一致しません。DELETE と入力してください。');
+
             return $this->redirect(['action' => 'deleteConfirm']);
         }
 
@@ -323,10 +332,12 @@ class SettingsController extends AppController
             $this->Authentication->logout();
             $this->request->getSession()->destroy();
             $this->Flash->success('アカウントを削除（無効化）しました。');
+
             return $this->redirect(['controller' => 'Pages', 'action' => 'display', 'home']);
         }
 
         $this->Flash->error('削除に失敗しました。時間をおいて再度お試しください。');
+
         return $this->redirect(['action' => 'deleteConfirm']);
     }
 }
