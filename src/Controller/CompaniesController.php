@@ -3,21 +3,21 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use Cake\Utility\Text;
 use Cake\Event\EventInterface;
+use Cake\Utility\Text;
 use Cake\Datasource\ConnectionManager;
-use Psr\Http\Message\UploadedFileInterface;
 use Cake\Filesystem\Folder;
 use Cake\Mailer\Mailer;
 use Cake\Routing\Router;
+use Psr\Http\Message\UploadedFileInterface;
 
 class CompaniesController extends AppController
 {
     public function initialize(): void
     {
         parent::initialize();
-        $this->loadModel('Portfolios');
-        $this->loadModel('Companies');
+        $this->Portfolios = $this->fetchTable('Portfolios');
+        $this->Companies = $this->fetchTable('Companies');
         $this->Authentication->addUnauthenticatedActions([]); // すべて認証必須
         // 認証コンポーネントが未ロードなら AppController で $this->loadComponent('Authentication.Authentication') を
     }
@@ -41,6 +41,7 @@ class CompaniesController extends AppController
 
         if ($this->request->is('get')) {
             $this->set(compact('company'));
+
             return;
         }
 
@@ -58,16 +59,18 @@ class CompaniesController extends AppController
             $size = (int)$uploaded->getSize();
             if (!in_array($mime, $allowed, true)) {
                 $this->Flash->error(__('Logo must be an image (png, jpg, webp, gif, svg).'));
+
                 return $this->redirect($this->request->getRequestTarget());
             }
-            if ($size > 2*1024*1024) { // 2MB
+            if ($size > 2 * 1024 * 1024) { // 2MB
                 $this->Flash->error(__('Logo is too large (max 2MB).'));
+
                 return $this->redirect($this->request->getRequestTarget());
             }
 
             $extMap = [
-                'image/png'=>'png','image/jpeg'=>'jpg','image/webp'=>'webp',
-                'image/gif'=>'gif','image/svg+xml'=>'svg',
+                'image/png' => 'png' , 'image/jpeg' => 'jpg' , 'image/webp' => 'webp',
+                'image/gif' => 'gif' , 'image/svg+xml' => 'svg',
             ];
             $ext = $extMap[$mime] ?? 'bin';
 
@@ -75,7 +78,7 @@ class CompaniesController extends AppController
             (new Folder($dir, true, 0755)); // 無ければ作る
 
             // まだIDは無いので、一旦タイムスタンプ＋乱数で
-            $filename = sprintf('company_new_%d_%04d.%s', time(), random_int(0,9999), $ext);
+            $filename = sprintf('company_new_%d_%04d.%s', time(), random_int(0, 9999), $ext);
             $dest = $dir . DS . $filename;
 
             $uploaded->moveTo($dest);
@@ -85,33 +88,36 @@ class CompaniesController extends AppController
         }
 
         // ★ owner_* → auth_* にマップ（フォーム名はそのままでOK）
-        $ownerEmail    = trim((string)($data['owner_email'] ?? $data['billing_email'] ?? ''));
+        $ownerEmail = trim((string)($data['owner_email'] ?? $data['billing_email'] ?? ''));
         $ownerPassword = (string)($data['owner_password'] ?? '');
 
         // ★ 必須チェック（未入力はエラー）
         if ($ownerEmail === '') {
             $this->Flash->error('オーナー用メールは必須です。');
             $this->set(compact('company'));
+
             return;
         }
         if ($ownerPassword === '') {
             $this->Flash->error('オーナー用パスワードは必須です。');
             $this->set(compact('company'));
+
             return;
         }
         if (mb_strlen($ownerPassword) < 8) { // 任意
             $this->Flash->error('パスワードは8文字以上にしてください。');
             $this->set(compact('company'));
+
             return;
         }
-        $data['auth_email']    = $ownerEmail;
+        $data['auth_email'] = $ownerEmail;
         $data['auth_password'] = $ownerPassword; // ★エンティティでハッシュされる
 
         // もし “一般ユーザーIDをオーナーとして保持したい”なら、別カラムに保持（任意）
         // $data['owner_user_id'] = $this->getIdentity() ?? null;
 
         $data['email_verified'] = false;
-        $data['email_token']    = Text::uuid();
+        $data['email_token'] = Text::uuid();
 
         // 保存
         $company = $this->Companies->patchEntity($company, $data /* , ['validate' => 'employerLogin'] */);
@@ -119,6 +125,7 @@ class CompaniesController extends AppController
             $errors = $company->getErrors();
             $this->Flash->error('Unable to create company: ' . json_encode($errors));
             $this->set(compact('company'));
+
             return;
         }
 
@@ -132,7 +139,7 @@ class CompaniesController extends AppController
                     'prefix' => 'Employer',
                     'controller' => 'Auth',
                     'action' => 'verifyEmail',
-                    $company->email_token
+                    $company->email_token,
                 ],
                 true
                 )
@@ -141,8 +148,8 @@ class CompaniesController extends AppController
         $this->Flash->success(__('確認メールを送信しました。メールをご確認ください。'));
         // 企業ログインページへ誘導
         $this->Authentication->logout();
-        return $this->redirect('/employer/login?auth_email=' . urlencode($ownerEmail));
 
+        return $this->redirect('/employer/login?auth_email=' . urlencode($ownerEmail));
 
         // // 作成完了 → 企業ログイン画面へ誘導（email を自動入力したいならクエリで渡す）
         // $this->Flash->success(__('Company has been created. Please sign in to Employer Console.'));
@@ -150,7 +157,6 @@ class CompaniesController extends AppController
         // $this->Authentication->logout();
         // return $this->redirect('/employer/login?auth_email=' . urlencode($ownerEmail));
     }
-
 
     /**
      * 会社一覧（必要なければ消してOK）
@@ -194,7 +200,8 @@ class CompaniesController extends AppController
         $identity = $this->Authentication->getIdentity();
         if (!$identity) {
             $this->Flash->error('Please sign in as Employer.');
-            return $this->redirect(['prefix'=>'Employer','controller'=>'Auth','action'=>'login']);
+
+            return $this->redirect(['prefix' => 'Employer' , 'controller' => 'Auth' , 'action' => 'login']);
         }
         $authedCompanyId = (int)$identity->get('id');
 
@@ -202,7 +209,8 @@ class CompaniesController extends AppController
 
         if ((int)$company->id !== $authedCompanyId) {
             $this->Flash->error('Not authorized.');
-            return $this->redirect(['prefix'=>'Employer','controller'=>'Dashboard','action'=>'index']);
+
+            return $this->redirect(['prefix' => 'Employer' , 'controller' => 'Dashboard' , 'action' => 'index']);
         }
 
         if ($this->request->is(['patch','post','put'])) {
@@ -218,6 +226,7 @@ class CompaniesController extends AppController
             $company = $this->Companies->patchEntity($company, $data);
             if ($this->Companies->save($company)) {
                 $this->Flash->success('会社情報を編集しました。');
+
                 return $this->redirect(['action' => 'view', $company->id]); // or view
             }
             $this->Flash->error('Update failed. Please try again.');
@@ -236,6 +245,7 @@ class CompaniesController extends AppController
         $identity = $this->getIdentity();
         if (!$identity) {
             $this->Flash->error(__('Please sign in.'));
+
             return $this->redirect(['controller' => 'Users', 'action' => 'login']);
         }
         $userId = (int)$identity;
@@ -244,14 +254,17 @@ class CompaniesController extends AppController
 
         if ((int)$company->owner_user_id !== $userId) {
             $this->Flash->error(__('Not authorized.'));
+
             return $this->redirect(['action' => 'view', $company->id]);
         }
 
         if ($this->Companies->delete($company)) {
             $this->Flash->success(__('Company deleted.'));
+
             return $this->redirect(['action' => 'index']);
         }
         $this->Flash->error(__('Delete failed.'));
+
         return $this->redirect(['action' => 'view', $company->id]);
     }
 
@@ -265,6 +278,7 @@ class CompaniesController extends AppController
         $identity = $this->getIdentity();
         if (!$identity) {
             $this->Flash->error(__('Please sign in.'));
+
             return $this->redirect(['controller' => 'Users', 'action' => 'login']);
         }
         $userId = (int)$identity;
@@ -277,6 +291,7 @@ class CompaniesController extends AppController
         if ($company) {
             return $this->redirect(['action' => 'view', $company->id]);
         }
+
         return $this->redirect(['action' => 'add']);
     }
 
@@ -288,12 +303,15 @@ class CompaniesController extends AppController
         $identity = $this->request->getAttribute('identity');
         if ($identity && method_exists($identity, 'getIdentifier')) {
             $id = $identity->getIdentifier();
+
             return $id !== null ? (int)$id : null;
         }
         if (property_exists($this, 'Authentication') && $this->Authentication->getIdentity()) {
             $id = $this->Authentication->getIdentity()->getIdentifier();
+
             return $id !== null ? (int)$id : null;
         }
+
         return null;
     }
 }
