@@ -37,7 +37,15 @@ class SettingsController extends AppController
     }
 
     /**
-     * 設定トップ：現在のメール、パスワード更新日時の表示のみ
+     * ユーザー情報の表示
+     *
+     * - ログイン中のユーザーIDを取得し、Users テーブルから情報を取得
+     * - 必須フィールド（id, email）は常に取得
+     * - 任意フィールド（modified, password_changed_at）はカラムが存在する場合のみ追加
+     * - ビューに $user を渡す
+     *
+     * @return void
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException ユーザーが見つからない場合
      */
     public function index()
     {
@@ -66,20 +74,31 @@ class SettingsController extends AppController
     }
 
     /**
-     * メール編集フォーム（GET）
+     * メールアドレス編集画面の表示
+     *
+     * - 現在ログイン中のユーザーIDを取得し、id・email・new_email フィールドを取得
+     * - ビューに $user をセットして edit_email テンプレートを表示
+     *
+     * @return void
+     * @throws \Cake\Datasource\Exception\RecordNotFoundException ユーザーが見つからない場合
      */
     public function editEmail()
     {
         $identity = $this->request->getAttribute('identity');
         $user = $this->Users->get($identity->getIdentifier(), [
-            'fields' => ['id', 'email', 'new_email']
+            'fields' => ['id', 'email', 'new_email'],
         ]);
         $this->set(compact('user'));
         $this->render('edit_email'); // templates/Settings/edit_email.php
     }
 
     /**
-     * パスワード編集フォーム（GET）
+     * パスワード編集画面の表示
+     *
+     * - 認証中ユーザー向けにパスワード変更フォームを表示
+     * - templates/Settings/edit_password.php を利用
+     *
+     * @return void
      */
     public function editPassword()
     {
