@@ -49,9 +49,13 @@ class CompaniesController extends AppController
     }
 
     /**
-     * 会社作成：
-     * - ログインユーザーの company が既にあれば edit にリダイレクト
-     * - なければ owner_user_id を自動セットして作成
+     * 会社アカウント作成アクション
+     *
+     * - 企業情報を新規作成し、ロゴ画像のアップロードや
+     *   オーナー用メール・パスワードの必須チェックを行います。
+     * - 入力データに基づいて `auth_email` と `auth_password` を設定し、
+     *
+     * @return void
      */
     public function add()
     {
