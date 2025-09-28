@@ -25,6 +25,18 @@ class LikesController extends AppController
         // $this->loadModel('Portfolios'); ← 必要なければ消してOK
     }
 
+    /**
+     * いいね追加（トグル機能付き）
+     *
+     * - POST リクエストのみ受け付け
+     * - すでに「user_id × portfolio_id」のレコードがある場合は削除（アンいいね）
+     * - 存在しない場合は新規作成
+     * - 保存成功時には、対象ポートフォリオの投稿者に通知を送信
+     *   （ただし、自分自身へのいいねは通知しない）
+     * - 成功・失敗いずれの場合も元のページへリダイレクト
+     *
+     * @return \Cake\Http\Response リダイレクトレスポンス
+     */
     public function add()
     {
         $this->request->allowMethod(['post']);
@@ -84,6 +96,16 @@ class LikesController extends AppController
         return $this->redirect($this->referer());
     }
 
+    /**
+     * 現在のログイン主体（ユーザー or 企業）を解決するヘルパー
+     *
+     * - 認証情報（identity）から ID を取得
+     * - Users テーブルに存在すれば ['user_id' => ID] を返す
+     * - Companies テーブルに存在すれば ['company_id' => ID] を返す
+     * - どちらにも存在しない、または未ログインの場合は空配列を返す
+     *
+     * @return array ユーザーID または 企業ID を含む配列、または空配列
+     */
     private function resolveActor(): array
     {
         $identity = $this->request->getAttribute('identity');
@@ -105,6 +127,18 @@ class LikesController extends AppController
         return [];
     }
 
+    /**
+     * いいねトグル（Ajax用）
+     *
+     * - POST リクエストのみ受け付け
+     * - 現在のログイン主体（ユーザー or 企業）を resolveActor() で判定
+     * - すでに同じ組み合わせ（user_id / company_id × portfolio_id）が存在する場合は削除（アンいいね）
+     * - 存在しない場合は新規作成し、対象ユーザーに通知を送信（※自分自身の投稿は通知対象外）
+     * - 成功時は JSON レスポンスとして { success, liked, likeCount } を返却
+     * - エラー時は HTTP ステータスコード（401, 400, 422, 500 など）と JSON エラー内容を返却
+     *
+     * @return \Cake\Http\Response JSON レスポンス
+     */
     public function toggle()
     {
         $this->request->allowMethod(['post']);
@@ -191,6 +225,20 @@ class LikesController extends AppController
         }
     }
 
+    /**
+     * お気に入り一覧（自分が「いいね」したポートフォリオを表示）
+     *
+     * - 現在のログイン主体（ユーザー or 企業）を resolveActor() で判定
+     * - 未ログインの場合はエラーメッセージを出して /login にリダイレクト
+     * - 自分が「いいね」したポートフォリオIDを取得し、
+     *   - 公開中（is_public = true）のみ一覧表示
+     *   - Users を関連付けて取得
+     *   - 作成日の新しい順に並び替え
+     * - 各ポートフォリオに liked_by_me（常に true）と like_count を付与
+     * - ビューに `portfolios` を渡して表示
+     *
+     * @return \Cake\Http\Response|null レスポンスまたはリダイレクト
+     */
     public function favorites()
     {
         $this->Likes = $this->fetchTable('Likes');
