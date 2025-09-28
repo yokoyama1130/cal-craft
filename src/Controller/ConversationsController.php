@@ -6,7 +6,21 @@ namespace App\Controller;
 class ConversationsController extends AppController
 {
     /**
-     * 会話一覧（自分が当事者の会話）
+     * 会話一覧アクション
+     *
+     * ログイン中のユーザーまたは企業が当事者となっている会話を取得し、
+     * 相手（partner）の情報を付与して一覧表示します。
+     *
+     * 主な処理の流れ:
+     * - 自分（actor: user または company）の ID を取得
+     * - Conversations テーブルから自分が p1 または p2 となっている会話を検索
+     * - 相手となる user_id / company_id を一括収集し、Users / Companies テーブルから情報をロード
+     * - 各会話エンティティに partner_type と partner 情報を付加
+     * - conversations, actorType, actorId をビューに渡す
+     *
+     * 未ログインの場合はトップページにリダイレクトし、エラーメッセージを表示します。
+     *
+     * @return \Cake\Http\Response|null レスポンス（未ログイン時はリダイレクト）
      */
     public function index()
     {
