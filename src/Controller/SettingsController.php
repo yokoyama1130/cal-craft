@@ -117,6 +117,7 @@ class SettingsController extends AppController
         $lastSent = $session->read('Settings.lastEmailRequestAt');
         if ($lastSent && (time() - (int)$lastSent) < 60) {
             $this->Flash->error('リクエストが多すぎます。しばらくしてからもう一度お試しください。');
+
             return $this->redirect(['action' => 'editEmail']);
         }
 
@@ -130,15 +131,17 @@ class SettingsController extends AppController
         $hasher = new DefaultPasswordHasher();
         if (!$hasher->check($currentPassword, (string)$user->password)) {
             $this->Flash->error('現在のパスワードが違います。');
+
             return $this->redirect(['action' => 'editEmail']);
         }
 
         // バリデーション（unique/format は validationEmailChange）
         $user = $this->Users->patchEntity($user, ['new_email' => $newEmail], [
-            'validate' => 'emailChange'
+            'validate' => 'emailChange',
         ]);
         if ($user->getErrors()) {
             $this->Flash->error('メールアドレスが不正か、既に使われています。');
+
             return $this->redirect(['action' => 'editEmail']);
         }
 
