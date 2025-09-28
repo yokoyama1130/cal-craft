@@ -17,14 +17,15 @@ class MessagesController extends AppController
         $this->request->allowMethod(['post']);
 
         $conversationId = (int)($this->request->getData('conversation_id') ?? 0);
-        $rawContent     = (string)($this->request->getData('content') ?? '');
-        $content        = trim(preg_replace("/\r\n?/", "\n", $rawContent));
+        $rawContent = (string)($this->request->getData('content') ?? '');
+        $content = trim(preg_replace("/\r\n?/", "\n", $rawContent));
 
         if ($conversationId <= 0) {
             throw new BadRequestException('conversation_id is required.');
         }
         if ($content === '') {
             $this->Flash->error('メッセージ内容を入力してください。');
+
             return $this->redirect(['controller' => 'Conversations', 'action' => 'view', $conversationId]);
         }
 
@@ -65,7 +66,13 @@ class MessagesController extends AppController
                         $used = $this->countMonthlyUniqueUsersContacted((int)$company->id);
                         if ($used >= $limit) {
                             $this->Flash->error('このプランで当月に話しかけ可能なユーザー数の上限に達しました。');
-                            return $this->redirect(['controller' => 'Conversations', 'action' => 'view', $conversationId]);
+
+                            return $this->redirect(
+                                [
+                                    'controller' => 'Conversations',
+                                    'action' => 'view', $conversationId,
+                                ]
+                            );
                         }
                     }
                 }
@@ -93,13 +100,14 @@ class MessagesController extends AppController
         $msg = $Messages->newEmptyEntity();
         $msg = $Messages->patchEntity($msg, [
             'conversation_id' => $conversationId,
-            'content'         => $content,
-            'sender_type'     => $actor['type'],  // user | company
-            'sender_ref_id'   => $actor['id'],
+            'content' => $content,
+            'sender_type' => $actor['type'], // user | company
+            'sender_ref_id' => $actor['id'],
         ]);
 
         if (!$Messages->save($msg)) {
             $this->Flash->error('送信に失敗しました。もう一度お試しください。');
+
             return $this->redirect(['controller' => 'Conversations', 'action' => 'view', $conversationId]);
         }
 
@@ -113,9 +121,9 @@ class MessagesController extends AppController
 
         return $this->redirect([
             'controller' => 'Conversations',
-            'action'     => 'view',
+            'action' => 'view',
             $conversationId,
-            '#'          => 'bottom',
+            '#' => 'bottom',
         ]);
     }
 
@@ -149,9 +157,9 @@ class MessagesController extends AppController
 
     // どこか共通で（例: MessagesController/ConversationsController のプロパティとして）
     private array $planUserContactLimits = [
-        'free'       => 1,   // 当月 新規に話しかけられるユーザー数
-        'pro'        => 100,
-        'enterprise' => 0,    // 0は無制限
+        'free' => 1, // 当月 新規に話しかけられるユーザー数
+        'pro' => 100,
+        'enterprise' => 0, // 0は無制限
     ];
 
     /**
@@ -245,5 +253,4 @@ class MessagesController extends AppController
 
         return count($partnerUserIds);
     }
-
 }
