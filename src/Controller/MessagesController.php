@@ -10,7 +10,18 @@ use Cake\Http\Exception\NotFoundException;
 class MessagesController extends AppController
 {
     /**
-     * POST /messages/send
+     * メッセージ送信アクション
+     *
+     * - POST リクエストのみ受け付け
+     * - conversation_id と content をリクエストから取得
+     * - 会社アカウントの場合はプランごとの月間接触ユーザー数制限を確認
+     * - 会話の参加者であることを検証し、Messages に保存
+     * - 保存成功後は会話の modified を更新し、会話画面の末尾へリダイレクト
+     *
+     * @throws \Cake\Http\Exception\BadRequestException conversation_id が不正な場合
+     * @throws \Cake\Http\Exception\NotFoundException 会話が存在しない場合
+     * @throws \Cake\Http\Exception\ForbiddenException 当該会話の参加者でない場合
+     * @return \Cake\Http\Response リダイレクトレスポンス
      */
     public function send()
     {
@@ -43,10 +54,12 @@ class MessagesController extends AppController
                 $conv = $Conversations->get($conversationId);
 
                 // 相手のタイプとID
-                $partnerType = ($conv->p1_type === 'company' && (int)$conv->p1_id === (int)$company->id)
-                    ? $conv->p2_type : $conv->p1_type;
-                $partnerId = ($conv->p1_type === 'company' && (int)$conv->p1_id === (int)$company->id)
-                    ? (int)$conv->p2_id : (int)$conv->p1_id;
+                $partnerType = $conv->p1_type === 'company' && (int)$conv->p1_id === (int)$company->id
+                    ? $conv->p2_type
+                    : $conv->p1_type;
+                $partnerId = $conv->p1_type === 'company' && (int)$conv->p1_id === (int)$company->id
+                    ? (int)$conv->p2_id
+                    : (int)$conv->p1_id;
 
                 if ($partnerType === 'user') {
                     // 当月、このユーザー宛に会社が既に送っているか？
@@ -127,6 +140,19 @@ class MessagesController extends AppController
         ]);
     }
 
+    /**
+     * メッセージ削除アクション
+     *
+     * - POST/DELETE リクエストのみ受け付け
+     * - 指定されたメッセージを取得し、ログインユーザーが送信者本人か検証
+     * - 本人以外は Forbidden をスロー
+     * - 削除成功/失敗に応じて Flash メッセージを表示
+     * - 削除後は該当会話画面にリダイレクト
+     *
+     * @param int $id 削除対象メッセージID
+     * @throws \Cake\Http\Exception\ForbiddenException 本人以外による削除リクエストの場合
+     * @return \Cake\Http\Response リダイレクトレスポンス
+     */
     public function delete(int $id)
     {
         $this->request->allowMethod(['post', 'delete']);
@@ -163,7 +189,14 @@ class MessagesController extends AppController
     ];
 
     /**
-     * 当月、会社が“実際に送信した”相手ユーザーIDのユニーク数を返す
+     * 指定した会社が当月に「実際にメッセージを送信した」ユニークなユーザー数を集計する
+     *
+     * - Conversations テーブルから、会社が参加しているユーザーとの会話IDを抽出
+     * - Messages テーブルから、当月その会社が送信した会話IDを特定
+     * - 会話IDに対応する相手ユーザーIDを収集し、ユニーク数を返す
+     *
+     * @param int $companyId 対象となる会社ID
+     * @return int ユニークユーザー数（当月会社が実際に送信したユーザーの数）
      */
     private function countMonthlyUniqueUsersContacted(int $companyId): int
     {
@@ -177,7 +210,7 @@ class MessagesController extends AppController
                 'OR' => [
                     ['p1_type' => 'company', 'p1_id' => $companyId, 'p2_type' => 'user'],
                     ['p2_type' => 'company', 'p2_id' => $companyId, 'p1_type' => 'user'],
-                ]
+                ],
             ])
             ->enableHydration(false)
             ->all()
@@ -236,7 +269,9 @@ class MessagesController extends AppController
                 ])
                 ->enableHydration(false)
                 ->all();
-            foreach ($rows1 as $r) $partnerUserIds[$r['uid']] = true;
+            foreach ($rows1 as $r) {
+                $partnerUserIds[$r['uid']] = true;
+            }
 
             // p2(company)/p1(user) 側
             $rows2 = $Conversations->find()
@@ -248,7 +283,9 @@ class MessagesController extends AppController
                 ])
                 ->enableHydration(false)
                 ->all();
-            foreach ($rows2 as $r) $partnerUserIds[$r['uid']] = true;
+            foreach ($rows2 as $r) {
+                $partnerUserIds[$r['uid']] = true;
+            }
         }
 
         return count($partnerUserIds);
