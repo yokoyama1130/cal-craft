@@ -4,12 +4,20 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\Event\EventInterface;
-use Cake\Filesystem\Folder;
 use Cake\Utility\Text;
 use Psr\Http\Message\UploadedFileInterface;
 
 class PortfoliosController extends AppController
 {
+    /**
+     * beforeFilter
+     *
+     * - 認証チェック前の処理を定義
+     * - `index`, `view`, `search` アクションは未ログインでもアクセス可能に設定
+     *
+     * @param \Cake\Event\EventInterface $event イベントオブジェクト
+     * @return void
+     */
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
@@ -17,9 +25,20 @@ class PortfoliosController extends AppController
         $this->Authentication->addUnauthenticatedActions(['index', 'view', 'search']);
     }
 
+    /**
+     * ポートフォリオ一覧を表示
+     *
+     * - 公開状態（is_public = true）のポートフォリオを新しい順に最大10件取得
+     * - 各ポートフォリオに対して以下の情報を付与する:
+     *   - like_count: そのポートフォリオに付いた「いいね」の総数
+     *   - liked_by_me: ログイン中ユーザーが「いいね」しているかどうか
+     * - ビューに `portfolios` 変数をセットして表示用に渡す
+     *
+     * @return void
+     */
     public function index()
     {
-        $this->loadModel('Likes');
+        $this->Likes = $this->fetchTable('Likes');
 
         $identity = $this->request->getAttribute('identity');
         $authUserId = $identity ? $identity->get('id') : null;
@@ -41,6 +60,25 @@ class PortfoliosController extends AppController
         $this->set(compact('portfolios'));
     }
 
+    /**
+     * ポートフォリオ詳細を表示
+     *
+     * - 指定された ID のポートフォリオを取得し、関連情報（Users, Companies, Categories, Comments）を含めて表示する
+     * - 非公開ポートフォリオは、投稿者本人のみが閲覧可能
+     * - ユーザー投稿の場合はフォローUIを表示し、フォロワー数・フォロー数・ログイン中ユーザーがフォロー中かどうかを判定
+     * - コメント一覧を取得し、関連するユーザーや企業情報も含めてビューに渡す
+     * - ビューに渡す変数:
+     *   - portfolio: ポートフォリオ本体
+     *   - comments: コメント一覧（昇順）
+     *   - showFollowUi: フォローUIを表示するかどうか（bool）
+     *   - followerCount: フォロワー数
+     *   - followingCount: フォロー数
+     *   - isFollowing: 現在ログイン中ユーザーが対象をフォローしているか
+     *   - currentActor: ログイン中のユーザーまたは企業情報
+     *
+     * @param int|null $id ポートフォリオID
+     * @return \Cake\Http\Response|null レンダリングまたはリダイレクト
+     */
     public function view($id = null)
     {
         $this->Follows = $this->fetchTable('Follows');
@@ -112,6 +150,20 @@ class PortfoliosController extends AppController
         ));
     }
 
+    /**
+     * ポートフォリオ新規作成
+     *
+     * - POST リクエストで送信されたデータを基に新しいポートフォリオを作成
+     * - ログインしているユーザーを投稿者（user_id）として設定（company_id は null）
+     * - サムネイル画像がアップロードされている場合は `/uploads/` に保存し、パスを `thumbnail` フィールドに設定
+     * - PDF など追加ファイルのアップロード処理は `handlePdfUploads()` で処理（例外時はエラーメッセージを表示）
+     * - 成功時は該当ポートフォリオの詳細ページへリダイレクト、失敗時はエラーメッセージを表示
+     * - ビューへ渡す変数:
+     *   - portfolio: 新規作成中のポートフォリオエンティティ
+     *   - categories: 投稿フォーム用カテゴリ一覧（id, name, slug）
+     *
+     * @return \Cake\Http\Response|null レンダリングまたはリダイレクト
+     */
     public function add()
     {
         $portfolio = $this->Portfolios->newEmptyEntity();
@@ -165,6 +217,20 @@ class PortfoliosController extends AppController
         $this->render('add');
     }
 
+    /**
+     * ポートフォリオ編集
+     *
+     * - 指定された ID のポートフォリオを取得し、投稿者本人のみが編集可能
+     * - ログインしていない場合、または他人の投稿の場合はエラーを表示して詳細ページへリダイレクト
+     * - PATCH/POST/PUT リクエストで送信されたデータを反映し、更新処理を実行
+     * - サムネイル画像がアップロードされた場合は `/uploads/` に保存し、`thumbnail` に反映
+     * - 更新成功時は PDF など追加ファイルの処理を行い、詳細ページにリダイレクト
+     * - 更新失敗時はエラーメッセージを表示してフォームを再描画
+     * - ビューは add フォームを再利用
+     *
+     * @param int|null $id 編集対象のポートフォリオID
+     * @return \Cake\Http\Response|null 成功時はリダイレクト、失敗時はフォームを再表示
+     */
     public function edit($id = null)
     {
         $portfolio = $this->Portfolios->get($id, [
@@ -216,6 +282,18 @@ class PortfoliosController extends AppController
         $this->render('add'); // add フォーム再利用
     }
 
+    /**
+     * ポートフォリオ削除
+     *
+     * - 指定された ID のポートフォリオを取得し、投稿者本人のみ削除可能
+     * - 権限がない場合は ForbiddenException をスロー
+     * - POST または DELETE リクエストのみ許可
+     * - 成功時はユーザープロフィールにリダイレクト
+     *
+     * @param int $id 削除対象のポートフォリオID
+     * @return \Cake\Http\Response リダイレクトレスポンス
+     * @throws \Cake\Http\Exception\ForbiddenException 投稿者以外による削除時
+     */
     public function delete($id)
     {
         $portfolio = $this->Portfolios->get($id);
@@ -237,6 +315,17 @@ class PortfoliosController extends AppController
         return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
     }
 
+    /**
+     * 公開／非公開の切り替え
+     *
+     * - 投稿者本人のみ操作可能
+     * - is_public フラグをトグルして保存
+     * - 実行後はユーザープロフィールへリダイレクト
+     *
+     * @param int $id 対象ポートフォリオID
+     * @return \Cake\Http\Response リダイレクトレスポンス
+     * @throws \Cake\Http\Exception\ForbiddenException 投稿者以外による操作時
+     */
     public function togglePublic($id)
     {
         $portfolio = $this->Portfolios->get($id);
@@ -253,6 +342,16 @@ class PortfoliosController extends AppController
         return $this->redirect(['controller' => 'Users', 'action' => 'profile']);
     }
 
+    /**
+     * ポートフォリオ検索
+     *
+     * - GET メソッドのみ許可
+     * - クエリパラメータ `q` を利用してタイトル／説明を部分一致検索
+     * - 常に公開設定（is_public = true）の投稿のみ対象
+     * - 検索結果を新しい順に表示し、`index` テンプレートを使用
+     *
+     * @return void
+     */
     public function search()
     {
         $this->request->allowMethod(['get']);
@@ -267,7 +366,7 @@ class PortfoliosController extends AppController
                 'OR' => [
                     'Portfolios.title LIKE' => '%' . $keyword . '%',
                     'Portfolios.description LIKE' => '%' . $keyword . '%',
-                ]
+                ],
             ]);
         }
 
@@ -277,6 +376,21 @@ class PortfoliosController extends AppController
         $this->render('index');
     }
 
+    /**
+     * 単一PDFファイルを保存
+     *
+     * - PDF 拡張子と MIME タイプをチェック
+     * - サイズ上限は 20MB
+     * - 保存先は `files/portfolios/{portfolioId}/` 配下
+     * - 安全な一意ファイル名を生成して保存
+     *
+     * @param \Psr\Http\Message\UploadedFileInterface $file アップロードされたファイル
+     * @param string $baseDir 保存先ディレクトリ
+     * @param string $kind 種別（drawing|supplement など）
+     * @param int $pid ポートフォリオID
+     * @return string 保存されたファイル名
+     * @throws \RuntimeException PDF 以外のファイルや制約違反時
+     */
     private function moveOnePdf(UploadedFileInterface $file, string $baseDir, string $kind, int $pid): string
     {
         $ext = strtolower(pathinfo($file->getClientFilename(), PATHINFO_EXTENSION));
@@ -304,6 +418,20 @@ class PortfoliosController extends AppController
         return $safeName;
     }
 
+    /**
+     * PDF ファイルのアップロード処理
+     *
+     * - 図面 PDF（drawing_pdf）と補足資料 PDF（supplement_pdfs[]）を処理
+     * - PDF のバリデーション（拡張子・MIME・サイズ）を実行
+     * - 保存先ディレクトリが存在しない場合は自動生成
+     * - 複数補足資料は既存のものに追記する形で保存
+     * - 保存パスは JSON 化してエンティティに格納
+     * - Portfolios テーブルに保存できなければ RuntimeException をスロー
+     *
+     * @param \App\Model\Entity\Portfolio $portfolio 対象のポートフォリオ
+     * @return void
+     * @throws \RuntimeException ファイル保存や DB 更新失敗時
+     */
     private function handlePdfUploads(\App\Model\Entity\Portfolio $portfolio): void
     {
         $req = $this->request;
@@ -315,7 +443,9 @@ class PortfoliosController extends AppController
         }
 
         $baseDir = WWW_ROOT . 'files' . DS . 'portfolios' . DS . $portfolio->id . DS;
-        (new Folder($baseDir, true, 0755));
+        if (!is_dir($baseDir)) {
+            mkdir($baseDir, 0755, true);
+        }
 
         if ($drawing && $drawing->getError() === UPLOAD_ERR_OK) {
             $fname = $this->moveOnePdf($drawing, $baseDir, 'drawing', (int)$portfolio->id);
