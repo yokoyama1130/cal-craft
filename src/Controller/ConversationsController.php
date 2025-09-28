@@ -10,15 +10,16 @@ class ConversationsController extends AppController
      */
     public function index()
     {
-        $this->loadModel('Conversations');
+        $this->Conversations = $this->fetchTable('Conversations');
 
         // 自分（ユーザー or 会社）
         $actor = $this->getActor(); // ['type'=>'user'|'company','id'=>int]
         $type = $actor['type'] ?? null;
-        $id   = $actor['id']   ?? null;
+        $id = $actor['id'] ?? null;
 
         if (!$type || !$id) {
             $this->Flash->error('ログインしてください。');
+
             return $this->redirect('/');
         }
 
@@ -36,13 +37,13 @@ class ConversationsController extends AppController
         $userIds = $companyIds = [];
         foreach ($rows as $c) {
             $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === (int)$id);
-            $pType  = $isP1Me ? $c->p2_type : $c->p1_type;
-            $pId    = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
-            if ($pType === 'user')    $userIds[$pId] = true;
+            $pType = $isP1Me ? $c->p2_type : $c->p1_type;
+            $pId = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
+            if ($pType === 'user') $userIds[$pId] = true;
             if ($pType === 'company') $companyIds[$pId] = true;
         }
 
-        $Users     = $this->fetchTable('Users');
+        $Users = $this->fetchTable('Users');
         $Companies = $this->fetchTable('Companies');
 
         $userMap = $userIds
@@ -57,11 +58,11 @@ class ConversationsController extends AppController
         $conversations = [];
         foreach ($rows as $c) {
             $isP1Me = ($c->p1_type === $type && (int)$c->p1_id === (int)$id);
-            $pType  = $isP1Me ? $c->p2_type : $c->p1_type;
-            $pId    = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
+            $pType = $isP1Me ? $c->p2_type : $c->p1_type;
+            $pId = $isP1Me ? (int)$c->p2_id : (int)$c->p1_id;
 
             $partner = null;
-            if ($pType === 'user')    $partner = $userMap[$pId]    ?? null;
+            if ($pType === 'user') $partner = $userMap[$pId] ?? null;
             if ($pType === 'company') $partner = $companyMap[$pId] ?? null;
 
             $c->set('partner_type', $pType);
@@ -71,8 +72,8 @@ class ConversationsController extends AppController
 
         $this->set([
             'conversations' => $conversations,
-            'actorType'     => $type,
-            'actorId'       => $id,
+            'actorType' => $type,
+            'actorId' => $id,
         ]);
     }
 
@@ -92,10 +93,10 @@ class ConversationsController extends AppController
 
         if ($arg2 === null) {
             $partnerType = 'user';
-            $partnerId   = (int)$arg1;
+            $partnerId = (int)$arg1;
         } else {
             $partnerType = strtolower((string)$arg1);
-            $partnerId   = (int)$arg2;
+            $partnerId = (int)$arg2;
         }
 
         if (!in_array($partnerType, ['user','company'], true) || $partnerId <= 0) {
@@ -105,6 +106,7 @@ class ConversationsController extends AppController
         $actor = $this->getActor(); // ['type','id']
         if (empty($actor['type']) || empty($actor['id'])) {
             $this->Flash->error('ログインが必要です。');
+
             return $this->redirect('/');
         }
 
@@ -118,6 +120,7 @@ class ConversationsController extends AppController
                 $used = $this->countMonthlyUniqueUsersContacted((int)$company->id);
                 if ($used >= $limit) {
                     $this->Flash->error('このプランで当月に話しかけ可能なユーザー数の上限に達しました。');
+
                     return $this->redirect(['action' => 'index']);
                 }
             }
@@ -125,6 +128,7 @@ class ConversationsController extends AppController
 
         if ($actor['type'] === $partnerType && (int)$actor['id'] === $partnerId) {
             $this->Flash->error('自分自身とは会話できません。');
+
             return $this->redirect(['action' => 'index']);
         }
 
@@ -142,12 +146,13 @@ class ConversationsController extends AppController
         if (!$conv) {
             $conv = $Conversations->newEntity([
                 'p1_type' => $actor['type'],
-                'p1_id'   => $actor['id'],
+                'p1_id' => $actor['id'],
                 'p2_type' => $partnerType,
-                'p2_id'   => $partnerId,
+                'p2_id' => $partnerId,
             ]);
             if (!$Conversations->save($conv)) {
                 $this->Flash->error('会話を開始できませんでした。');
+
                 return $this->redirect(['action' => 'index']);
             }
         }
@@ -161,11 +166,12 @@ class ConversationsController extends AppController
     public function view($id)
     {
         $Conversations = $this->fetchTable('Conversations');
-        $Messages      = $this->fetchTable('Messages');
+        $Messages = $this->fetchTable('Messages');
 
         $actor = $this->getActor();
         if (empty($actor['id'])) {
             $this->Flash->error('ログインが必要です。');
+
             return $this->redirect('/');
         }
 
@@ -179,10 +185,10 @@ class ConversationsController extends AppController
 
         if ($isP1) {
             $partnerType = $conversation->p2_type;
-            $partnerId   = (int)$conversation->p2_id;
+            $partnerId = (int)$conversation->p2_id;
         } else {
             $partnerType = $conversation->p1_type;
-            $partnerId   = (int)$conversation->p1_id;
+            $partnerId = (int)$conversation->p1_id;
         }
 
         if ($partnerType === 'user') {
@@ -202,15 +208,15 @@ class ConversationsController extends AppController
             ->toArray();
 
         $myType = $actor['type'];
-        $myId   = (int)$actor['id'];
+        $myId = (int)$actor['id'];
 
-        $this->set(compact('conversation','messages','partner','myType','myId'));
+        $this->set(compact('conversation', 'messages', 'partner', 'myType', 'myId'));
     }
 
-    /** プラン別：当月に新規コンタクトできるユーザー数（0は無制限） */
+    // プラン別：当月に新規コンタクトできるユーザー数（0は無制限
     private array $planUserContactLimits = [
-        'free'       => 1,
-        'pro'        => 100,
+        'free' => 1,
+        'pro' => 100,
         'enterprise' => 0,
     ];
 
@@ -229,7 +235,7 @@ class ConversationsController extends AppController
                 'OR' => [
                     ['p1_type' => 'company', 'p1_id' => $companyId, 'p2_type' => 'user'],
                     ['p2_type' => 'company', 'p2_id' => $companyId, 'p1_type' => 'user'],
-                ]
+                ],
             ])
             ->enableHydration(false)
             ->all()
@@ -247,9 +253,9 @@ class ConversationsController extends AppController
             ->select('conversation_id')
             ->where([
                 'conversation_id IN' => $convIds,
-                'sender_type'        => 'company',
-                'sender_ref_id'      => $companyId,
-                'created >='         => $since,
+                'sender_type' => 'company',
+                'sender_ref_id' => $companyId,
+                'created >=' => $since,
             ])
             ->distinct()
             ->enableHydration(false)
@@ -288,5 +294,4 @@ class ConversationsController extends AppController
 
         return count($partnerUserIds);
     }
-
 }
