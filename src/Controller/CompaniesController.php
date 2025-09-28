@@ -97,7 +97,9 @@ class CompaniesController extends AppController
             $ext = $extMap[$mime] ?? 'bin';
 
             $dir = WWW_ROOT . 'img' . DS . 'companies';
-            (new Folder($dir, true, 0755)); // 無ければ作る
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            } // 無ければ作る
 
             // まだIDは無いので、一旦タイムスタンプ＋乱数で
             $filename = sprintf('company_new_%d_%04d.%s', time(), random_int(0, 9999), $ext);
