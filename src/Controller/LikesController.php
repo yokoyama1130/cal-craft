@@ -7,6 +7,15 @@ use Cake\Log\Log;
 
 class LikesController extends AppController
 {
+    /**
+     * コントローラーの初期化処理
+     *
+     * - 親クラスの initialize() を呼び出し、共通初期化を継承。
+     * - Authentication コンポーネントをロードし、認証機能を有効化。
+     * - Likes テーブルを明示的にロードして、コントローラー内で利用可能にする。
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
