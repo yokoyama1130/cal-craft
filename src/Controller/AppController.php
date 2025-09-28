@@ -42,8 +42,6 @@ class AppController extends Controller
 
         if ($identity) {
             $this->Notifications = $this->fetchTable('Notifications');
-
-            $this->loadModel('Notifications');
             $userId = $identity->get('id');
 
             $unreadCount = $this->Notifications->find()
