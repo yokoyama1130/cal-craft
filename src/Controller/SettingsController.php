@@ -183,17 +183,19 @@ class SettingsController extends AppController
     {
         if (!$token) {
             $this->Flash->error('トークンがありません。');
+
             return $this->redirect(['action' => 'index']);
         }
 
         $user = $this->Users->find()
             ->where([
                 'email_change_token' => $token,
-                'email_change_expires >' => FrozenTime::now()
+                'email_change_expires >' => FrozenTime::now(),
             ])->first();
 
         if (!$user || empty($user->new_email)) {
             $this->Flash->error('リンクが無効または期限切れです。');
+
             return $this->redirect(['action' => 'index']);
         }
 
