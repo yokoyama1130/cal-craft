@@ -9,6 +9,14 @@ use Cake\Log\Log;
 
 class WebhooksController extends AppController
 {
+    /**
+     * コントローラ初期化処理
+     *
+     * - POST メソッドのみ許可
+     * - 自動レンダリングを無効化
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
@@ -16,6 +24,14 @@ class WebhooksController extends AppController
         $this->autoRender = false;
     }
 
+    /**
+     * beforeFilter
+     *
+     * - 認証コンポーネントを利用している場合、`stripe` アクションを未認証でも許可
+     *
+     * @param \Cake\Event\EventInterface $event イベントオブジェクト
+     * @return void
+     */
     public function beforeFilter(\Cake\Event\EventInterface $event)
     {
         parent::beforeFilter($event);
@@ -24,6 +40,16 @@ class WebhooksController extends AppController
         }
     }
 
+    /**
+     * Stripe Webhook 受信エンドポイント
+     *
+     * - Stripe から送信されるイベントを検証（署名検証を含む）
+     * - `invoice.finalized`, `invoice.paid`, `payment_intent.succeeded` などのイベントを処理
+     * - CompanyInvoices テーブルに対して upsert（作成・更新）を実行
+     * - 該当する場合は Companies テーブルのプラン情報や有効期限も更新
+     *
+     * @return \Cake\Http\Response
+     */
     public function stripe()
     {
         $secret = (string)env('STRIPE_WEBHOOK_SECRET', (string)(Configure::read('Stripe.webhook_secret') ?? ''));
