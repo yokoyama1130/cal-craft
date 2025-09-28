@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Mailer\UserMailer;
+use Authentication\PasswordHasher\DefaultPasswordHasher;
 use Cake\I18n\FrozenTime;
 use Cake\Utility\Text;
-use Authentication\PasswordHasher\DefaultPasswordHasher;
-use App\Mailer\UserMailer;
 
 class SettingsController extends AppController
 {
