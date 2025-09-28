@@ -12,6 +12,14 @@ use Cake\Event\EventInterface;
  */
 class HomeController extends AppController
 {
+    /**
+     * フィルタ設定
+     *
+     * - index アクションのみ認証不要に設定
+     *
+     * @param \Cake\Event\EventInterface $event イベントオブジェクト
+     * @return void
+     */
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
@@ -20,10 +28,20 @@ class HomeController extends AppController
         $this->Authentication->addUnauthenticatedActions(['index']);
     }
 
+    /**
+     * ホームページ表示
+     *
+     * - 公開ポートフォリオの一覧を取得して表示
+     * - キーワード検索 (タイトル部分一致)
+     * - 直近の投稿を 18 件まで取得
+     * - 各ポートフォリオに「いいね数」と「自分がいいね済みかどうか」を付与
+     *
+     * @return void
+     */
     public function index()
     {
-        $this->loadModel('Portfolios');
-        $this->loadModel('Likes');
+        $this->Portfolios = $this->fetchTable('Portfolios');
+        $this->Likes = $this->fetchTable('Likes');
 
         $identity = $this->request->getAttribute('identity');
         $authId = $identity ? $identity->get('id') : null;
