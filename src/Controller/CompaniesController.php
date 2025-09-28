@@ -4,11 +4,9 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\Event\EventInterface;
-use Cake\Utility\Text;
-use Cake\Datasource\ConnectionManager;
-use Cake\Filesystem\Folder;
 use Cake\Mailer\Mailer;
 use Cake\Routing\Router;
+use Cake\Utility\Text;
 use Psr\Http\Message\UploadedFileInterface;
 
 class CompaniesController extends AppController
@@ -159,13 +157,13 @@ class CompaniesController extends AppController
             ->deliver(
                 "以下のURLをクリックしてメール認証を完了してください：\n\n" .
                 Router::url(
-                [
-                    'prefix' => 'Employer',
-                    'controller' => 'Auth',
-                    'action' => 'verifyEmail',
-                    $company->email_token,
-                ],
-                true
+                    [
+                        'prefix' => 'Employer',
+                        'controller' => 'Auth',
+                        'action' => 'verifyEmail',
+                        $company->email_token,
+                    ],
+                    true
                 )
             );
 
