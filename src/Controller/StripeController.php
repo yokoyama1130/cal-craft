@@ -3,19 +3,27 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Controller\AppController;
 use Cake\Core\Configure;
 
 class StripeController extends AppController
 {
-    // CSRF/フォーム保護の影響を避けるならこのアクションだけ除外設定でもOK
+    /**
+     * Stripe Webhook受信処理
+     *
+     * - Stripe から送信される Webhook イベントを受け取り処理する。
+     * - 開発環境では署名検証を省略できるが、本番環境では必ず `Stripe-Signature` ヘッダーを検証。
+     * - checkout.session.completed イベントを検知した場合、対象の会社レコードに
+     *   サブスクリプションIDとプランを反映する。
+     *
+     * @return \Cake\Http\Response Stripe へのレスポンス（200 OK）
+     */
     public function webhook()
     {
         $this->request->allowMethod(['post']);
 
-        $payload    = (string)$this->request->getBody();
-        $sigHeader  = $this->request->getHeaderLine('Stripe-Signature');
-        $whSecret   = (string)(Configure::read('Stripe.webhook_secret') ?? '');
+        $payload = (string)$this->request->getBody();
+        $sigHeader = $this->request->getHeaderLine('Stripe-Signature');
+        $whSecret = (string)(Configure::read('Stripe.webhook_secret') ?? '');
 
         if (!$whSecret) {
             // 開発中：署名検証なし（本番は必ず検証）
@@ -35,7 +43,7 @@ class StripeController extends AppController
         if ($type === 'checkout.session.completed') {
             $session = $event['data']['object'] ?? [];
             $companyId = (int)($session['metadata']['company_id'] ?? 0);
-            $target    = (string)($session['metadata']['target_plan'] ?? '');
+            $target = (string)($session['metadata']['target_plan'] ?? '');
 
             if ($companyId && in_array($target, ['pro','enterprise'], true)) {
                 $Companies = $this->fetchTable('Companies');
