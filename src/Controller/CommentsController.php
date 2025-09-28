@@ -54,44 +54,45 @@ class CommentsController extends AppController
         $actor = $this->getActor(); // ★ user or company の判定
         if (empty($actor['type']) || empty($actor['id'])) {
             $this->Flash->error('ログインが必要です。');
+
             return $this->redirect($this->referer());
         }
 
         $comment = $this->Comments->newEmptyEntity();
-        $data    = $this->request->getData();
+        $data = $this->request->getData();
 
         // 片方だけセット
         $payload = [
             'portfolio_id' => (int)$data['portfolio_id'],
-            'content'      => (string)$data['content'],
-            'user_id'      => $actor['type'] === 'user'    ? (int)$actor['id'] : null,
-            'company_id'   => $actor['type'] === 'company' ? (int)$actor['id'] : null,
+            'content' => (string)$data['content'],
+            'user_id' => $actor['type'] === 'user' ? (int)$actor['id'] : null,
+            'company_id' => $actor['type'] === 'company' ? (int)$actor['id'] : null,
         ];
 
         $comment = $this->Comments->patchEntity($comment, $payload);
 
         if ($this->Comments->save($comment)) {
             // 通知（投稿主ユーザーへ）— 既存ロジックを軽微に拡張
-            $this->loadModel('Portfolios');
+            $this->Portfolios = $this->fetchTable('Portfolios');
             $portfolio = $this->Portfolios->get($comment->portfolio_id);
 
             // 自分で自分に通知は送らない
-            $selfUserId = ($actor['type'] === 'user') ? (int)$actor['id'] : 0;
+            $selfUserId = $actor['type'] === 'user' ? (int)$actor['id'] : 0;
             if ((int)$portfolio->user_id !== $selfUserId) {
-                $this->loadModel('Notifications');
+                $this->Notifications = $this->fetchTable('Notifications');
 
                 // 既存が sender_id だけなら:
                 // - 会社コメント時は sender_id を NULL にしておく or 別カラムを追加
                 $notification = $this->Notifications->newEmptyEntity();
                 $notification = $this->Notifications->patchEntity($notification, [
-                    'user_id'       => (int)$portfolio->user_id, // 受け取り側（投稿主）
-                    'sender_id'     => $actor['type'] === 'user' ? (int)$actor['id'] : null, // 互換用
+                    'user_id' => (int)$portfolio->user_id, // 受け取り側（投稿主）
+                    'sender_id' => $actor['type'] === 'user' ? (int)$actor['id'] : null, // 互換用
                     // 拡張するなら下の2つのカラムを追加して使うのがベター
                     // 'sender_type'    => $actor['type'],
                     // 'sender_company_id' => $actor['type'] === 'company' ? (int)$actor['id'] : null,
-                    'portfolio_id'  => (int)$portfolio->id,
-                    'type'          => 'comment',
-                    'is_read'       => false,
+                    'portfolio_id' => (int)$portfolio->id,
+                    'type' => 'comment',
+                    'is_read' => false,
                 ]);
                 $this->Notifications->save($notification);
             }
@@ -104,27 +105,43 @@ class CommentsController extends AppController
         return $this->redirect($this->referer());
     }
 
+    /**
+     * コメント編集アクション
+     *
+     * 指定されたIDのコメントを取得し、ログイン中のユーザーまたは企業が
+     * 自分のコメントであれば編集を許可します。POST/PUT/PATCHリクエストで
+     * 送信された内容を保存し、成功時は対応するポートフォリオ詳細ページへ
+     * リダイレクトします。
+     *
+     * - 一般ユーザー: comment.user_id と一致する場合のみ編集可能
+     * - 企業ユーザー: comment.company_id と一致する場合のみ編集可能
+     *
+     * @param int $id コメントID
+     * @return \Cake\Http\Response|null レスポンスオブジェクトまたはリダイレクト
+     */
     public function edit($id)
     {
         $comment = $this->Comments->get($id);
-        $actor   = $this->getActor();
+        $actor = $this->getActor();
 
         // 自分のコメントだけ編集可（user_id or company_id のどちらか一致）
         $isOwner =
-            ($actor['type'] === 'user'    && (int)$comment->user_id === (int)$actor['id']) ||
+            ($actor['type'] === 'user' && (int)$comment->user_id === (int)$actor['id']) ||
             ($actor['type'] === 'company' && (int)$comment->company_id === (int)$actor['id']);
 
         if (!$isOwner) {
             $this->Flash->error('編集できません。');
+
             return $this->redirect($this->referer());
         }
 
         if ($this->request->is(['post','put','patch'])) {
             $this->Comments->patchEntity($comment, [
-                'content' => (string)$this->request->getData('content')
+                'content' => (string)$this->request->getData('content'),
             ]);
             if ($this->Comments->save($comment)) {
                 $this->Flash->success('コメントを更新しました。');
+
                 return $this->redirect(['controller' => 'Portfolios', 'action' => 'view', $comment->portfolio_id]);
             }
             $this->Flash->error('コメントの更新に失敗しました。');
@@ -133,18 +150,33 @@ class CommentsController extends AppController
         $this->set(compact('comment'));
     }
 
+    /**
+     * コメント削除アクション
+     *
+     * 指定されたIDのコメントを取得し、ログイン中のユーザーまたは企業が
+     * 自分のコメントであれば削除を許可します。削除成功/失敗に応じて
+     * フラッシュメッセージを表示し、対応するポートフォリオ詳細ページへ
+     * リダイレクトします。
+     *
+     * - 一般ユーザー: comment.user_id と一致する場合のみ削除可能
+     * - 企業ユーザー: comment.company_id と一致する場合のみ削除可能
+     *
+     * @param int $id コメントID
+     * @return \Cake\Http\Response|null レスポンスオブジェクト（ポートフォリオ詳細へのリダイレクト）
+     */
     public function delete($id)
     {
         $this->request->allowMethod(['post', 'delete']);
         $comment = $this->Comments->get($id);
-        $actor   = $this->getActor();
+        $actor = $this->getActor();
 
         $isOwner =
-            ($actor['type'] === 'user'    && (int)$comment->user_id === (int)$actor['id']) ||
+            ($actor['type'] === 'user' && (int)$comment->user_id === (int)$actor['id']) ||
             ($actor['type'] === 'company' && (int)$comment->company_id === (int)$actor['id']);
 
         if (!$isOwner) {
             $this->Flash->error('削除できません。');
+
             return $this->redirect($this->referer());
         }
 
@@ -158,5 +190,4 @@ class CommentsController extends AppController
 
         return $this->redirect(['controller' => 'Portfolios', 'action' => 'view', $portfolioId]);
     }
-
 }
