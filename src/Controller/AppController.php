@@ -22,6 +22,15 @@ class AppController extends Controller
         $this->loadComponent('Authentication.Authentication');
     }
 
+    /**
+     * コントローラのアクション実行前処理
+     *
+     * ログインユーザーの未読通知件数を取得し、
+     * ビュー変数 `unreadCount` にセットします。
+     *
+     * @param \Cake\Event\EventInterface $event イベントオブジェクト
+     * @return void
+     */
     public function beforeFilter(\Cake\Event\EventInterface $event)
     {
         parent::beforeFilter($event);
