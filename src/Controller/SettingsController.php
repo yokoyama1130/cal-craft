@@ -177,7 +177,14 @@ class SettingsController extends AppController
     }
 
     /**
-     * メール確認リンク（未ログイン可）
+     * メールアドレス変更の確認
+     *
+     * - 確認メール内のトークンを受け取り、新しいメールアドレスに反映する
+     * - トークンが存在しない／無効／期限切れの場合はエラーを表示
+     * - 成功時は Users テーブルの email を更新し、new_email / token / 有効期限をクリアする
+     *
+     * @param string|null $token メール認証用トークン
+     * @return \Cake\Http\Response|null リダイレクトレスポンス
      */
     public function confirmEmail(?string $token = null)
     {
