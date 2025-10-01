@@ -13,27 +13,27 @@ $val = function($arr, $key, $default=''){ return isset($arr[$key]) ? $arr[$key] 
     <div class="col-lg-5">
       <?= $this->Form->control('q', [
         'label' => 'キーワード（社名/ドメイン）',
-        'value' => $val($q,'q'),
+        'value' => $val($q, 'q'),
         'class' => 'form-control',
-        'placeholder' => '例）Acme / acme.co'
+        'placeholder' => '例）Acme / acme.co',
       ]) ?>
     </div>
     <div class="col-lg-3">
       <?= $this->Form->control('plan', [
         'label' => 'プラン',
-        'type'  => 'select',
+        'type' => 'select',
         'options' => ['' => '—', 'free' => 'free', 'pro' => 'pro', 'enterprise' => 'enterprise'],
-        'value' => $val($q,'plan'),
-        'class' => 'form-select'
+        'value' => $val($q, 'plan'),
+        'class' => 'form-select',
       ]) ?>
     </div>
     <div class="col-lg-2">
       <?= $this->Form->control('verified', [
         'label' => '認証',
-        'type'  => 'select',
+        'type' => 'select',
         'options' => ['' => '—', '1' => 'Verified', '0' => 'Pending'],
-        'value' => $val($q,'verified'),
-        'class' => 'form-select'
+        'value' => $val($q, 'verified'),
+        'class' => 'form-select',
       ]) ?>
     </div>
     <div class="col-lg-2 text-end">
@@ -58,24 +58,24 @@ $val = function($arr, $key, $default=''){ return isset($arr[$key]) ? $arr[$key] 
         </tr>
       </thead>
       <tbody>
-        <?php foreach ($companies as $co): ?>
-          <?php
-            $plan = strtolower((string)$co->plan);
-            $planBadgeClass = 'text-bg-secondary';
-            if ($plan === 'pro') $planBadgeClass = 'text-bg-warning';
-            if ($plan === 'enterprise') $planBadgeClass = 'text-bg-purple';
-            if ($plan === 'free') $planBadgeClass = 'text-bg-info';
+        <?php foreach ($companies as $co) : ?>
+            <?php
+              $plan = strtolower((string)$co->plan);
+              $planBadgeClass = 'text-bg-secondary';
+              if ($plan === 'pro') $planBadgeClass = 'text-bg-warning';
+              if ($plan === 'enterprise') $planBadgeClass = 'text-bg-purple';
+              if ($plan === 'free') $planBadgeClass = 'text-bg-info';
 
-            $verified = (int)$co->verified === 1;
-          ?>
+              $verified = (int)$co->verified === 1;
+            ?>
           <tr>
             <td>#<?= (int)$co->id ?></td>
             <td>
-              <?php if (!empty($co->logo_path)): ?>
+              <?php if (!empty($co->logo_path)) : ?>
                 <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;border:1px solid #eee">
                   <img src="<?= h($co->logo_path) ?>" style="width:100%;height:100%;object-fit:cover;display:block">
                 </div>
-              <?php else: ?>
+              <?php else : ?>
                 <div class="text-muted small">—</div>
               <?php endif; ?>
             </td>
@@ -87,9 +87,9 @@ $val = function($arr, $key, $default=''){ return isset($arr[$key]) ? $arr[$key] 
               <span class="badge <?= h($planBadgeClass) ?>"><?= h($co->plan ?: 'free') ?></span>
             </td>
             <td>
-              <?php if ($verified): ?>
+              <?php if ($verified) : ?>
                 <span class="badge text-bg-success"><i class="fa-solid fa-shield-check me-1"></i>Verified</span>
-              <?php else: ?>
+              <?php else : ?>
                 <span class="badge text-bg-secondary"><i class="fa-regular fa-hourglass-half me-1"></i>Pending</span>
               <?php endif; ?>
             </td>
@@ -98,9 +98,9 @@ $val = function($arr, $key, $default=''){ return isset($arr[$key]) ? $arr[$key] 
             <td class="text-end">
               <?= $this->Html->link('表示', ['prefix' => false, 'controller' => 'Companies', 'action' => 'view', $co->id], ['class' => 'btn btn-sm btn-outline-secondary']) ?>
 
-              <?php if (!$verified): ?>
-                <?= $this->Form->postLink('Verify', ['action' => 'verify', $co->id], ['class' => 'btn btn-sm btn-success ms-1']) ?>
-              <?php else: ?>
+              <?php if (!$verified) : ?>
+                    <?= $this->Form->postLink('Verify', ['action' => 'verify', $co->id], ['class' => 'btn btn-sm btn-success ms-1']) ?>
+              <?php else : ?>
                 <button class="btn btn-sm btn-success ms-1" disabled>Verified</button>
               <?php endif; ?>
 
