@@ -8,6 +8,19 @@ use Cake\Validation\Validator;
 
 class CompanyInvoicesTable extends Table
 {
+    /**
+     * バリデーションルールを定義
+     *
+     * - company_id: 整数・必須
+     * - amount: 整数・任意
+     * - currency: 文字列・任意
+     * - status: 文字列・任意
+     * - paid_at: 日時・任意
+     * - raw_payload: 任意（JSONや文字列）
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance
+     * @return \Cake\Validation\Validator 修正済みバリデータ
+     */
     public function validationDefault(Validator $validator): Validator
     {
         return $validator
@@ -19,6 +32,17 @@ class CompanyInvoicesTable extends Table
             ->allowEmptyString('raw_payload');
     }
 
+    /**
+     * 初期化処理
+     *
+     * - company_invoices テーブルをセット
+     * - 主キーを id に設定
+     * - Timestamp ビヘイビアを追加
+     * - Companies との belongsTo 関連を定義
+     *
+     * @param array<string, mixed> $config テーブル設定オプション
+     * @return void
+     */
     public function initialize(array $config): void
     {
         parent::initialize($config);
