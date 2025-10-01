@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
-use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -12,7 +11,6 @@ use Cake\Validation\Validator;
  * Users Model
  *
  * @property \App\Model\Table\PortfoliosTable&\Cake\ORM\Association\HasMany $Portfolios
- *
  * @method \App\Model\Entity\User newEmptyEntity()
  * @method \App\Model\Entity\User newEntity(array $data, array $options = [])
  * @method \App\Model\Entity\User[] newEntities(array $data, array $options = [])
@@ -38,26 +36,26 @@ class UsersTable extends Table
     public function initialize(array $config): void
     {
         parent::initialize($config);
-    
+
         $this->setTable('users');
         $this->setDisplayField('name');
         $this->setPrimaryKey('id');
-        $this->addBehavior('Timestamp'); 
+        $this->addBehavior('Timestamp');
 
         // 既存のアソシエーション
         $this->hasMany('Portfolios');
         $this->hasMany('Likes');
-    
+
         // 👇 フォロワー（自分をフォローしているユーザーたち）
         $this->hasMany('Followers', [
             'className' => 'Follows',
-            'foreignKey' => 'followed_id'
+            'foreignKey' => 'followed_id',
         ]);
-    
+
         // 👇 フォロー中（自分がフォローしているユーザーたち）
         $this->hasMany('Followings', [
             'className' => 'Follows',
-            'foreignKey' => 'follower_id'
+            'foreignKey' => 'follower_id',
         ]);
 
         $this->hasMany('Comments', [
@@ -113,12 +111,29 @@ class UsersTable extends Table
         return $rules;
     }
 
-    // src/Model/Table/UsersTable.php
+    /**
+     * 認証用 finder
+     *
+     * - 認証時に email_verified = true のみ対象とする
+     *
+     * @param \Cake\ORM\Query $query ORMクエリ
+     * @param array<string,mixed> $options オプション
+     * @return \Cake\ORM\Query
+     */
     public function findAuth(\Cake\ORM\Query $query, array $options)
     {
         return $query->where(['email_verified' => true]);
     }
 
+    /**
+     * メールアドレス変更用バリデーション
+     *
+     * - new_email: メール形式、必須、未使用であること
+     * - 他ユーザーの email/new_email と重複しないこと
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance
+     * @return \Cake\Validation\Validator 修正済みバリデータ
+     */
     public function validationEmailChange(Validator $validator): Validator
     {
         $v = new Validator();
@@ -130,11 +145,21 @@ class UsersTable extends Table
                   // 既存email と他ユーザーの new_email に重複しない
                   return !$this->exists(['email' => $value]) && !$this->exists(['new_email' => $value]);
               },
-              'message' => 'このメールは既に使用されています。'
+              'message' => 'このメールは既に使用されています。',
           ]);
+
         return $v;
     }
 
+    /**
+     * パスワード変更用バリデーション
+     *
+     * - password: 8文字以上
+     * - password: 大文字/小文字/数字/記号のうち2種類以上を含むこと
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance
+     * @return \Cake\Validation\Validator 修正済みバリデータ
+     */
     public function validationPasswordChange(Validator $validator): Validator
     {
         $v = new Validator();
@@ -145,14 +170,24 @@ class UsersTable extends Table
                          + (int)preg_match('/[A-Z]/', $value)
                          + (int)preg_match('/\d/', $value)
                          + (int)preg_match('/[^a-zA-Z0-9]/', $value);
+
                   return $score >= 2;
               },
-              'message' => '大文字・小文字・数字・記号のうち2種類以上を含めてください。'
+              'message' => '大文字・小文字・数字・記号のうち2種類以上を含めてください。',
           ]);
+
         return $v;
     }
 
-    // 共通 finder（アプリ側で使うやつは極力これ経由）
+    /**
+     * アクティブユーザー finder
+     *
+     * - 論理削除されていないユーザーのみを取得
+     *
+     * @param \Cake\ORM\Query $query ORMクエリ
+     * @param array<string,mixed> $options オプション
+     * @return \Cake\ORM\Query
+     */
     public function findActive(\Cake\ORM\Query $query, array $options)
     {
         return $query->where(['Users.deleted_at IS' => null]);
