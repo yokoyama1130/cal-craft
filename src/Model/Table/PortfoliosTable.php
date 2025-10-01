@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
-use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -15,7 +14,6 @@ use Cake\Validation\Validator;
  * @property \App\Model\Table\CategoriesTable&\Cake\ORM\Association\BelongsTo $Categories
  * @property \App\Model\Table\LikesTable&\Cake\ORM\Association\HasMany $Likes
  * @property \App\Model\Table\CommentsTable&\Cake\ORM\Association\HasMany $Comments
- *
  * @method \App\Model\Entity\Portfolio newEmptyEntity()
  * @method \App\Model\Entity\Portfolio newEntity(array $data, array $options = [])
  * @method \App\Model\Entity\Portfolio[] newEntities(array $data, array $options = [])
@@ -69,6 +67,19 @@ class PortfoliosTable extends Table
         ]);
     }
 
+    /**
+     * バリデーションルールを定義
+     *
+     * - user_id: 任意（企業投稿を許可するため）
+     * - company_id: 任意（ユーザー投稿を許可するため）
+     * - category_id: 必須
+     * - title: 必須、最大255文字
+     * - description: 必須
+     * - thumbnail: 任意、最大255文字
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance
+     * @return \Cake\Validation\Validator 修正済みバリデータ
+     */
     public function validationDefault(Validator $validator): Validator
     {
         $validator
@@ -99,6 +110,17 @@ class PortfoliosTable extends Table
         return $validator;
     }
 
+    /**
+     * アプリケーションルール（整合性チェック）を定義
+     *
+     * - user_id が Users に存在する場合は存在チェック
+     * - company_id が Companies に存在する場合は存在チェック
+     * - user_id または company_id のどちらか必須
+     * - 両方同時指定は不可
+     *
+     * @param \Cake\ORM\RulesChecker $rules ルールチェッカー
+     * @return \Cake\ORM\RulesChecker 修正済みルールチェッカー
+     */
     public function buildRules(RulesChecker $rules): RulesChecker
     {
         // 片方があれば existsIn を確認する
@@ -110,23 +132,23 @@ class PortfoliosTable extends Table
             'errorField' => 'company_id',
             'allowNullableNulls' => true,
         ]);
-    
+
         // どちらか一方必須
         $rules->add(function ($entity, $options) {
             return (bool)($entity->user_id || $entity->company_id);
         }, 'OwnerRequired', [
             'errorField' => 'owner',
-            'message' => 'ユーザーIDまたは会社IDのいずれかを指定してください。'
+            'message' => 'ユーザーIDまたは会社IDのいずれかを指定してください。',
         ]);
-    
+
         // 両方同時はNG
         $rules->add(function ($entity, $options) {
             return !($entity->user_id && $entity->company_id);
         }, 'OwnerExclusive', [
             'errorField' => 'owner',
-            'message' => 'ユーザーと会社の両方を同時に設定することはできません。'
+            'message' => 'ユーザーと会社の両方を同時に設定することはできません。',
         ]);
-    
+
         return $rules;
-    }    
+    }
 }
