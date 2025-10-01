@@ -6,7 +6,9 @@
  */
 $this->assign('title', '企業管理');
 
-$val = function($arr, $key, $default=''){ return isset($arr[$key]) ? $arr[$key] : $default; };
+$val = function ($arr, $key, $default = '') {
+    return $arr[$key] ?? $default;
+};
 ?>
 <div class="card p-3 mb-3">
   <?= $this->Form->create(null, ['type' => 'get', 'class' => 'row g-2 align-items-end']) ?>
@@ -62,10 +64,15 @@ $val = function($arr, $key, $default=''){ return isset($arr[$key]) ? $arr[$key] 
             <?php
               $plan = strtolower((string)$co->plan);
               $planBadgeClass = 'text-bg-secondary';
-              if ($plan === 'pro') $planBadgeClass = 'text-bg-warning';
-              if ($plan === 'enterprise') $planBadgeClass = 'text-bg-purple';
-              if ($plan === 'free') $planBadgeClass = 'text-bg-info';
-
+            if ($plan === 'pro') {
+                $planBadgeClass = 'text-bg-warning';
+            }
+            if ($plan === 'enterprise') {
+                $planBadgeClass = 'text-bg-purple';
+            }
+            if ($plan === 'free') {
+                $planBadgeClass = 'text-bg-info';
+            }
               $verified = (int)$co->verified === 1;
             ?>
           <tr>
