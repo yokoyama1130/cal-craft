@@ -29,11 +29,11 @@ class Like extends Entity
      */
     protected $_accessible = [
         'user_id' => true,
-        'company_id' => true, // ← 追加
+        'company_id' => true,
         'portfolio_id' => true,
         'created' => true,
         'user' => true,
-        'company' => true,    // ← 任意
+        'company' => true,
         'portfolio' => true,
-    ];    
+    ];
 }
