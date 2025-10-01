@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
-use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -17,6 +16,17 @@ use Cake\Validation\Validator;
  */
 class NotificationsTable extends Table
 {
+    /**
+     * 初期化処理
+     *
+     * - notifications テーブルをセット
+     * - 主キーを id に設定
+     * - Users（通知の受け手）、SenderUsers（通知の送り手）、Portfolios（通知対象）との関連を定義
+     * - Timestamp ビヘイビアを追加
+     *
+     * @param array<string, mixed> $config テーブル設定オプション
+     * @return void
+     */
     public function initialize(array $config): void
     {
         parent::initialize($config);
@@ -48,6 +58,18 @@ class NotificationsTable extends Table
         $this->addBehavior('Timestamp');
     }
 
+    /**
+     * バリデーションルールを定義
+     *
+     * - user_id: 必須
+     * - sender_id: 任意
+     * - portfolio_id: 任意
+     * - type: 文字列（最大50文字）、必須
+     * - is_read: 真偽値、必須
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance
+     * @return \Cake\Validation\Validator 修正済みバリデータ
+     */
     public function validationDefault(Validator $validator): Validator
     {
         $validator
@@ -74,6 +96,16 @@ class NotificationsTable extends Table
         return $validator;
     }
 
+    /**
+     * アプリケーションルール（整合性チェック）を定義
+     *
+     * - user_id が Users に存在すること
+     * - sender_id が SenderUsers に存在すること（nullable 可）
+     * - portfolio_id が Portfolios に存在すること（nullable 可）
+     *
+     * @param \Cake\ORM\RulesChecker $rules ルールチェッカー
+     * @return \Cake\ORM\RulesChecker 修正済みルールチェッカー
+     */
     public function buildRules(RulesChecker $rules): RulesChecker
     {
         // 通知の受信者（Users）に存在しているか
