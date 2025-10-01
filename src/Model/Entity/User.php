@@ -15,6 +15,11 @@ class User extends Entity
         'icon_path' => true,
     ];
 
+    /**
+     * アイコン画像のURLを取得するアクセサ
+     *
+     * @return string|null 画像が存在する場合は '/img/{icon_path}'、未設定なら null
+     */
     protected function _getIconUrl()
     {
         if (!empty($this->icon_path)) {
@@ -24,11 +29,24 @@ class User extends Entity
         return null;
     }
 
+    /**
+     * JSONやAPI出力時に隠すフィールド
+     *
+     * @var array<int, string>
+     */
     protected $_hidden = ['password'];
 
+    /**
+     * パスワードをハッシュ化してセットするミューテータ
+     *
+     * エンティティに代入されたプレーンテキストのパスワードを
+     * 自動的に DefaultPasswordHasher でハッシュ化して保存する。
+     *
+     * @param string $password プレーンテキストのパスワード
+     * @return string|null ハッシュ化済みパスワード
+     */
     protected function _setPassword(string $password): ?string
     {
-        return (new DefaultPasswordHasher)->hash($password);
+        return (new DefaultPasswordHasher())->hash($password);
     }
 }
-
