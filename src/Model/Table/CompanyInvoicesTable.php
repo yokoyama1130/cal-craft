@@ -12,7 +12,7 @@ class CompanyInvoicesTable extends Table
     {
         return $validator
             ->integer('company_id')->requirePresence('company_id')->notEmptyString('company_id')
-            ->integer('amount')->allowEmptyString('amount')       // ← ここで弾かない
+            ->integer('amount')->allowEmptyString('amount')
             ->scalar('currency')->allowEmptyString('currency')
             ->scalar('status')->allowEmptyString('status')
             ->dateTime('paid_at')->allowEmptyDateTime('paid_at')
@@ -29,7 +29,7 @@ class CompanyInvoicesTable extends Table
 
         $this->belongsTo('Companies', [
             'foreignKey' => 'company_id',
-            'joinType'   => 'INNER',
+            'joinType' => 'INNER',
         ]);
     }
 }
