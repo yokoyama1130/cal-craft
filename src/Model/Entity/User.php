@@ -20,7 +20,8 @@ class User extends Entity
         if (!empty($this->icon_path)) {
             return '/img/' . $this->icon_path;
         }
-        return null; // or return default image URL if you prefer
+
+        return null;
     }
 
     protected $_hidden = ['password'];
