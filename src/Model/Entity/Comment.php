@@ -31,7 +31,7 @@ class Comment extends Entity
      */
     protected $_accessible = [
         'user_id' => true,
-        'company_id'   => true,
+        'company_id' => true,
         'portfolio_id' => true,
         'content' => true,
         'created' => true,

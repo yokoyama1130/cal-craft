@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Mailer;
@@ -9,6 +8,14 @@ use Cake\Routing\Router;
 
 class UserMailer extends Mailer
 {
+    /**
+     * 初期化処理
+     *
+     * - メール送信プロファイルを "default" に設定
+     * - From アドレスが未設定の場合は no-reply@your-domain.tld を既定値として利用
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
@@ -21,12 +28,23 @@ class UserMailer extends Mailer
         }
     }
 
+    /**
+     * メールアドレス変更確認メール送信
+     *
+     * 新しいメールアドレス宛に確認リンクを送信する。
+     * ユーザーがリンクを踏むことで変更が確定する。
+     *
+     * @param \App\Model\Entity\User $user  対象ユーザーエンティティ
+     * @param string $token                  確認用トークン（URLに付与）
+     * @return void
+     * @throws \Throwable 送信エラーが発生した場合に再スローされる
+     */
     public function emailChangeConfirm($user, string $token): void
     {
         $confirmUrl = Router::url([
             'controller' => 'Settings',
             'action' => 'confirmEmail',
-            $token
+            $token,
         ], true); // full base URL 必須（app.phpのApp.fullBaseUrlも設定推奨）
 
         $this
@@ -45,6 +63,15 @@ class UserMailer extends Mailer
         }
     }
 
+    /**
+     * 旧メールアドレス宛の通知メール送信
+     *
+     * ユーザーがメール変更をリクエストした際に、旧アドレスに通知を送信する。
+     * 送信失敗は致命的でないため、例外は握りつぶす設計。
+     *
+     * @param \App\Model\Entity\User $user  対象ユーザーエンティティ
+     * @return void
+     */
     public function emailChangeNoticeOld($user): void
     {
         $this
