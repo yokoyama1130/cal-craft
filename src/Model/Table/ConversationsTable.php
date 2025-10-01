@@ -7,6 +7,18 @@ use Cake\ORM\Table;
 
 class ConversationsTable extends Table
 {
+    /**
+     * 初期化処理
+     *
+     * - conversations テーブルをセット
+     * - 主キーを id に設定
+     * - Timestamp ビヘイビアを追加
+     * - User1/User2 との belongsTo 関連を定義
+     * - Messages との hasMany 関連を定義
+     *
+     * @param array<string, mixed> $config テーブル設定オプション
+     * @return void
+     */
     public function initialize(array $config): void
     {
         parent::initialize($config);
