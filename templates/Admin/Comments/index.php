@@ -13,9 +13,9 @@ $this->assign('title', 'コメント管理');
     <div class="col-md-6">
       <?= $this->Form->control('q', [
         'label' => 'キーワード（本文）',
-        'value' => isset($q) ? $q : '',
+        'value' => $q ?? '',
         'class' => 'form-control',
-        'placeholder' => '例）修正お願いします'
+        'placeholder' => '例）修正お願いします',
       ]) ?>
     </div>
     <div class="col-12 text-end">
@@ -38,43 +38,56 @@ $this->assign('title', 'コメント管理');
         </tr>
       </thead>
       <tbody>
-        <?php foreach ($comments as $c): ?>
-          <?php
-            $isCompany = !empty($c->company_id);
-            $authorBadge = $isCompany ? '<span class="badge text-bg-secondary me-2">企業</span>' : '<span class="badge text-bg-info me-2">ユーザー</span>';
-            $authorName  = $isCompany
-              ? h(isset($c->company) && $c->company ? $c->company->name : '—')
-              : h(isset($c->user)    && $c->user    ? $c->user->name    : '—');
-            $excerpt = h(Text::truncate((string)$c->content, 120, ['ellipsis' => '…', 'exact' => false]));
-          ?>
+        <?php foreach ($comments as $c) : ?>
+            <?php
+              $isCompany = !empty($c->company_id);
+              $authorBadge = $isCompany
+                ? '<span class="badge text-bg-secondary me-2">企業</span>'
+                : '<span class="badge text-bg-info me-2">ユーザー</span>';
+              $authorName = $isCompany
+                ? h(isset($c->company) && $c->company ? $c->company->name : '—')
+                : h(isset($c->user) && $c->user ? $c->user->name : '—');
+              $excerpt = h(Text::truncate((string)$c->content, 120, ['ellipsis' => '…', 'exact' => false]));
+            ?>
           <tr>
             <td>#<?= (int)$c->id ?></td>
             <td><?= $excerpt ?></td>
             <td><?= $this->Html->tag('span', '', ['escape' => false]) ?><?= $authorBadge ?><?= $authorName ?></td>
             <td>
-              <?php if (isset($c->portfolio) && $c->portfolio): ?>
+              <?php if (isset($c->portfolio) && $c->portfolio) : ?>
                 <div class="d-flex align-items-center gap-2">
-                  <?php if (!empty($c->portfolio->thumbnail)): ?>
-                    <img src="<?= h($c->portfolio->thumbnail) ?>" style="width:56px;height:36px;object-fit:cover;border-radius:6px">
-                  <?php endif; ?>
+                    <?php if (!empty($c->portfolio->thumbnail)) : ?>
+                      <img 
+                          src="<?= h($c->portfolio->thumbnail) ?>" 
+                          style="width:56px;height:36px;object-fit:cover;border-radius:6px"
+                      />
+                    <?php endif; ?>
                   <div>
                     <div class="small text-muted">#<?= (int)$c->portfolio->id ?></div>
                     <div class="fw-semibold"><?= h($c->portfolio->title ?? '—') ?></div>
                   </div>
                 </div>
-              <?php else: ?>
+              <?php else : ?>
                 —
               <?php endif; ?>
             </td>
             <td><?= $c->created ? $c->created->i18nFormat('yyyy/MM/dd HH:mm') : '—' ?></td>
             <td class="text-end">
-              <?php if (isset($c->portfolio_id) && $c->portfolio_id): ?>
-                <?= $this->Html->link('表示', ['prefix' => false, 'controller' => 'Portfolios', 'action' => 'view', $c->portfolio_id], ['class' => 'btn btn-sm btn-outline-secondary']) ?>
+              <?php if (isset($c->portfolio_id) && $c->portfolio_id) : ?>
+                    <?= $this->Html->link(
+                        '表示',
+                        ['prefix' => false, 'controller' => 'Portfolios', 'action' => 'view', $c->portfolio_id],
+                        ['class' => 'btn btn-sm btn-outline-secondary']
+                    ) ?>
               <?php endif; ?>
-              <?= $this->Html->link('編集', ['prefix' => false, 'controller' => 'Comments', 'action' => 'edit', $c->id], ['class' => 'btn btn-sm btn-primary ms-1']) ?>
+              <?= $this->Html->link(
+                  '編集',
+                  ['prefix' => false, 'controller' => 'Comments', 'action' => 'edit', $c->id],
+                  ['class' => 'btn btn-sm btn-primary ms-1']
+              ) ?>
               <?= $this->Form->postLink('削除', ['action' => 'delete', $c->id], [
                     'confirm' => 'このコメントを削除しますか？',
-                    'class'   => 'btn btn-sm btn-danger ms-1'
+                    'class' => 'btn btn-sm btn-danger ms-1',
                   ]) ?>
             </td>
           </tr>
