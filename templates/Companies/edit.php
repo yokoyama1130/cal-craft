@@ -166,9 +166,9 @@
         <div class="card-body p-4">
           <h5 class="fw-semibold mb-3 text-danger"><i class="fa-regular fa-trash-can me-2"></i>Danger Zone</h5>
           <p class="text-secondary small mb-3">この会社プロフィールを削除します。元に戻せません。</p>
-          <?= $this->Form->postLink('削除する', ['action'=>'delete',$company->id], [
-            'class'=>'btn btn-outline-danger w-100',
-            'confirm'=>__('本当に削除しますか？')
+          <?= $this->Form->postLink('削除する', ['action' => 'delete',$company->id], [
+            'class' => 'btn btn-outline-danger w-100',
+            'confirm' => __('本当に削除しますか？'),
           ]) ?>
         </div>
       </div>
