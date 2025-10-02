@@ -9,7 +9,11 @@
 <div class="hero-wrap position-relative overflow-hidden">
   <div class="hero-bg-gradient position-absolute top-0 start-0 w-100 h-100"></div>
   <svg class="hero-wave position-absolute bottom-0 start-0 w-100" viewBox="0 0 1440 220" preserveAspectRatio="none">
-    <path fill="#ffffff" d="M0,192L48,186.7C96,181,192,171,288,149.3C384,128,480,96,576,85.3C672,75,768,85,864,101.3C960,117,1056,139,1152,138.7C1248,139,1344,117,1392,106.7L1440,96L1440,320L0,320Z"/>
+    <path 
+        fill="#ffffff" 
+        d="M0,192L48,186.7C96,181,192,171,288,149.3C384,128,480,96,576,85.3C672,75,768,85,864,101.3
+        C960,117,1056,139,1152,138.7C1248,139,1344,117,1392,106.7L1440,96L1440,320L0,320Z"
+    />
   </svg>
 
   <div class="container position-relative" style="z-index:2;">
@@ -19,7 +23,11 @@
         <p class="text-secondary mb-0">オーナーはログイン中のユーザーに自動で割当てられます。</p>
       </div>
       <div class="col-lg-5 mt-4 mt-lg-0 text-lg-end">
-        <?= $this->Html->link('← ' . __('ログイン画面へ'), ['controller' => 'Employer/Auth', 'action' => 'login'], ['class' => 'btn btn-outline-secondary btn-lg']) ?>
+        <?= $this->Html->link(
+            '← ' . __('ログイン画面へ'),
+            ['controller' => 'Employer/Auth', 'action' => 'login'],
+            ['class' => 'btn btn-outline-secondary btn-lg']
+        ) ?>
       </div>
     </div>
   </div>
@@ -233,18 +241,87 @@
 
 <?php $this->start('css'); ?>
 <style>
-.glass2{background:linear-gradient(180deg,#fff,rgba(255,255,255,.96));backdrop-filter:blur(6px);border:1px solid rgba(0,0,0,.05);border-radius:18px}
-.btn-gradient{background:linear-gradient(90deg,#3b82f6,#22c55e);color:#fff;border:none}
-.btn-gradient:hover{opacity:.92;color:#fff}
-.logo-preview-wrap{width:100%;height:120px;border:1px dashed #d9d9d9;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
-#cmp-logo-preview{max-height:100%;max-width:100%;object-fit:contain}
-.hero-wrap{min-height:48vh;display:flex;align-items:center}
-.hero-bg-gradient{background:radial-gradient(1200px 600px at 20% 10%,#fff2bd 0%,rgba(255,242,189,0) 50%), radial-gradient(900px 500px at 85% 20%,#cfe8ff 0%,rgba(207,232,255,0) 60%),linear-gradient(180deg,#fff,#f7f9fc)}
-.hero-wave{height:100px}
-.text-gradient{background:linear-gradient(90deg,#eab308,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent}
-.glass{background:rgba(255,255,255,.75);backdrop-filter: blur(6px);border:1px solid rgba(0,0,0,.05)}
-@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.animate-rise{animation:fadeIn .6s ease both}
+.glass2 {
+    background: linear-gradient(180deg, #fff, rgba(255, 255, 255, .96));
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 0, 0, .05);
+    border-radius: 18px;
+}
+
+.btn-gradient {
+    background: linear-gradient(90deg, #3b82f6, #22c55e);
+    color: #fff;
+    border: none;
+}
+
+.btn-gradient:hover {
+    opacity: .92;
+    color: #fff;
+}
+
+.logo-preview-wrap {
+    width: 100%;
+    height: 120px;
+    border: 1px dashed #d9d9d9;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #fff;
+}
+
+#cmp-logo-preview {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.hero-wrap {
+    min-height: 48vh;
+    display: flex;
+    align-items: center;
+}
+
+.hero-bg-gradient {
+    background:
+        radial-gradient(1200px 600px at 20% 10%, #fff2bd 0%, rgba(255, 242, 189, 0) 50%),
+        radial-gradient(900px 500px at 85% 20%, #cfe8ff 0%, rgba(207, 232, 255, 0) 60%),
+        linear-gradient(180deg, #fff, #f7f9fc);
+}
+
+.hero-wave {
+    height: 100px;
+}
+
+.text-gradient {
+    background: linear-gradient(90deg, #eab308, #3b82f6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.glass {
+    background: rgba(255, 255, 255, .75);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(0, 0, 0, .05);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.animate-rise {
+    animation: fadeIn .6s ease both;
+}
+
 </style>
 <?php $this->end(); ?>
 
