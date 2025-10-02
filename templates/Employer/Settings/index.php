@@ -34,14 +34,14 @@
     </div>
     <div class="col right">
       <?= $this->Html->link(
-            'アカウントを削除',
-            ['action' => 'deleteConfirm'],
-            [
+          'アカウントを削除',
+          ['action' => 'deleteConfirm'],
+          [
               'class' => 'btn btn-danger',
               'escapeTitle' => false,
-              'confirm' => '本当にアカウントを削除しますか？この操作は取り消せません。'
+              'confirm' => '本当にアカウントを削除しますか？この操作は取り消せません。',
             ]
-        ) ?>
+      ) ?>
     </div>
   </div>
 </div>
