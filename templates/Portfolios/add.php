@@ -34,7 +34,7 @@ if (isset($slugMap) && is_array($slugMap)) {
         ->toArray();
 }
 
-$identity   = $this->getRequest()->getAttribute('identity');
+$identity = $this->getRequest()->getAttribute('identity');
 $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
 ?>
 
