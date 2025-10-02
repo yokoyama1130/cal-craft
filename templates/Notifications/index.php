@@ -1,13 +1,13 @@
 <h2 class="mb-4 fw-bold">通知一覧</h2>
 
-<?php if (empty($notifications)): ?>
+<?php if (empty($notifications)) : ?>
     <div class="alert alert-info text-center py-4 shadow-sm">
         <i class="fas fa-bell-slash fa-2x text-secondary mb-2"></i><br>
         通知はまだありません。
     </div>
-<?php else: ?>
+<?php else : ?>
     <div class="list-group">
-        <?php foreach ($notifications as $n): ?>
+        <?php foreach ($notifications as $n) : ?>
             <?php
                 $sender = $n->sender_user ?? null;
                 $senderName = $sender ? h($sender->name) : '不明なユーザー';
@@ -41,9 +41,9 @@
                         <i class="fas fa-user-circle fa-2x text-secondary"></i>
                     </div>
                     <div>
-                        <?php if (!empty($link)): ?>
+                        <?php if (!empty($link)) : ?>
                             <?= $this->Html->link($message, $link, ['class' => 'text-dark text-decoration-none fw-semibold']) ?>
-                        <?php else: ?>
+                        <?php else : ?>
                             <span class="fw-semibold"><?= h($message) ?></span>
                         <?php endif; ?>
 
@@ -53,7 +53,7 @@
                     </div>
                 </div>
 
-                <?php if (!$n->is_read): ?>
+                <?php if (!$n->is_read) : ?>
                     <span class="badge bg-danger align-self-center ms-3">NEW</span>
                 <?php endif; ?>
             </div>
