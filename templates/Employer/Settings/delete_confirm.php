@@ -12,12 +12,12 @@
 
 <?= $this->Form->create(null, ['url' => ['action' => 'deleteAccount']]) ?>
   <?= $this->Form->control('current_password', [
-        'type' => 'password', 'label' => '現在のパスワード', 'required' => true
+        'type' => 'password', 'label' => '現在のパスワード', 'required' => true,
   ]) ?>
   <?= $this->Form->control('confirm_keyword', [
         'type' => 'text',
         'label' => '確認のため「DELETE」と入力',
-        'placeholder' => 'DELETE', 'required' => true
+        'placeholder' => 'DELETE', 'required' => true,
   ]) ?>
   <div class="actions">
     <?= $this->Form->button('アカウントを削除する', ['class' => 'btn btn-danger']) ?>
