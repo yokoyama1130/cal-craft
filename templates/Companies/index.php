@@ -21,8 +21,8 @@
         </h1>
         <p class="lead text-secondary mb-4">あなたの会社プロフィールを作って、スカウトや採用活動の母艦に。</p>
         <div class="d-flex flex-wrap gap-2">
-          <?= $this->Html->link('<i class="fa-solid fa-building-circle-arrow-right me-2"></i>自分の会社へ', ['action' => 'my'], ['escape'=>false,'class'=>'btn btn-outline-secondary btn-lg px-4']) ?>
-          <?= $this->Html->link('<i class="fa-solid fa-square-plus me-2"></i>新規作成', ['action' => 'add'], ['escape'=>false,'class'=>'btn btn-primary btn-lg px-4']) ?>
+          <?= $this->Html->link('<i class="fa-solid fa-building-circle-arrow-right me-2"></i>自分の会社へ', ['action' => 'my'], ['escape' => false, 'class' => 'btn btn-outline-secondary btn-lg px-4']) ?>
+          <?= $this->Html->link('<i class="fa-solid fa-square-plus me-2"></i>新規作成', ['action' => 'add'], ['escape' => false, 'class' => 'btn btn-primary btn-lg px-4']) ?>
         </div>
       </div>
       <div class="col-lg-5 mt-4 mt-lg-0">
@@ -49,22 +49,22 @@
         <thead>
           <tr>
             <th class="text-nowrap"><?= $this->Paginator->sort('id', '#') ?></th>
-            <th><?= $this->Paginator->sort('name','会社名') ?></th>
-            <th><?= $this->Paginator->sort('industry','業種') ?></th>
-            <th><?= $this->Paginator->sort('website','Web') ?></th>
-            <th class="text-nowrap"><?= $this->Paginator->sort('plan','プラン') ?></th>
-            <th class="text-nowrap"><?= $this->Paginator->sort('verified','認証') ?></th>
-            <th class="text-nowrap"><?= $this->Paginator->sort('modified','更新') ?></th>
+            <th><?= $this->Paginator->sort('name', '会社名') ?></th>
+            <th><?= $this->Paginator->sort('industry', '業種') ?></th>
+            <th><?= $this->Paginator->sort('website', 'Web') ?></th>
+            <th class="text-nowrap"><?= $this->Paginator->sort('plan', 'プラン') ?></th>
+            <th class="text-nowrap"><?= $this->Paginator->sort('verified', '認証') ?></th>
+            <th class="text-nowrap"><?= $this->Paginator->sort('modified', '更新') ?></th>
             <th class="text-end"><?= __('Actions') ?></th>
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($companies as $c): ?>
+          <?php foreach ($companies as $c) : ?>
             <tr class="animate-fade">
               <td class="text-muted">#<?= $this->Number->format($c->id) ?></td>
               <td>
                 <div class="fw-semibold mb-1">
-                  <?= $this->Html->link(h($c->name), ['action'=>'view',$c->id], ['class'=>'link-dark link-underline link-underline-opacity-0']) ?>
+                  <?= $this->Html->link(h($c->name), ['action' => 'view',$c->id], ['class' => 'link-dark link-underline link-underline-opacity-0']) ?>
                 </div>
                 <div class="small text-secondary">
                   <i class="fa-solid fa-tag me-1"></i><?= h($c->slug) ?>
@@ -72,11 +72,11 @@
               </td>
               <td class="text-secondary"><?= h($c->industry) ?></td>
               <td class="truncate" title="<?= h($c->website) ?>">
-                <?php if ($c->website): ?>
+                <?php if ($c->website) : ?>
                   <a href="<?= h($c->website) ?>" target="_blank" rel="noopener" class="small">
                     <i class="fa-solid fa-arrow-up-right-from-square me-1"></i><?= h($c->website) ?>
                   </a>
-                <?php else: ?>
+                <?php else : ?>
                   <span class="text-muted small">—</span>
                 <?php endif; ?>
               </td>
@@ -84,26 +84,30 @@
                 <?php
                   $plan = strtolower((string)$c->plan);
                   $planClass = 'badge-plan-free';
-                  if ($plan==='pro') $planClass='badge-plan-pro';
-                  if ($plan==='enterprise') $planClass='badge-plan-enterprise';
+                if ($plan === 'pro') {
+                    $planClass = 'badge-plan-pro';
+                }
+                if ($plan === 'enterprise') {
+                    $planClass = 'badge-plan-enterprise';
+                }
                 ?>
                 <span class="badge <?= $planClass ?>"><?= h($c->plan) ?></span>
               </td>
               <td>
-                <?php if ((int)$c->verified === 1): ?>
+                <?php if ((int)$c->verified === 1) : ?>
                   <span class="badge badge-verified"><i class="fa-solid fa-shield-check me-1"></i>Verified</span>
-                <?php else: ?>
+                <?php else : ?>
                   <span class="badge badge-unverified"><i class="fa-solid fa-hourglass-half me-1"></i>Pending</span>
                 <?php endif; ?>
               </td>
               <td class="text-nowrap small"><?= $c->modified ? $c->modified->i18nFormat('yyyy/MM/dd HH:mm') : '' ?></td>
               <td class="text-end">
                 <div class="btn-group btn-group-sm" role="group">
-                  <?= $this->Html->link('<i class="fa-regular fa-eye"></i>', ['action'=>'view',$c->id], ['escape'=>false,'class'=>'btn btn-outline-secondary']) ?>
-                  <?= $this->Html->link('<i class="fa-regular fa-pen-to-square"></i>', ['action'=>'edit',$c->id], ['escape'=>false,'class'=>'btn btn-primary']) ?>
-                  <?= $this->Form->postLink('<i class="fa-regular fa-trash-can"></i>', ['action'=>'delete',$c->id], [
-                        'escape'=>false,'class'=>'btn btn-outline-danger',
-                        'confirm'=>__('Are you sure you want to delete # {0}?',$c->id)
+                  <?= $this->Html->link('<i class="fa-regular fa-eye"></i>', ['action' => 'view',$c->id], ['escape' => false, 'class' => 'btn btn-outline-secondary']) ?>
+                  <?= $this->Html->link('<i class="fa-regular fa-pen-to-square"></i>', ['action' => 'edit',$c->id], ['escape' => false,'class' => 'btn btn-primary']) ?>
+                  <?= $this->Form->postLink('<i class="fa-regular fa-trash-can"></i>', ['action' => 'delete',$c->id], [
+                        'escape' => false, 'class' => 'btn btn-outline-danger',
+                        'confirm' => __('Are you sure you want to delete # {0}?', $c->id),
                       ]) ?>
                 </div>
               </td>
