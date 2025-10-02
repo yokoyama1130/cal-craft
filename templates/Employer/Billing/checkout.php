@@ -12,8 +12,8 @@
 
   <?= $this->Form->create(null) ?>
     <div class="d-flex gap-2">
-      <?= $this->Html->link('戻る', ['action'=>'plan'], ['class'=>'btn btn-outline-secondary']) ?>
-      <?= $this->Form->button('このプランに変更する', ['class'=>'btn btn-primary']) ?>
+      <?= $this->Html->link('戻る', ['action' => 'plan'], ['class' => 'btn btn-outline-secondary']) ?>
+      <?= $this->Form->button('このプランに変更する', ['class' => 'btn btn-primary']) ?>
     </div>
   <?= $this->Form->end() ?>
 </div>
