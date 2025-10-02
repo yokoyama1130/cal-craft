@@ -16,9 +16,9 @@
         次回<?= $willAutoRenew ? '自動更新' : '終了予定' ?>：
         <?= h($nextRenewAt->i18nFormat('yyyy-MM-dd HH:mm')) ?>
       </span>
-      <?php if ($willAutoRenew === false) : ?>
-        <span class="badge bg-secondary ms-1 align-middle">期末で解約</span>
-      <?php endif; ?>
+        <?php if ($willAutoRenew === false) : ?>
+          <span class="badge bg-secondary ms-1 align-middle">期末で解約</span>
+        <?php endif; ?>
     <?php endif; ?>
   </p>
   <?php if ($this->Identity->isLoggedIn() && $this->Identity->get('id') === $company->id) : ?>
