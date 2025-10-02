@@ -13,7 +13,7 @@
 
   <?= $this->Form->create(null, [
         'url' => ['prefix' => 'Employer', 'controller' => 'Auth', 'action' => 'resendVerification'],
-        'autocomplete' => 'off'
+        'autocomplete' => 'off',
   ]) ?>
 
   <?php
@@ -23,9 +23,9 @@
       'type' => 'email',
       'required' => true,
       'value' => $prefill,
-      'class' => 'form-control'
+      'class' => 'form-control',
     ]);
-  ?>
+    ?>
 
   <div class="mt-3">
     <?= $this->Form->button('認証メールを再送する', ['class' => 'btn btn-primary w-100']) ?>
