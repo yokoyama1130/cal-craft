@@ -19,9 +19,9 @@ if (!empty($partnerIcon)) {
     <i class="fa-solid fa-chevron-left"></i>
   </a>
   <div class="d-flex align-items-center gap-2">
-    <?php if ($partnerIconUrl): ?>
+    <?php if ($partnerIconUrl) : ?>
       <img src="<?= h($partnerIconUrl) ?>" class="rounded-circle" style="width:38px;height:38px;object-fit:cover;">
-    <?php else: ?>
+    <?php else : ?>
       <i class="fa-regular fa-user-circle fa-2x text-muted"></i>
     <?php endif; ?>
     <div>
@@ -35,20 +35,19 @@ if (!empty($partnerIcon)) {
 <div id="chatBox" class="chat-box p-3 rounded-4 shadow-sm mb-3">
   <?php
     $lastDate = null;
-    foreach ($messages as $m):
+    foreach ($messages as $m) :
       // 自分判定：sender_type/sender_ref_id
-      $isMine = ($m->sender_type === $myType) && ((int)$m->sender_ref_id === (int)$myId);
-      $d = $m->created->format('Y-m-d');
-      if ($d !== $lastDate):
-  ?>
+        $isMine = ($m->sender_type === $myType) && ((int)$m->sender_ref_id === (int)$myId);
+        $d = $m->created->format('Y-m-d');
+        if ($d !== $lastDate) :?>
     <div class="day-sep"><span><?= h($m->created->i18nFormat('yyyy/MM/dd (eee)')) ?></span></div>
   <?php $lastDate = $d; endif; ?>
   <div class="msg-row d-flex <?= $isMine ? 'justify-content-end' : 'justify-content-start' ?> mb-2">
-    <?php if (!$isMine): ?>
+    <?php if (!$isMine) : ?>
       <!-- 相手側の吹き出しにだけアイコンを置く（詳細な送信者アイコン取得が不要な簡易版） -->
-      <?php if ($partnerIconUrl): ?>
+      <?php if ($partnerIconUrl) : ?>
         <img src="<?= h($partnerIconUrl) ?>" class="rounded-circle me-2 d-none d-sm-block" style="width:32px;height:32px;object-fit:cover;">
-      <?php else: ?>
+      <?php else : ?>
         <i class="fas fa-user-circle fa-lg text-muted me-2 d-none d-sm-block"></i>
       <?php endif; ?>
     <?php endif; ?>
@@ -74,7 +73,7 @@ if (!empty($partnerIcon)) {
         'rows' => 1,
         'class' => 'form-control form-control-lg rounded-4 pr-5',
         'placeholder' => 'メッセージを入力…（Ctrl+Enterで送信）',
-        'style' => 'resize:none;overflow:hidden;'
+        'style' => 'resize:none;overflow:hidden;',
       ]) ?>
       <button class="btn btn-light attach-btn" type="button" title="添付（将来用）">
         <i class="fa-regular fa-face-smile"></i>
