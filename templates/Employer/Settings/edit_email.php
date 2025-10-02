@@ -19,7 +19,7 @@
               'required' => true,
               'class' => 'form-control form-control-lg',
               'placeholder' => '••••••••',
-              'autocomplete' => 'current-password'
+              'autocomplete' => 'current-password',
           ]) ?>
           <div class="form-text">本人確認のために入力してください。</div>
         </div>
@@ -34,7 +34,7 @@
               'required' => true,
               'class' => 'form-control form-control-lg',
               'placeholder' => 'name@example.com',
-              'autocomplete' => 'email'
+              'autocomplete' => 'email',
           ]) ?>
           <div class="form-text">確認リンクを送ります。リンクを開くまで変更は反映されません。</div>
         </div>
