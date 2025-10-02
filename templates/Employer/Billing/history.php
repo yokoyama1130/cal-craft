@@ -11,9 +11,9 @@ use Cake\I18n\FrozenTime;
     <?= $this->Html->link('プラン変更へ', ['action' => 'plan'], ['class' => 'btn btn-outline-secondary']) ?>
   </div>
 
-  <?php if ($invoices->isEmpty()): ?>
+  <?php if ($invoices->isEmpty()) : ?>
     <div class="alert alert-info mb-0">請求履歴はまだありません。</div>
-  <?php else: ?>
+  <?php else : ?>
     <div class="table-responsive">
       <table class="table table-hover align-middle">
         <thead>
@@ -26,7 +26,7 @@ use Cake\I18n\FrozenTime;
         </tr>
         </thead>
         <tbody>
-        <?php foreach ($invoices as $i): ?>
+        <?php foreach ($invoices as $i) : ?>
           <?php
             $dt = $i->paid_at ?: $i->created;
             // 表示をお好みで（例：YYYY/MM/DD HH:mm）
@@ -51,24 +51,25 @@ use Cake\I18n\FrozenTime;
               <span class="badge <?= $badge ?>"><?= h($status ?: '-') ?></span>
             </td>
             <td class="small">
-              <?php if (!empty($i->stripe_invoice_id)): ?>
+              <?php if (!empty($i->stripe_invoice_id)) : ?>
                 請求書：
                 <?= $this->Html->link(
-                      h($i->stripe_invoice_id),
-                      ['prefix' => 'Employer', 'controller' => 'Billing', 'action' => 'receipt', 'invoice', $i->stripe_invoice_id],
-                      ['target' => '_blank', 'rel' => 'noopener', 'escape' => true]
-                    ) ?>
+                    h($i->stripe_invoice_id),
+                    ['prefix' => 'Employer', 'controller' => 'Billing', 'action' => 'receipt', 'invoice', $i->stripe_invoice_id],
+                    ['target' => '_blank', 'rel' => 'noopener', 'escape' => true]
+                  )
+                ?>
                 <br>
               <?php endif; ?>
-              <?php if (!empty($i->stripe_payment_intent_id)): ?>
+              <?php if (!empty($i->stripe_payment_intent_id)) : ?>
                 レシート：
                 <?= $this->Html->link(
-                      h($i->stripe_payment_intent_id),
-                      ['prefix' => 'Employer', 'controller' => 'Billing', 'action' => 'receipt', 'pi', $i->stripe_payment_intent_id],
-                      ['target' => '_blank', 'rel' => 'noopener', 'escape' => true]
-                    ) ?>
+                    h($i->stripe_payment_intent_id),
+                    ['prefix' => 'Employer', 'controller' => 'Billing', 'action' => 'receipt', 'pi', $i->stripe_payment_intent_id],
+                    ['target' => '_blank', 'rel' => 'noopener', 'escape' => true]
+                  ) ?>
               <?php endif; ?>
-              <?php if (empty($i->stripe_invoice_id) && empty($i->stripe_payment_intent_id)): ?>
+              <?php if (empty($i->stripe_invoice_id) && empty($i->stripe_payment_intent_id)) : ?>
                 -
               <?php endif; ?>
             </td>
@@ -78,6 +79,6 @@ use Cake\I18n\FrozenTime;
       </table>
     </div>
 
-    <?= $this->element('pagination') ?>
+      <?= $this->element('pagination') ?>
   <?php endif; ?>
 </div>
