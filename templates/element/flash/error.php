@@ -8,9 +8,9 @@ if (!isset($params['escape']) || $params['escape'] !== false) {
 }
 
 $classes = [
-    'flash'   => true,
-    'alert'   => true,
-    'mt-3'    => true,
+    'flash' => true,
+    'alert' => true,
+    'mt-3' => true,
     'shadow-sm' => true,
 ];
 switch ($key) {
