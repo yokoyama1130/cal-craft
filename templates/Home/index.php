@@ -1,7 +1,12 @@
 <div class="hero-wrap position-relative overflow-hidden">
   <div class="hero-bg-gradient position-absolute top-0 start-0 w-100 h-100"></div>
   <svg class="hero-wave position-absolute bottom-0 start-0 w-100" viewBox="0 0 1440 220" preserveAspectRatio="none">
-    <path fill="#ffffff" d="M0,192L48,186.7C96,181,192,171,288,149.3C384,128,480,96,576,85.3C672,75,768,85,864,101.3C960,117,1056,139,1152,138.7C1248,139,1344,117,1392,106.7L1440,96L1440,320L0,320Z"/>
+    <path 
+        fill="#ffffff" 
+        d="M0,192L48,186.7C96,181,192,171,288,149.3C384,128,480,96,
+        576,85.3C672,75,768,85,864,101.3C960,117,1056,139,1152,138.7C1248,
+        139,1344,117,1392,106.7L1440,96L1440,320L0,320Z"
+    />
   </svg>
 
   <div class="container position-relative" style="z-index:2;">
@@ -180,7 +185,13 @@
     <?php if ($this->Identity->isLoggedIn()) : ?>
       <a href="/portfolios/add" class="btn btn-primary btn-lg px-5"><i class="fa-solid fa-plus me-2"></i>投稿する</a>
     <?php else : ?>
-      <a href="/users/register" class="btn btn-warning text-dark btn-lg px-5"><i class="fa-solid fa-user-plus me-2"></i>無料登録</a>
+      <a 
+          href="/users/register" 
+          class="btn btn-warning text-dark btn-lg px-5"
+      >
+          <i class="fa-solid fa-user-plus me-2"></i>
+          無料登録
+      </a>
     <?php endif; ?>
   </div>
 </section>
@@ -188,21 +199,66 @@
 <?php $this->start('css'); ?>
 <style>
 .hero-wrap{min-height:72vh;display:flex;align-items:center}
-.hero-bg-gradient{background:radial-gradient(1200px 600px at 20% 10%,#fff2bd 0%,rgba(255,242,189,0) 50%), radial-gradient(900px 500px at 85% 20%,#cfe8ff 0%,rgba(207,232,255,0) 60%),linear-gradient(180deg,#fff, #f7f9fc)}
+.hero-bg-gradient {
+  background:
+    radial-gradient(1200px 600px at 20% 10%, #fff2bd 0%, rgba(255,242,189,0) 50%),
+    radial-gradient(900px 500px at 85% 20%, #cfe8ff 0%, rgba(207,232,255,0) 60%),
+    linear-gradient(180deg, #fff, #f7f9fc);
+}
 .hero-wave{height:120px}
-.text-gradient{background:linear-gradient(90deg,#eab308,#3b82f6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.text-gradient {
+  background: linear-gradient(90deg, #eab308, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .glass{background:rgba(255,255,255,.75);backdrop-filter: blur(6px);border:1px solid rgba(0,0,0,.05)}
 .icon-circle{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
-.icon-lg{width:56px;height:56px;display:inline-flex;align-items:center;justify-content:center;border-radius:14px;font-size:1.3rem}
+.icon-lg {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  font-size: 1.3rem;
+}
 .hero-boards{grid-template-columns:1fr}
 @media (min-width: 768px){.hero-boards{grid-template-columns:1fr;max-width:520px;margin-left:auto}}
 .brand{opacity:.8;filter:grayscale(100%);transition:.2s}
 .brand:hover{opacity:1;filter:none}
-.chip{display:inline-block;padding:.375rem .75rem;border-radius:999px;border:1px solid #e5e7eb;background:#fff;color:#374151;text-decoration:none;font-size:.9rem}
+.chip {
+  display: inline-block;
+  padding: .375rem .75rem;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #374151;
+  text-decoration: none;
+  font-size: .9rem;
+}
 .chip:hover{background:#f9fafb}
 .step-card{border:1px solid #eee;border-radius:14px;padding:24px;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.04)}
-.step-card .num{width:36px;height:36px;border-radius:50%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;margin-bottom:10px}
-.feature-card{border:1px solid #eee;border-radius:16px;padding:24px;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.05);transition:transform .2s, box-shadow .2s}
+.step-card .num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.feature-card {
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 24px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(0,0,0,.05);
+  transition: transform .2s, box-shadow .2s;
+}
 .feature-card:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,.08)}
 .cta{border-radius:18px;background:linear-gradient(180deg,#fff,#fbfbff)}
 /* アニメーション */
