@@ -38,14 +38,21 @@
             }
             ?>
 
-            <div class="list-group-item d-flex justify-content-between align-items-start p-3 rounded shadow-sm mb-2 <?= $n->is_read ? 'bg-white' : 'bg-light' ?>">
+            <div 
+                class="list-group-item d-flex justify-content-between align-items-start 
+                    p-3 rounded shadow-sm mb-2 <?= $n->is_read ? 'bg-white' : 'bg-light' ?>"
+            >
                 <div class="d-flex">
                     <div class="me-3">
                         <i class="fas fa-user-circle fa-2x text-secondary"></i>
                     </div>
                     <div>
                         <?php if (!empty($link)) : ?>
-                            <?= $this->Html->link($message, $link, ['class' => 'text-dark text-decoration-none fw-semibold']) ?>
+                            <?= $this->Html->link(
+                                $message,
+                                $link,
+                                ['class' => 'text-dark text-decoration-none fw-semibold']
+                            ) ?>
                         <?php else : ?>
                             <span class="fw-semibold"><?= h($message) ?></span>
                         <?php endif; ?>
