@@ -19,7 +19,7 @@
         </p>
 
         <div class="d-flex flex-wrap gap-2">
-          <?php if ($this->Identity->isLoggedIn()): ?>
+          <?php if ($this->Identity->isLoggedIn()) : ?>
             <a href="/portfolios/add" class="btn btn-primary btn-lg px-4">
               <i class="fa-solid fa-rocket-launch me-2"></i>課題 / 作品を投稿
             </a>
@@ -29,7 +29,7 @@
             <a href="/users/search" class="btn btn-outline-secondary btn-lg px-4">
               <i class="fa-solid fa-users-viewfinder me-2"></i>つながる相手を探す
             </a>
-          <?php else: ?>
+          <?php else : ?>
             <a href="/users/register" class="btn btn-warning text-dark btn-lg px-4">
               <i class="fa-solid fa-user-plus me-2"></i>無料ではじめる
             </a>
@@ -98,10 +98,10 @@
         <div class="d-flex flex-wrap gap-2 align-items-center opacity-90">
           <?php
             $tags = ['#課題', '#レポート', '#卒業制作', '#個人開発', '#AI/ML', '#Web', '#UI/UX', '#電子工作', '#ロボティクス', '#研究'];
-            foreach ($tags as $t):
-          ?>
+            foreach ($tags as $t) :
+                ?>
             <a class="chip" href="/search?tag=<?= urlencode(ltrim($t, '#')) ?>"><?= h($t) ?></a>
-          <?php endforeach; ?>
+            <?php endforeach; ?>
         </div>
       </div>
     </div>
@@ -177,9 +177,9 @@
   <div class="cta card border-0 shadow-sm p-4 p-md-5 text-center">
     <h3 class="fw-bold mb-3">今日の一歩が、明日の出会いに。</h3>
     <p class="text-secondary mb-4">作品はラフでもOK。まずは1枚のスクショと数行の解説から。</p>
-    <?php if ($this->Identity->isLoggedIn()): ?>
+    <?php if ($this->Identity->isLoggedIn()) : ?>
       <a href="/portfolios/add" class="btn btn-primary btn-lg px-5"><i class="fa-solid fa-plus me-2"></i>投稿する</a>
-    <?php else: ?>
+    <?php else : ?>
       <a href="/users/register" class="btn btn-warning text-dark btn-lg px-5"><i class="fa-solid fa-user-plus me-2"></i>無料登録</a>
     <?php endif; ?>
   </div>
