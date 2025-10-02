@@ -28,7 +28,7 @@
   const stripe = Stripe('<?= h($publishableKey) ?>');
   const csrf = document.querySelector('meta[name="csrfToken"]')?.getAttribute('content');
 
-  const resp = await fetch('<?= $this->Url->build(['prefix'=>'Employer','controller'=>'Billing','action'=>'intent',$planKey]) ?>', {
+  const resp = await fetch('<?= $this->Url->build(['prefix' => 'Employer', 'controller' => 'Billing', 'action' => 'intent',$planKey]) ?>', {
     method: 'POST',
     headers: {
       'X-Requested-With': 'XMLHttpRequest',
