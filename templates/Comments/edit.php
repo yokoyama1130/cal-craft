@@ -34,10 +34,10 @@
 
         <label for="comment-content" class="form-label fw-semibold">内容</label>
         <?= $this->Form->textarea('content', [
-          'id'          => 'comment-content',
-          'rows'        => 6,
+          'id' => 'comment-content',
+          'rows' => 6,
           'placeholder' => '感想や補足を編集…',
-          'class'       => 'form-control form-control-lg',
+          'class' => 'form-control form-control-lg',
           // 'maxlength' => 1000, // もし上限を付けたいときはコメントアウト解除
         ]) ?>
         <div class="d-flex justify-content-between mt-2">
@@ -49,11 +49,14 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <?= $this->Html->link('キャンセル', ['controller' => 'Portfolios', 'action' => 'view', $comment->portfolio_id],
-            ['class' => 'btn btn-outline-secondary']) ?>
+          <?= $this->Html->link(
+              'キャンセル',
+              ['controller' => 'Portfolios', 'action' => 'view', $comment->portfolio_id],
+              ['class' => 'btn btn-outline-secondary']
+          ) ?>
           <?= $this->Form->button('<i class="fa-solid fa-floppy-disk me-1"></i> 更新', [
             'class' => 'btn btn-primary',
-            'escapeTitle' => false
+            'escapeTitle' => false,
           ]) ?>
         </div>
       <?= $this->Form->end() ?>
