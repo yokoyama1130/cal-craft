@@ -24,25 +24,29 @@
 
             <!-- バッジ -->
             <div class="d-flex flex-wrap gap-2">
-              <?php
-                $plan = strtolower((string)$company->plan);
-                $planClass = 'badge-plan-free';
-                if ($plan === 'pro') $planClass = 'badge-plan-pro';
-                if ($plan === 'enterprise') $planClass = 'badge-plan-enterprise';
-              ?>
+                <?php
+                  $plan = strtolower((string)$company->plan);
+                  $planClass = 'badge-plan-free';
+                if ($plan === 'pro') {
+                    $planClass = 'badge-plan-pro';
+                }
+                if ($plan === 'enterprise') {
+                    $planClass = 'badge-plan-enterprise';
+                }
+                ?>
               <span class="badge <?= $planClass ?>"><?= h($company->plan ?: 'free') ?></span>
 
-              <?php if ((int)$company->verified === 1): ?>
+              <?php if ((int)$company->verified === 1) : ?>
                 <span class="badge badge-verified"><i class="fa-solid fa-shield-check me-1"></i>Verified</span>
-              <?php else: ?>
+              <?php else : ?>
                 <span class="badge badge-unverified"><i class="fa-regular fa-hourglass-half me-1"></i>Pending</span>
               <?php endif; ?>
 
-              <?php if (!empty($company->industry)): ?>
+              <?php if (!empty($company->industry)) : ?>
                 <span class="badge bg-light text-secondary border"><i class="fa-solid fa-industry me-1"></i><?= h($company->industry) ?></span>
               <?php endif; ?>
 
-              <?php if (!empty($company->size)): ?>
+              <?php if (!empty($company->size)) : ?>
                 <span class="badge bg-light text-secondary border"><i class="fa-solid fa-people-group me-1"></i><?= h($company->size) ?></span>
               <?php endif; ?>
             </div>
@@ -57,11 +61,11 @@
         </div>
 
         <!-- アクション -->
-        <?php if ($this->Identity->isLoggedIn() && $this->Identity->get('id') === $company->id): ?>
+        <?php if ($this->Identity->isLoggedIn() && $this->Identity->get('id') === $company->id) : ?>
           <div class="d-flex gap-2">
             <?= $this->Html->link('<i class="fa-regular fa-pen-to-square me-1"></i> 編集', ['action' => 'edit', $company->id], ['escape' => false, 'class' => 'btn btn-primary']) ?>
-            <?= $this->Html->link('プラン変更', '/employer/billing/plan', ['class'=>'btn btn-outline-primary']) ?>
-            <?= $this->Html->link('請求履歴', '/employer/billing/history', ['class'=>'btn btn-outline-primary']) ?>
+            <?= $this->Html->link('プラン変更', '/employer/billing/plan', ['class' => 'btn btn-outline-primary']) ?>
+            <?= $this->Html->link('請求履歴', '/employer/billing/history', ['class' => 'btn btn-outline-primary']) ?>
           </div>
         <?php endif; ?>
       </div>
@@ -76,16 +80,16 @@
         <div class="card-body p-4">
           <h5 class="fw-semibold mb-3"><i class="fa-regular fa-file-lines me-2 text-secondary"></i>会社説明</h5>
           <div class="text-secondary">
-            <?php if (!empty($company->description)): ?>
-              <?= $this->Text->autoParagraph(h($company->description)); ?>
-            <?php else: ?>
+            <?php if (!empty($company->description)) : ?>
+                <?= $this->Text->autoParagraph(h($company->description)); ?>
+            <?php else : ?>
               <span class="text-muted">説明はまだ登録されていません。</span>
             <?php endif; ?>
           </div>
         </div>
       </div>
 
-      <?php if (!empty($company->website)): ?>
+      <?php if (!empty($company->website)) : ?>
       <div class="card border-0 shadow-sm">
         <div class="card-body p-4 d-flex align-items-center justify-content-between">
           <div>
@@ -132,12 +136,16 @@
         <div class="card-body p-4">
           <h6 class="fw-semibold mb-3"><i class="fa-regular fa-user me-2 text-secondary"></i>オーナー</h6>
           <div class="d-flex align-items-center gap-2">
-            <?php if (isset($company->user) && $company->user): ?>
-              <?php if (!empty($company->user->icon_url)): ?>
-                <img src="<?= h($company->user->icon_url) ?>" class="rounded-circle border shadow-sm" style="width:36px;height:36px;object-fit:cover;">
-              <?php endif; ?>
-              <?= $this->Html->link(h($company->user->name ?? ('User #'.$company->user->id)), ['controller'=>'Users','action'=>'view',$company->user->id], ['class'=>'text-decoration-none']) ?>
-            <?php else: ?>
+            <?php if (isset($company->user) && $company->user) : ?>
+                <?php if (!empty($company->user->icon_url)) : ?>
+                  <img src="<?= h($company->user->icon_url) ?>" class="rounded-circle border shadow-sm" style="width:36px;height:36px;object-fit:cover;">
+                <?php endif; ?>
+                <?= $this->Html->link(
+                    h($company->user->name ?? 'User #' . $company->user->id),
+                    ['controller' => 'Users', 'action' => 'view', $company->user->id],
+                    ['class' => 'text-decoration-none']
+                ) ?>
+            <?php else : ?>
               <span class="text-muted small">未設定</span>
             <?php endif; ?>
           </div>
@@ -154,11 +162,11 @@
 <!-- 投稿一覧 -->
 <h2 class="mb-4"><?= h($company->name) ?>さんの投稿一覧</h2>
 <div class="row">
-  <?php foreach ($portfolios as $p): ?>
+  <?php foreach ($portfolios as $p) : ?>
     <div class="col-12 col-md-6 col-lg-4 mb-4">
       <div class="youtube-card shadow-sm">
         <div class="youtube-thumb-wrapper">
-          <?php if (!empty($p->thumbnail)): ?>
+          <?php if (!empty($p->thumbnail)) : ?>
             <a href="<?= $this->Url->build(['controller' => 'Portfolios', 'action' => 'view', $p->id]) ?>">
               <img src="<?= h($p->thumbnail) ?>" class="youtube-thumb" alt="thumbnail">
             </a>
@@ -169,7 +177,7 @@
             <div class="title">
               <?= $this->Html->link(h($p->title), ['controller' => 'Portfolios', 'action' => 'view', $p->id], ['class' => 'text-dark fw-bold text-decoration-none']) ?>
             </div>
-            <?php if ($this->request->getAttribute('identity')->get('id') === $company->id): ?>
+            <?php if ($this->request->getAttribute('identity')->get('id') === $company->id) : ?>
               <div class="dropdown">
                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                   操作
