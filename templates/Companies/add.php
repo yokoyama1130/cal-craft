@@ -3,7 +3,6 @@
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\Company $company
  */
-use Cake\Utility\Text;
 ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -20,7 +19,7 @@ use Cake\Utility\Text;
         <p class="text-secondary mb-0">オーナーはログイン中のユーザーに自動で割当てられます。</p>
       </div>
       <div class="col-lg-5 mt-4 mt-lg-0 text-lg-end">
-        <?= $this->Html->link('← ' . __('ログイン画面へ'), ['controller' => 'Employer/Auth', 'action' => 'login'], ['class'=>'btn btn-outline-secondary btn-lg']) ?>
+        <?= $this->Html->link('← ' . __('ログイン画面へ'), ['controller' => 'Employer/Auth', 'action' => 'login'], ['class' => 'btn btn-outline-secondary btn-lg']) ?>
       </div>
     </div>
   </div>
@@ -30,7 +29,7 @@ use Cake\Utility\Text;
   <div class="card border-0 shadow-lg glass2 overflow-hidden">
 
     <!-- ★ フォームは左右カラムを丸ごと囲む -->
-    <?= $this->Form->create($company, ['class'=>'needs-validation', 'novalidate'=>true, 'type' => 'file']) ?>
+    <?= $this->Form->create($company, ['class' => 'needs-validation', 'novalidate' => true, 'type' => 'file']) ?>
 
     <div class="row g-0">
       <!-- 左：主要入力 -->
@@ -47,10 +46,10 @@ use Cake\Utility\Text;
           <div class="col-md-7">
             <label class="form-label fw-semibold"><i class="fa-solid fa-building me-2 text-primary"></i>会社名</label>
             <?= $this->Form->text('name', [
-              'class'=>'form-control form-control-lg',
-              'placeholder'=>'例）株式会社OrcaFolio',
-              'required'=>true,
-              'id'=>'cmp-name'
+              'class' => 'form-control form-control-lg',
+              'placeholder' => '例）株式会社OrcaFolio',
+              'required' => true,
+              'id' => 'cmp-name',
             ]) ?>
             <div class="form-text">公開名。名刺やWebサイトと表記を統一しましょう。</div>
           </div>
@@ -59,10 +58,10 @@ use Cake\Utility\Text;
             <div class="input-group">
               <span class="input-group-text">/c/</span>
               <?= $this->Form->text('slug', [
-                'class'=>'form-control',
-                'placeholder'=>'例）OrcaFolio',
-                'id'=>'cmp-slug',
-                'maxlength'=>160
+                'class' => 'form-control',
+                'placeholder' => '例）OrcaFolio',
+                'id' => 'cmp-slug',
+                'maxlength' => 160,
               ]) ?>
             </div>
             <div class="form-text">空なら会社名から自動生成します。</div>
@@ -79,7 +78,7 @@ use Cake\Utility\Text;
             </label>
             <?= $this->Form->email('owner_email', [
               'class' => 'form-control',
-              'placeholder' => 'owner@example.com'
+              'placeholder' => 'owner@example.com',
             ]) ?>
             <div class="form-text">未ログインで作成する場合は必須です（ログイン中なら無視されます）。</div>
           </div>
@@ -93,7 +92,7 @@ use Cake\Utility\Text;
               'placeholder' => '8文字以上',
               'required' => true,
               'minlength' => 8,
-              'autocomplete' => 'new-password'
+              'autocomplete' => 'new-password',
             ]) ?>
           </div>
         </div>
@@ -105,9 +104,9 @@ use Cake\Utility\Text;
             <div class="input-group">
               <span class="input-group-text"><i class="fa-solid fa-link"></i></span>
               <?= $this->Form->text('website', [
-                'class'=>'form-control',
-                'placeholder'=>'https://example.com',
-                'id'=>'cmp-website'
+                'class' => 'form-control',
+                'placeholder' => 'https://example.com',
+                'id' => 'cmp-website',
               ]) ?>
             </div>
             <div class="form-text">`http(s)://` から始まるURLを推奨します。</div>
@@ -117,8 +116,8 @@ use Cake\Utility\Text;
             <div class="input-group">
               <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
               <?= $this->Form->email('billing_email', [
-                'class'=>'form-control',
-                'placeholder'=>'billing@example.com'
+                'class' => 'form-control',
+                'placeholder' => 'billing@example.com',
               ]) ?>
             </div>
           </div>
@@ -129,15 +128,15 @@ use Cake\Utility\Text;
           <div class="col-md-6">
             <label class="form-label fw-semibold"><i class="fa-solid fa-industry me-2 text-secondary"></i>業種</label>
             <?= $this->Form->text('industry', [
-              'class'=>'form-control',
-              'placeholder'=>'例）IT・ソフトウェア'
+              'class' => 'form-control',
+              'placeholder' => '例）IT・ソフトウェア',
             ]) ?>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold"><i class="fa-solid fa-people-group me-2 text-secondary"></i>規模</label>
             <?= $this->Form->text('size', [
-              'class'=>'form-control',
-              'placeholder'=>'例）11-50名'
+              'class' => 'form-control',
+              'placeholder' => '例）11-50名',
             ]) ?>
           </div>
         </div>
@@ -149,9 +148,9 @@ use Cake\Utility\Text;
             <div class="input-group">
               <span class="input-group-text">@</span>
               <?= $this->Form->text('domain', [
-                'class'=>'form-control',
-                'placeholder'=>'例）example.com',
-                'id'=>'cmp-domain'
+                'class' => 'form-control',
+                'placeholder' => '例）example.com',
+                'id' => 'cmp-domain',
               ]) ?>
             </div>
             <div class="form-text">後のドメイン認証で活用できます。</div>
@@ -162,17 +161,17 @@ use Cake\Utility\Text;
         <div class="mt-3">
           <label class="form-label fw-semibold"><i class="fa-regular fa-file-lines me-2 text-secondary"></i>説明</label>
           <?= $this->Form->textarea('description', [
-            'rows'=>5,
-            'class'=>'form-control',
-            'placeholder'=>'事業内容、ミッション、主要プロダクト、技術スタックなど…'
+            'rows' => 5,
+            'class' => 'form-control',
+            'placeholder' => '事業内容、ミッション、主要プロダクト、技術スタックなど…',
           ]) ?>
         </div>
 
         <div class="mt-4 d-flex gap-2">
           <?= $this->Form->button('<i class="fa-solid fa-square-plus me-2"></i>作成する', [
-            'escapeTitle'=>false,'class'=>'btn btn-gradient btn-lg px-4'
+            'escapeTitle' => false, 'class' => 'btn btn-gradient btn-lg px-4',
           ]) ?>
-          <?= $this->Html->link('キャンセル', ['action'=>'index'], ['class'=>'btn btn-outline-secondary btn-lg px-4']) ?>
+          <?= $this->Html->link('キャンセル', ['action' => 'index'], ['class' => 'btn btn-outline-secondary btn-lg px-4']) ?>
         </div>
       </div>
 
@@ -197,7 +196,7 @@ use Cake\Utility\Text;
               <?= $this->Form->file('logo_file', [
                 'accept' => 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml',
                 'id' => 'cmp-logo-file',
-                'class' => 'd-none'
+                'class' => 'd-none',
               ]) ?>
 
               <label for="cmp-logo-file" class="btn btn-outline-primary">
