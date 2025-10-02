@@ -2,10 +2,10 @@
 $cakeDescription = 'OrcaFolio';
 ?>
 <?php
-$isLoggedIn  = $this->Identity->isLoggedIn();
-$isEmployer  = $isLoggedIn && $this->Identity->get('auth_email') !== null; // 企業ログイン判定
-$companyId   = $isEmployer ? (int)$this->Identity->get('id') : null;
-$logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
+$isLoggedIn = $this->Identity->isLoggedIn();
+$isEmployer = $isLoggedIn && $this->Identity->get('auth_email') !== null; // 企業ログイン判定
+$companyId = $isEmployer ? (int)$this->Identity->get('id') : null;
+$logoutUrl = $isEmployer ? '/employer/logout' : '/users/logout';
 ?>
 <!DOCTYPE html>
 <html lang="ja">
@@ -113,7 +113,7 @@ $logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
 
     <!-- 右：ログイン系 -->
     <div class="nav-right ms-auto d-flex align-items-center">
-      <?php if ($isLoggedIn): ?>
+      <?php if ($isLoggedIn) : ?>
         <span class="me-2 d-none d-sm-inline text-truncate" style="max-width:140px;">
           ようこそ <?= h($this->Identity->get('name')) ?> さん
         </span>
@@ -121,7 +121,7 @@ $logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
         <a href="<?= $logoutUrl ?>" class="btn btn-outline-secondary btn-sm d-inline d-sm-none" title="ログアウト">
           <i class="fa-solid fa-right-from-bracket"></i>
         </a>
-      <?php else: ?>
+      <?php else : ?>
         <a href="/users/login" class="btn btn-outline-primary btn-sm me-2 d-none d-sm-inline">ログイン</a>
         <a href="/users/register" class="btn btn-primary btn-sm d-none d-sm-inline">新規登録</a>
         <a href="/users/login" class="btn btn-primary btn-sm d-inline d-sm-none" title="ログイン">
@@ -141,47 +141,47 @@ $logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
   <div class="offcanvas-body">
     <ul class="list-unstyled">
         <li><a href="/top">トップ画面</a></li>
-        <?php if ($isLoggedIn): ?>
-          <?php if ($isEmployer): ?>
-            <li>
-              <a href="<?= $this->Url->build([
-                'prefix' => 'Employer',
-                'controller' => 'Companies',
-                'action' => 'view',
-                $companyId
-              ]) ?>">
-                会社マイページ
-              </a>
-            </li>
-          <?php else: ?>
-            <li>
-              <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile']) ?>">
-                プロフィール
-              </a>
-            </li>
-          <?php endif; ?>
+        <?php if ($isLoggedIn) : ?>
+            <?php if ($isEmployer) : ?>
+              <li>
+                <a href="<?= $this->Url->build([
+                  'prefix' => 'Employer',
+                  'controller' => 'Companies',
+                  'action' => 'view',
+                  $companyId,
+                ]) ?>">
+                  会社マイページ
+                </a>
+              </li>
+            <?php else : ?>
+              <li>
+                <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile']) ?>">
+                  プロフィール
+                </a>
+              </li>
+            <?php endif; ?>
         <?php endif; ?>
         <li><a href="/users/search">ユーザー検索</a></li>
         <li><a href="/favorites">お気に入り</a></li>
-        <?php if ($isLoggedIn): ?>
-          <?php if ($isEmployer): ?>
-            <li>
-              <a href="<?= $this->Url->build([
-                'prefix' => 'Employer',
-                'controller' => 'portfolios',
-                'action' => 'add',
-                $companyId
-              ]) ?>">
-                投稿する
-              </a>
-            </li>
-          <?php else: ?>
-            <li>
-              <a href="<?= $this->Url->build(['controller' => 'portfolios', 'action' => 'add']) ?>">
-                投稿する
-              </a>
-            </li>
-          <?php endif; ?>
+        <?php if ($isLoggedIn) : ?>
+            <?php if ($isEmployer) : ?>
+              <li>
+                <a href="<?= $this->Url->build([
+                  'prefix' => 'Employer',
+                  'controller' => 'portfolios',
+                  'action' => 'add',
+                  $companyId,
+                ]) ?>">
+                  投稿する
+                </a>
+              </li>
+            <?php else : ?>
+              <li>
+                <a href="<?= $this->Url->build(['controller' => 'portfolios', 'action' => 'add']) ?>">
+                  投稿する
+                </a>
+              </li>
+            <?php endif; ?>
         <?php endif; ?>
         <li><a href="/conversations">メッセージ</a></li>
         <li>
@@ -189,25 +189,25 @@ $logoutUrl   = $isEmployer ? '/employer/logout' : '/users/logout';
             通知<?= isset($unreadCount) && $unreadCount > 0 ? "（{$unreadCount}）" : '' ?>
           </a>
         </li>
-        <?php if ($isLoggedIn): ?>
-          <?php if ($isEmployer): ?>
-            <li>
-              <a href="<?= $this->Url->build([
-                'prefix' => 'Employer',
-                'controller' => 'Settings',
-                'action' => 'index',
-                $companyId
-              ]) ?>">
-                会社アカウント設定
-              </a>
-            </li>
-          <?php else: ?>
-            <li>
-              <a href="<?= $this->Url->build(['controller' => 'Settings', 'action' => 'index']) ?>">
-                設定
-              </a>
-            </li>
-          <?php endif; ?>
+        <?php if ($isLoggedIn) : ?>
+            <?php if ($isEmployer) : ?>
+              <li>
+                <a href="<?= $this->Url->build([
+                  'prefix' => 'Employer',
+                  'controller' => 'Settings',
+                  'action' => 'index',
+                  $companyId,
+                ]) ?>">
+                  会社アカウント設定
+                </a>
+              </li>
+            <?php else : ?>
+              <li>
+                <a href="<?= $this->Url->build(['controller' => 'Settings', 'action' => 'index']) ?>">
+                  設定
+                </a>
+              </li>
+            <?php endif; ?>
         <?php endif; ?>
     </ul>
   </div>
