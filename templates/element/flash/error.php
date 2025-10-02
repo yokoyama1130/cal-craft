@@ -32,7 +32,11 @@ switch ($key) {
         break;
 }
 ?>
-<div class="<?= implode(' ', array_keys(array_filter($classes))) ?> d-flex align-items-center justify-content-between" role="alert">
-  <div><?= $message ?></div>
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
+<div 
+    class="<?= implode(' ', array_keys(array_filter($classes))) ?> 
+           d-flex align-items-center justify-content-between" 
+    role="alert"
+>
+    <div><?= $message ?></div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
 </div>
