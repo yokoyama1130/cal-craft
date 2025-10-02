@@ -38,7 +38,7 @@ $identity = $this->getRequest()->getAttribute('identity');
 $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
 ?>
 
-<?php if ($isEmployer): ?>
+<?php if ($isEmployer) : ?>
   <div class="alert alert-warning mb-3">会社アカウントとして投稿します</div>
 <?php endif; ?>
 
@@ -47,13 +47,13 @@ $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
 
   <?= $this->Form->create($portfolio, ['type' => 'file']) ?>
 
-  <?php if (!empty($portfolio->getErrors())): ?>
+  <?php if (!empty($portfolio->getErrors())) : ?>
     <div class="alert alert-danger">
       <ul class="mb-0">
-        <?php foreach ($portfolio->getErrors() as $field => $messages): ?>
-          <?php foreach ((array)$messages as $rule => $msg): ?>
-            <li><?= h(($field === 'owner' ? '' : $field . ': ') . (is_array($msg) ? implode(', ', $msg) : $msg)) ?></li>
-          <?php endforeach; ?>
+        <?php foreach ($portfolio->getErrors() as $field => $messages) : ?>
+            <?php foreach ((array)$messages as $rule => $msg) : ?>
+              <li><?= h(($field === 'owner' ? '' : $field . ': ') . (is_array($msg) ? implode(', ', $msg) : $msg)) ?></li>
+            <?php endforeach; ?>
         <?php endforeach; ?>
       </ul>
     </div>
@@ -64,12 +64,12 @@ $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
   <!-- ▼ カテゴリ選択 -->
   <div class="mb-3">
     <?= $this->Form->control('category_id', [
-        'label'   => 'ジャンル（カテゴリ）',
-        'type'    => 'select',
+        'label' => 'ジャンル（カテゴリ）',
+        'type' => 'select',
         'options' => $options,
-        'empty'   => '選択してください',
-        'class'   => 'form-select',
-        'id'      => 'category-select'
+        'empty' => '選択してください',
+        'class' => 'form-select',
+        'id' => 'category-select',
     ]) ?>
   </div>
 
@@ -87,25 +87,25 @@ $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
     <div class="mb-3">
       <?= $this->Form->control('description', [
           'label' => '説明',
-          'type'  => 'textarea',
-          'rows'  => 5,
-          'class' => 'form-control'
+          'type' => 'textarea',
+          'rows' => 5,
+          'class' => 'form-control',
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('thumbnail_file', [
           'label' => 'サムネイル画像をアップロード',
-          'type'  => 'file',
-          'class' => 'form-control'
+          'type' => 'file',
+          'class' => 'form-control',
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('link', [
-          'label'       => '関連リンク（任意）',
-          'class'       => 'form-control',
-          'placeholder' => 'https://example.com/...'
+          'label' => '関連リンク（任意）',
+          'class' => 'form-control',
+          'placeholder' => 'https://example.com/...',
       ]) ?>
     </div>
   </div>
@@ -118,67 +118,67 @@ $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
 
     <?= $this->Form->control('purpose', [
       'label' => '目的・背景',
-      'type'  => 'textarea',
-      'rows'  => 3,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 3,
+      'class' => 'form-control',
     ]) ?>
 
     <?= $this->Form->control('basic_spec', [
       'label' => '基本仕様（サイズ・重量・用途など）',
-      'type'  => 'textarea',
-      'rows'  => 3,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 3,
+      'class' => 'form-control',
     ]) ?>
 
     <h5 class="mt-4 mb-2">[2] 設計と部品情報</h5>
 
     <?= $this->Form->control('design_url', [
       'label' => '設計書リンク（Google Drive, GitHubなど）',
-      'class' => 'form-control'
+      'class' => 'form-control',
     ]) ?>
 
     <?= $this->Form->control('design_description', [
       'label' => '設計の説明',
-      'type'  => 'textarea',
-      'rows'  => 4,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 4,
+      'class' => 'form-control',
     ]) ?>
 
     <?= $this->Form->control('parts_list', [
       'label' => '部品リスト（Markdown形式）',
-      'type'  => 'textarea',
-      'rows'  => 5,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 5,
+      'class' => 'form-control',
     ]) ?>
 
     <h5 class="mt-4 mb-2">[3] 加工・解析情報</h5>
 
     <?= $this->Form->control('processing_method', [
       'label' => '加工方法',
-      'type'  => 'textarea',
-      'rows'  => 3,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 3,
+      'class' => 'form-control',
     ]) ?>
 
     <?= $this->Form->control('processing_notes', [
       'label' => '加工ノウハウ・注意点',
-      'type'  => 'textarea',
-      'rows'  => 3,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 3,
+      'class' => 'form-control',
     ]) ?>
 
     <?= $this->Form->control('analysis_method', [
       'label' => '解析手法',
-      'type'  => 'textarea',
-      'rows'  => 3,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 3,
+      'class' => 'form-control',
     ]) ?>
 
     <?= $this->Form->control('analysis_result', [
       'label' => '解析結果・考察',
-      'type'  => 'textarea',
-      'rows'  => 4,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 4,
+      'class' => 'form-control',
     ]) ?>
 
     <h5 class="mt-4 mb-2">[4] 補足情報</h5>
@@ -187,44 +187,44 @@ $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
 
     <!-- 図面PDF（1枚） -->
     <?= $this->Form->control('drawing_pdf', [
-      'type'  => 'file',
+      'type' => 'file',
       'label' => '図面PDF',
-      'accept'=> 'application/pdf'
+      'accept' => 'application/pdf',
     ]) ?>
 
     <?= $this->Form->control('development_period', [
       'label' => '開発期間',
-      'class' => 'form-control'
+      'class' => 'form-control',
     ]) ?>
 
     <?= $this->Form->control('mechanical_notes', [
       'label' => '工夫点・反省',
-      'type'  => 'textarea',
-      'rows'  => 3,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 3,
+      'class' => 'form-control',
     ]) ?>
 
     <?= $this->Form->control('reference_links', [
       'label' => '参考資料・URL（Markdown可）',
-      'type'  => 'textarea',
-      'rows'  => 3,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 3,
+      'class' => 'form-control',
     ]) ?>
 
     <div class="mb-3">
       <?= $this->Form->control('tool_used', [
         'label' => '使用ツール（例：SolidWorks, Fusion360 など）',
-        'type'  => 'textarea',
-        'rows'  => 3,
-        'class' => 'form-control'
+        'type' => 'textarea',
+        'rows' => 3,
+        'class' => 'form-control',
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('material_used', [
         'label' => '使用材料（例：アルミ、SUS304など）',
-        'type'  => 'textarea',
-        'rows'  => 3,
+        'type' => 'textarea',
+        'rows' => 3,
         'class' => 'form-control',
       ]) ?>
     </div>
@@ -232,8 +232,8 @@ $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
     <div class="mb-3">
       <?= $this->Form->control('processing_method', [
         'label' => '加工方法（例：旋盤、フライス、3Dプリンタなど）',
-        'type'  => 'textarea',
-        'rows'  => 3,
+        'type' => 'textarea',
+        'rows' => 3,
         'class' => 'form-control',
       ]) ?>
     </div>
@@ -241,67 +241,67 @@ $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
     <div class="mb-3">
       <?= $this->Form->control('analysis_method', [
         'label' => '解析手法（例：FEM、流体解析など）',
-        'type'  => 'textarea',
-        'rows'  => 3,
-        'class' => 'form-control'
+        'type' => 'textarea',
+        'rows' => 3,
+        'class' => 'form-control',
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('development_period', [
         'label' => '開発期間（例：2ヶ月）',
-        'class' => 'form-control'
+        'class' => 'form-control',
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('design_url', [
-        'label'       => '設計書の共有リンク（例：Google Drive、GitHubなど）',
-        'class'       => 'form-control',
-        'placeholder' => 'https://drive.google.com/...'
+        'label' => '設計書の共有リンク（例：Google Drive、GitHubなど）',
+        'class' => 'form-control',
+        'placeholder' => 'https://drive.google.com/...',
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('design_description', [
         'label' => '設計の説明（設計意図や工夫点など）',
-        'type'  => 'textarea',
-        'rows'  => 4,
-        'class' => 'form-control'
+        'type' => 'textarea',
+        'rows' => 4,
+        'class' => 'form-control',
       ]) ?>
     </div>
 
     <div class="mb-3">
       <?= $this->Form->control('mechanical_notes', [
         'label' => 'その他の工夫点・反省点など',
-        'type'  => 'textarea',
-        'rows'  => 4,
-        'class' => 'form-control'
+        'type' => 'textarea',
+        'rows' => 4,
+        'class' => 'form-control',
       ]) ?>
     </div>
 
     <!-- 補足PDF（複数可） -->
     <?= $this->Form->control('supplement_pdfs[]', [
-      'type'     => 'file',
-      'label'    => '補足資料PDF（複数可）',
+      'type' => 'file',
+      'label' => '補足資料PDF（複数可）',
       'multiple' => true,
-      'accept'   => 'application/pdf'
+      'accept' => 'application/pdf',
     ]) ?>
   </div>
 
   <div id="extra-programming" class="extra-fields d-none">
     <?= $this->Form->control('github_url', [
       'label' => 'GitHub URL',
-      'class' => 'form-control'
+      'class' => 'form-control',
     ]) ?>
   </div>
 
   <div id="extra-chemistry" class="extra-fields d-none">
     <?= $this->Form->control('experiment_summary', [
       'label' => '実験の概要',
-      'type'  => 'textarea',
-      'rows'  => 3,
-      'class' => 'form-control'
+      'type' => 'textarea',
+      'rows' => 3,
+      'class' => 'form-control',
     ]) ?>
   </div>
 
@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // PHP から安全に渡したマップ
-  const slugMap = <?= json_encode($slugMapArr, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) ?>;
+  const slugMap = <?= json_encode($slugMapArr, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
 
   function hideAllExtraFields() {
     document.querySelectorAll('.extra-fields').forEach(el => el.classList.add('d-none'));
