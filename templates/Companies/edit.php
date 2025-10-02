@@ -3,7 +3,6 @@
  * @var \App\View\AppView $this
  * @var \App\Model\Entity\Company $company
  */
-use Cake\Utility\Text;
 ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -26,8 +25,8 @@ use Cake\Utility\Text;
       </div>
     </div>
     <div class="d-flex gap-2">
-      <?= $this->Html->link('一覧へ', ['action'=>'index'], ['class'=>'btn btn-outline-secondary']) ?>
-      <?= $this->Html->link('詳細を見る', ['action'=>'view',$company->id], ['class'=>'btn btn-outline-dark']) ?>
+      <?= $this->Html->link('一覧へ', ['action' => 'index'], ['class' => 'btn btn-outline-secondary']) ?>
+      <?= $this->Html->link('詳細を見る', ['action' => 'view',$company->id], ['class' => 'btn btn-outline-dark']) ?>
     </div>
   </div>
 
@@ -36,17 +35,17 @@ use Cake\Utility\Text;
     <div class="col-lg-8">
       <div class="card border-0 shadow-sm">
         <div class="card-body p-4">
-          <?= $this->Form->create($company, ['class'=>'needs-validation', 'novalidate'=>true, 'type' => 'file']) ?>
+          <?= $this->Form->create($company, ['class' => 'needs-validation', 'novalidate' => true, 'type' => 'file']) ?>
 
           <!-- 会社名 / スラッグ -->
           <div class="row g-3">
             <div class="col-md-7">
               <label class="form-label fw-semibold"><i class="fa-solid fa-building me-2 text-primary"></i>会社名</label>
               <?= $this->Form->text('name', [
-                'class'=>'form-control form-control-lg',
-                'placeholder'=>'例）株式会社OrcaFolio',
-                'required'=>true,
-                'id'=>'cmp-name'
+                'class' => 'form-control form-control-lg',
+                'placeholder' => '例）株式会社OrcaFolio',
+                'required' => true,
+                'id' => 'cmp-name',
               ]) ?>
             </div>
             <div class="col-md-5">
@@ -54,10 +53,10 @@ use Cake\Utility\Text;
               <div class="input-group">
                 <span class="input-group-text">/c/</span>
                 <?= $this->Form->text('slug', [
-                  'class'=>'form-control',
-                  'placeholder'=>'例）OrcaFolio',
-                  'id'=>'cmp-slug',
-                  'maxlength'=>160
+                  'class' => 'form-control',
+                  'placeholder' => '例）OrcaFolio',
+                  'id' => 'cmp-slug',
+                  'maxlength' => 160,
                 ]) ?>
               </div>
               <div class="form-text">空なら会社名から自動生成します。</div>
@@ -73,9 +72,9 @@ use Cake\Utility\Text;
               <div class="input-group">
                 <span class="input-group-text"><i class="fa-solid fa-link"></i></span>
                 <?= $this->Form->text('website', [
-                  'class'=>'form-control',
-                  'placeholder'=>'https://example.com',
-                  'id'=>'cmp-website'
+                  'class' => 'form-control',
+                  'placeholder' => 'https://example.com',
+                  'id' => 'cmp-website',
                 ]) ?>
               </div>
               <div class="form-text">`http(s)://` から始まるURLを推奨します。</div>
@@ -85,8 +84,8 @@ use Cake\Utility\Text;
               <div class="input-group">
                 <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
                 <?= $this->Form->email('billing_email', [
-                  'class'=>'form-control',
-                  'placeholder'=>'billing@example.com'
+                  'class' => 'form-control',
+                  'placeholder' => 'billing@example.com',
                 ]) ?>
               </div>
             </div>
@@ -96,11 +95,11 @@ use Cake\Utility\Text;
           <div class="row g-3 mt-1">
             <div class="col-md-6">
               <label class="form-label fw-semibold"><i class="fa-solid fa-industry me-2 text-secondary"></i>業種</label>
-              <?= $this->Form->text('industry', ['class'=>'form-control','placeholder'=>'例）IT・ソフトウェア']) ?>
+              <?= $this->Form->text('industry', ['class' => 'form-control', 'placeholder' => '例）IT・ソフトウェア']) ?>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold"><i class="fa-solid fa-people-group me-2 text-secondary"></i>規模</label>
-              <?= $this->Form->text('size', ['class'=>'form-control','placeholder'=>'例）11-50名']) ?>
+              <?= $this->Form->text('size', ['class' => 'form-control', 'placeholder' => '例）11-50名']) ?>
             </div>
           </div>
 
@@ -111,9 +110,9 @@ use Cake\Utility\Text;
               <div class="input-group">
                 <span class="input-group-text">@</span>
                 <?= $this->Form->text('domain', [
-                  'class'=>'form-control',
-                  'placeholder'=>'例）example.com',
-                  'id'=>'cmp-domain'
+                  'class' => 'form-control',
+                  'placeholder' => '例）example.com',
+                  'id' => 'cmp-domain',
                 ]) ?>
               </div>
             </div>
@@ -127,7 +126,7 @@ use Cake\Utility\Text;
                 <?= $this->Form->file('logo_file', [
                   'accept' => 'image/png,image/jpeg,image/webp,image/gif, image/svg+xml', // svgは必要なら
                   'id' => 'cmp-logo-file',
-                  'class' => 'form-control'
+                  'class' => 'form-control',
                 ]) ?>
               </div>
               <div class="form-text">PNG / JPG / WEBP / GIF / SVG、最大 2MB 推奨。</div>
@@ -141,9 +140,9 @@ use Cake\Utility\Text;
           <div class="mt-3">
             <label class="form-label fw-semibold"><i class="fa-regular fa-file-lines me-2 text-secondary"></i>説明</label>
             <?= $this->Form->textarea('description', [
-              'rows'=>5,
-              'class'=>'form-control',
-              'placeholder'=>'事業内容、ミッション、主要プロダクト、技術スタックなど…'
+              'rows' => 5,
+              'class' => 'form-control',
+              'placeholder' => '事業内容、ミッション、主要プロダクト、技術スタックなど…',
             ]) ?>
           </div>
 
@@ -151,9 +150,9 @@ use Cake\Utility\Text;
 
           <div class="mt-4 d-flex gap-2">
             <?= $this->Form->button('<i class="fa-regular fa-floppy-disk me-2"></i>保存する', [
-              'escapeTitle'=>false,'class'=>'btn btn-primary btn-lg px-4'
+              'escapeTitle' => false,'class' => 'btn btn-primary btn-lg px-4',
             ]) ?>
-            <?= $this->Html->link('キャンセル', ['action'=>'view',$company->id], ['class'=>'btn btn-outline-secondary btn-lg px-4']) ?>
+            <?= $this->Html->link('キャンセル', ['action' => 'view',$company->id], ['class' => 'btn btn-outline-secondary btn-lg px-4']) ?>
           </div>
 
           <?= $this->Form->end() ?>
