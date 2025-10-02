@@ -25,11 +25,11 @@
   <aside class="sidebar p-3">
     <div class="brand fs-5 mb-3"><i class="fa-solid fa-shield-halved me-2"></i>Admin</div>
     <nav class="d-grid gap-1">
-      <?= $this->Html->link('<i class="fa-solid fa-gauge-high me-2"></i>ダッシュボード', ['prefix'=>'Admin','controller'=>'Dashboard','action'=>'index'], ['escape'=>false, 'class' => $this->request->getParam('controller')==='Dashboard'?'active':'']) ?>
-      <?= $this->Html->link('<i class="fa-regular fa-user me-2"></i>ユーザー', ['prefix'=>'Admin','controller'=>'Users','action'=>'index'], ['escape'=>false]) ?>
-      <?= $this->Html->link('<i class="fa-solid fa-building me-2"></i>企業', ['prefix'=>'Admin','controller'=>'Companies','action'=>'index'], ['escape'=>false]) ?>
-      <?= $this->Html->link('<i class="fa-regular fa-images me-2"></i>ポートフォリオ', ['prefix'=>'Admin','controller'=>'Portfolios','action'=>'index'], ['escape'=>false]) ?>
-      <?= $this->Html->link('<i class="fa-regular fa-comments me-2"></i>コメント', ['prefix'=>'Admin','controller'=>'Comments','action'=>'index'], ['escape'=>false]) ?>
+      <?= $this->Html->link('<i class="fa-solid fa-gauge-high me-2"></i>ダッシュボード', ['prefix' => 'Admin','controller' => 'Dashboard', 'action' => 'index'], ['escape' => false, 'class' => $this->request->getParam('controller') === 'Dashboard' ? 'active' : '']) ?>
+      <?= $this->Html->link('<i class="fa-regular fa-user me-2"></i>ユーザー', ['prefix' => 'Admin','controller' => 'Users', 'action' => 'index'], ['escape' => false]) ?>
+      <?= $this->Html->link('<i class="fa-solid fa-building me-2"></i>企業', ['prefix' => 'Admin','controller' => 'Companies','action' => 'index'], ['escape' => false]) ?>
+      <?= $this->Html->link('<i class="fa-regular fa-images me-2"></i>ポートフォリオ', ['prefix' => 'Admin', 'controller' => 'Portfolios', 'action' => 'index'], ['escape' => false]) ?>
+      <?= $this->Html->link('<i class="fa-regular fa-comments me-2"></i>コメント', ['prefix' => 'Admin', 'controller' => 'Comments', 'action' => 'index'], ['escape' => false]) ?>
     </nav>
   </aside>
 
