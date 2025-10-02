@@ -27,20 +27,24 @@ use Cake\I18n\FrozenTime;
         </thead>
         <tbody>
         <?php foreach ($invoices as $i) : ?>
-          <?php
-            $dt = $i->paid_at ?: $i->created;
-            // 表示をお好みで（例：YYYY/MM/DD HH:mm）
-            $dtText = $dt instanceof FrozenTime ? $dt->i18nFormat('yyyy/MM/dd HH:mm') : h((string)$dt);
+            <?php
+              $dt = $i->paid_at ?: $i->created;
+              // 表示をお好みで（例：YYYY/MM/DD HH:mm）
+              $dtText = $dt instanceof FrozenTime ? $dt->i18nFormat('yyyy/MM/dd HH:mm') : h((string)$dt);
 
-            $status = (string)($i->status ?? '');
-            $badge = 'bg-secondary';
-            if ($status === 'paid') $badge = 'bg-success';
-            elseif (in_array($status, ['open','requires_payment_method'], true)) $badge = 'bg-warning text-dark';
-            elseif (in_array($status, ['void','canceled'], true)) $badge = 'bg-dark';
-            elseif (in_array($status, ['uncollectible','refunded'], true)) $badge = 'bg-danger';
-
-            $amount = is_numeric($i->amount) ? (int)$i->amount : null; // JPYは最小単位＝円
-          ?>
+              $status = (string)($i->status ?? '');
+              $badge = 'bg-secondary';
+            if ($status === 'paid') {
+                $badge = 'bg-success';
+            } elseif (in_array($status, ['open','requires_payment_method'], true)) {
+                $badge = 'bg-warning text-dark';
+            } elseif (in_array($status, ['void','canceled'], true)) {
+                $badge = 'bg-dark';
+            } elseif (in_array($status, ['uncollectible','refunded'], true)) {
+                $badge = 'bg-danger';
+            }
+              $amount = is_numeric($i->amount) ? (int)$i->amount : null; // JPYは最小単位＝円
+            ?>
           <tr>
             <td><?= h($dtText) ?></td>
             <td><?= h($i->plan ?: '-') ?></td>
@@ -53,21 +57,33 @@ use Cake\I18n\FrozenTime;
             <td class="small">
               <?php if (!empty($i->stripe_invoice_id)) : ?>
                 請求書：
-                <?= $this->Html->link(
-                    h($i->stripe_invoice_id),
-                    ['prefix' => 'Employer', 'controller' => 'Billing', 'action' => 'receipt', 'invoice', $i->stripe_invoice_id],
-                    ['target' => '_blank', 'rel' => 'noopener', 'escape' => true]
-                  )
-                ?>
+                    <?= $this->Html->link(
+                        h($i->stripe_invoice_id),
+                        [
+                            'prefix' => 'Employer',
+                            'controller' => 'Billing',
+                            'action' => 'receipt',
+                            'invoice',
+                            $i->stripe_invoice_id,
+                        ],
+                        ['target' => '_blank', 'rel' => 'noopener', 'escape' => true]
+                    )
+                    ?>
                 <br>
               <?php endif; ?>
               <?php if (!empty($i->stripe_payment_intent_id)) : ?>
                 レシート：
-                <?= $this->Html->link(
-                    h($i->stripe_payment_intent_id),
-                    ['prefix' => 'Employer', 'controller' => 'Billing', 'action' => 'receipt', 'pi', $i->stripe_payment_intent_id],
-                    ['target' => '_blank', 'rel' => 'noopener', 'escape' => true]
-                  ) ?>
+                    <?= $this->Html->link(
+                        h($i->stripe_payment_intent_id),
+                        [
+                            'prefix' => 'Employer',
+                            'controller' => 'Billing',
+                            'action' => 'receipt',
+                            'pi',
+                            $i->stripe_payment_intent_id,
+                        ],
+                        ['target' => '_blank', 'rel' => 'noopener', 'escape' => true]
+                    ) ?>
               <?php endif; ?>
               <?php if (empty($i->stripe_invoice_id) && empty($i->stripe_payment_intent_id)) : ?>
                 -
