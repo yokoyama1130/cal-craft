@@ -41,25 +41,26 @@ if (!empty($partnerIcon)) {
         $d = $m->created->format('Y-m-d');
         if ($d !== $lastDate) :?>
     <div class="day-sep"><span><?= h($m->created->i18nFormat('yyyy/MM/dd (eee)')) ?></span></div>
-  <?php $lastDate = $d; endif; ?>
-  <div class="msg-row d-flex <?= $isMine ? 'justify-content-end' : 'justify-content-start' ?> mb-2">
-    <?php if (!$isMine) : ?>
-      <!-- 相手側の吹き出しにだけアイコンを置く（詳細な送信者アイコン取得が不要な簡易版） -->
-      <?php if ($partnerIconUrl) : ?>
-        <img src="<?= h($partnerIconUrl) ?>" class="rounded-circle me-2 d-none d-sm-block" style="width:32px;height:32px;object-fit:cover;">
-      <?php else : ?>
-        <i class="fas fa-user-circle fa-lg text-muted me-2 d-none d-sm-block"></i>
-      <?php endif; ?>
-    <?php endif; ?>
-    <div class="bubble <?= $isMine ? 'mine' : 'theirs' ?>">
-      <div class="bubble-body"><?= nl2br(h($m->content)) ?></div>
-      <div class="bubble-time small <?= $isMine ? 'text-white-50' : 'text-muted' ?>">
-        <?= h($m->created->nice()) ?>
+            <?php $lastDate = $d; ?>
+        <?php endif; ?>
+    <div class="msg-row d-flex <?= $isMine ? 'justify-content-end' : 'justify-content-start' ?> mb-2">
+          <?php if (!$isMine) : ?>
+            <!-- 相手側の吹き出しにだけアイコンを置く（詳細な送信者アイコン取得が不要な簡易版） -->
+                  <?php if ($partnerIconUrl) : ?>
+                    <img src="<?= h($partnerIconUrl) ?>" class="rounded-circle me-2 d-none d-sm-block" style="width:32px;height:32px;object-fit:cover;">
+                  <?php else : ?>
+                    <i class="fas fa-user-circle fa-lg text-muted me-2 d-none d-sm-block"></i>
+                  <?php endif; ?>
+          <?php endif; ?>
+      <div class="bubble <?= $isMine ? 'mine' : 'theirs' ?>">
+        <div class="bubble-body"><?= nl2br(h($m->content)) ?></div>
+        <div class="bubble-time small <?= $isMine ? 'text-white-50' : 'text-muted' ?>">
+          <?= h($m->created->nice()) ?>
+        </div>
+        <span class="tail"></span>
       </div>
-      <span class="tail"></span>
     </div>
-  </div>
-  <?php endforeach; ?>
+    <?php endforeach; ?>
 </div>
 
 <!-- Composer -->
