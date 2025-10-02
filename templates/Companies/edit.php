@@ -80,7 +80,10 @@
               <div class="form-text">`http(s)://` から始まるURLを推奨します。</div>
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="fa-regular fa-envelope me-2 text-primary"></i>請求メール</label>
+              <label class="form-label fw-semibold">
+                  <i class="fa-regular fa-envelope me-2 text-primary"></i>
+                  請求メール
+              </label>
               <div class="input-group">
                 <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
                 <?= $this->Form->email('billing_email', [
@@ -98,7 +101,10 @@
               <?= $this->Form->text('industry', ['class' => 'form-control', 'placeholder' => '例）IT・ソフトウェア']) ?>
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="fa-solid fa-people-group me-2 text-secondary"></i>規模</label>
+              <label class="form-label fw-semibold">
+                  <i class="fa-solid fa-people-group me-2 text-secondary"></i>
+                  規模
+              </label>
               <?= $this->Form->text('size', ['class' => 'form-control', 'placeholder' => '例）11-50名']) ?>
             </div>
           </div>
@@ -106,7 +112,10 @@
           <!-- ドメイン / ロゴ -->
           <div class="row g-3 mt-1">
             <div class="col-md-6">
-              <label class="form-label fw-semibold"><i class="fa-solid fa-at me-2 text-secondary"></i>メールドメイン（任意）</label>
+              <label class="form-label fw-semibold">
+                  <i class="fa-solid fa-at me-2 text-secondary"></i>
+                  メールドメイン（任意）
+              </label>
               <div class="input-group">
                 <span class="input-group-text">@</span>
                 <?= $this->Form->text('domain', [
@@ -152,7 +161,11 @@
             <?= $this->Form->button('<i class="fa-regular fa-floppy-disk me-2"></i>保存する', [
               'escapeTitle' => false,'class' => 'btn btn-primary btn-lg px-4',
             ]) ?>
-            <?= $this->Html->link('キャンセル', ['action' => 'view',$company->id], ['class' => 'btn btn-outline-secondary btn-lg px-4']) ?>
+            <?= $this->Html->link(
+                'キャンセル',
+                ['action' => 'view', $company->id],
+                ['class' => 'btn btn-outline-secondary btn-lg px-4']
+            ) ?>
           </div>
 
           <?= $this->Form->end() ?>
