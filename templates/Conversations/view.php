@@ -47,7 +47,11 @@ if (!empty($partnerIcon)) {
           <?php if (!$isMine) : ?>
             <!-- 相手側の吹き出しにだけアイコンを置く（詳細な送信者アイコン取得が不要な簡易版） -->
                   <?php if ($partnerIconUrl) : ?>
-                    <img src="<?= h($partnerIconUrl) ?>" class="rounded-circle me-2 d-none d-sm-block" style="width:32px;height:32px;object-fit:cover;">
+                    <img 
+                        src="<?= h($partnerIconUrl) ?>" 
+                        class="rounded-circle me-2 d-none d-sm-block" 
+                        style="width:32px;height:32px;object-fit:cover;"
+                    >
                   <?php else : ?>
                     <i class="fas fa-user-circle fa-lg text-muted me-2 d-none d-sm-block"></i>
                   <?php endif; ?>
@@ -64,7 +68,13 @@ if (!empty($partnerIcon)) {
 </div>
 
 <!-- Composer -->
-<?= $this->Form->create(null, ['url' => ['controller' => 'Messages', 'action' => 'send'], 'class' => 'chat-composer']) ?>
+<?= $this->Form->create(null, [
+    'url' => [
+        'controller' => 'Messages',
+        'action' => 'send',
+    ],
+    'class' => 'chat-composer',
+]) ?>
   <?= $this->Form->hidden('conversation_id', ['value' => $conversation->id]) ?>
   <div class="composer d-flex align-items-end gap-2">
     <div class="flex-grow-1 position-relative">
@@ -90,7 +100,13 @@ if (!empty($partnerIcon)) {
 .chat-box{background:#f8fafc;border:1px solid #eef1f5;height:65vh;overflow-y:auto}
 .day-sep{display:flex;justify-content:center;margin:12px 0}
 .day-sep>span{background:#e9eef6;color:#556;font-size:.78rem;padding:.2rem .6rem;border-radius:999px}
-.bubble{max-width:72%;padding:.55rem .75rem .4rem;border-radius:16px;position:relative;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.bubble {
+  max-width: 72%;
+  padding: .55rem .75rem .4rem;
+  border-radius: 16px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
 .bubble .bubble-body{line-height:1.7}
 .bubble .bubble-meta{margin-bottom:.15rem;font-weight:600}
 .bubble .bubble-time{text-align:right;margin-top:.15rem}
