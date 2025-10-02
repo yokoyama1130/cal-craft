@@ -14,25 +14,28 @@
                 $message = '';
                 $link = null;
 
-                switch ($n->type) {
-                    case 'like':
-                        $message = "{$senderName} さんがあなたの投稿にいいねしました。";
-                        $link = ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id];
-                        break;
-                    case 'comment':
-                        $message = "{$senderName} さんがあなたの投稿にコメントしました。";
-                        $link = ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id];
-                        break;
-                    case 'follow':
-                        $message = "{$senderName} さんがあなたをフォローしました。";
-                        if ($sender) {
-                            $link = ['controller' => 'Users', 'action' => 'profile', $sender->id];
-                        }
-                        break;
-                    default:
-                        $message = "{$senderName} さんから通知があります。";
-                        break;
-                }
+            switch ($n->type) {
+                case 'like':
+                    $message = "{$senderName} さんがあなたの投稿にいいねしました。";
+                    $link = ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id];
+                    break;
+
+                case 'comment':
+                    $message = "{$senderName} さんがあなたの投稿にコメントしました。";
+                    $link = ['controller' => 'Portfolios', 'action' => 'view', $n->portfolio_id];
+                    break;
+
+                case 'follow':
+                    $message = "{$senderName} さんがあなたをフォローしました。";
+                    if ($sender) {
+                        $link = ['controller' => 'Users', 'action' => 'profile', $sender->id];
+                    }
+                    break;
+
+                default:
+                    $message = "{$senderName} さんから通知があります。";
+                    break;
+            }
             ?>
 
             <div class="list-group-item d-flex justify-content-between align-items-start p-3 rounded shadow-sm mb-2 <?= $n->is_read ? 'bg-white' : 'bg-light' ?>">
@@ -48,7 +51,7 @@
                         <?php endif; ?>
 
                         <div class="small text-muted mt-1">
-                            <?= ($n->created !== null) ? $n->created->nice() : '' ?>
+                            <?= $n->created !== null ? $n->created->nice() : '' ?>
                         </div>
                     </div>
                 </div>
