@@ -7,7 +7,7 @@
         <?= $this->Form->control('name', [
             'label' => 'お名前',
             'class' => 'form-control',
-            'required' => true
+            'required' => true,
         ]) ?>
     </div>
 
@@ -16,7 +16,7 @@
             'label' => 'メールアドレス',
             'type' => 'email',
             'class' => 'form-control',
-            'required' => true
+            'required' => true,
         ]) ?>
     </div>
 
@@ -25,7 +25,7 @@
             'label' => 'パスワード',
             'type' => 'password',
             'class' => 'form-control',
-            'required' => true
+            'required' => true,
         ]) ?>
     </div>
 
