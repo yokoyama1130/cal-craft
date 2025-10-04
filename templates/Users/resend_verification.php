@@ -8,7 +8,7 @@
         'label' => 'メールアドレス',
         'type' => 'email',
         'required' => true,
-        'class' => 'form-control'
+        'class' => 'form-control',
       ]) ?>
     </div>
     <?= $this->Form->button('再送する', ['class' => 'btn btn-primary']) ?>
