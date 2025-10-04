@@ -7,7 +7,7 @@
       <?= $this->Form->create(null, [
         'url' => ['action' => 'updatePassword'],
         'class' => 'needs-validation',
-        'novalidate' => true
+        'novalidate' => true,
       ]) ?>
 
         <div class="mb-3">
@@ -21,7 +21,7 @@
               'required' => true,
               'class' => 'form-control form-control-lg',
               'placeholder' => '現在のパスワード',
-              'autocomplete' => 'current-password'
+              'autocomplete' => 'current-password',
             ]) ?>
             <button type="button" class="btn-eye" data-toggle="pw">表示</button>
           </div>
@@ -40,7 +40,7 @@
               'class' => 'form-control form-control-lg',
               'placeholder' => '新しいパスワード',
               'autocomplete' => 'new-password',
-              'minlength' => 8
+              'minlength' => 8,
             ]) ?>
             <button type="button" class="btn-eye" data-toggle="pw">表示</button>
           </div>
@@ -58,7 +58,7 @@
               'required' => true,
               'class' => 'form-control form-control-lg',
               'placeholder' => 'もう一度入力',
-              'autocomplete' => 'new-password'
+              'autocomplete' => 'new-password',
             ]) ?>
             <button type="button" class="btn-eye" data-toggle="pw">表示</button>
           </div>
