@@ -52,7 +52,9 @@ $isEmployer = $this->getRequest()->getParam('prefix') === 'Employer';
       <ul class="mb-0">
         <?php foreach ($portfolio->getErrors() as $field => $messages) : ?>
             <?php foreach ((array)$messages as $rule => $msg) : ?>
-              <li><?= h(($field === 'owner' ? '' : $field . ': ') . (is_array($msg) ? implode(', ', $msg) : $msg)) ?></li>
+              <li>
+                <?= h(($field === 'owner' ? '' : $field . ': ') . (is_array($msg) ? implode(', ', $msg) : $msg)) ?>
+              </li>
             <?php endforeach; ?>
         <?php endforeach; ?>
       </ul>
