@@ -60,59 +60,59 @@
 </head>
 <body>
 <div class="d-flex align-items-center mb-4 fade-in">
-  <?php if (!empty($portfolio->user_id) && !empty($portfolio->user)): ?>
+  <?php if (!empty($portfolio->user_id) && !empty($portfolio->user)) : ?>
     <!-- ユーザー投稿のとき -->
     <a href="<?= $this->Url->build(['controller' => 'Users', 'action' => 'profile', $portfolio->user->id]) ?>">
-      <?php if (!empty($portfolio->user->icon_path)): ?>
+      <?php if (!empty($portfolio->user->icon_path)) : ?>
         <img src="/img/<?= h($portfolio->user->icon_path) ?>" class="rounded-circle me-3 shadow-sm border" style="width:100px;height:100px;object-fit:cover;">
-      <?php else: ?>
+      <?php else : ?>
         <i class="fas fa-user-circle fa-5x text-muted me-3"></i>
       <?php endif; ?>
     </a>
     <div>
       <h2 class="mb-1"><?= h($portfolio->user->name) ?></h2>
 
-      <?php if (!empty($showFollowUi)): ?>
+      <?php if (!empty($showFollowUi)) : ?>
         <div>
-          <?= $this->Html->link(
-            'フォロー <span id="following-count">' . h((int)$followingCount) . '</span>人',
-            ['controller' => 'Users', 'action' => 'followings', $portfolio->user->id],
-            ['escape' => false]
-          ) ?>
+            <?= $this->Html->link(
+                'フォロー <span id="following-count">' . h((int)$followingCount) . '</span>人',
+                ['controller' => 'Users', 'action' => 'followings', $portfolio->user->id],
+                ['escape' => false]
+            ) ?>
           /
-          <?= $this->Html->link(
-            'フォロワー <span id="follower-count">' . h((int)$followerCount) . '</span>人',
-            ['controller' => 'Users', 'action' => 'followers', $portfolio->user->id],
-            ['escape' => false]
-          ) ?>
+            <?= $this->Html->link(
+                'フォロワー <span id="follower-count">' . h((int)$followerCount) . '</span>人',
+                ['controller' => 'Users', 'action' => 'followers', $portfolio->user->id],
+                ['escape' => false]
+            ) ?>
         </div>
 
-        <?php if ($this->request->getAttribute('identity') && $this->request->getAttribute('identity')->get('id') !== $portfolio->user->id): ?>
-          <div id="follow-button-container" class="mt-2">
-            <button
-              class="btn <?= $isFollowing ? 'btn-outline-secondary' : 'btn-primary' ?>"
-              id="follow-button"
-              data-following="<?= $isFollowing ? '1' : '0' ?>"
-              data-user-id="<?= h($portfolio->user->id) ?>"
-            >
-              <?= $isFollowing ? 'フォロー解除' : 'フォロー' ?>
-            </button>
-          </div>
-        <?php endif; ?>
+            <?php if ($this->request->getAttribute('identity') && $this->request->getAttribute('identity')->get('id') !== $portfolio->user->id): ?>
+              <div id="follow-button-container" class="mt-2">
+                <button
+                  class="btn <?= $isFollowing ? 'btn-outline-secondary' : 'btn-primary' ?>"
+                  id="follow-button"
+                  data-following="<?= $isFollowing ? '1' : '0' ?>"
+                  data-user-id="<?= h($portfolio->user->id) ?>"
+                >
+                    <?= $isFollowing ? 'フォロー解除' : 'フォロー' ?>
+                </button>
+              </div>
+            <?php endif; ?>
       <?php endif; ?>
 
     </div>
 
     <?php else: ?>
     <!-- 会社投稿のとき -->
-    <?php if (!empty($portfolio->company)): ?>
+    <?php if (!empty($portfolio->company)) : ?>
       <a href="<?= $this->Url->build(['controller' => 'Companies', 'action' => 'view', $portfolio->company->id]) ?>">
-        <?php if (!empty($portfolio->company->logo_path)): ?>
+        <?php if (!empty($portfolio->company->logo_path)) : ?>
           <img src="<?= h($portfolio->company->logo_path) ?>"
               alt="<?= h($portfolio->company->name) ?>"
               class="rounded-circle me-3 shadow-sm border"
               style="width:100px;height:100px;object-fit:cover;">
-        <?php else: ?>
+        <?php else : ?>
           <i class="fa-solid fa-building fa-5x text-muted me-3"></i>
         <?php endif; ?>
       </a>
@@ -125,7 +125,7 @@
         </h2>
         <!-- 会社にはフォローUIを出さない -->
       </div>
-    <?php else: ?>
+    <?php else : ?>
       <!-- company 情報が無い場合のフォールバック -->
       <a href="#">
         <i class="fa-solid fa-building fa-5x text-muted me-3"></i>
@@ -141,7 +141,7 @@
       <h1 class="m-0"><?= h($portfolio->title) ?></h1>
     </div>
   </div>
-  <?php if ($portfolio->thumbnail): ?>
+  <?php if ($portfolio->thumbnail) : ?>
     <div class="text-center mb-4 fade-in">
       <img src="<?= h($portfolio->thumbnail) ?>" alt="Thumbnail" class="portfolio-img">
     </div>
@@ -151,22 +151,22 @@
     <h4 class="section-title">概要</h4>
     <p><?= nl2br(h($portfolio->description)) ?></p>
 
-    <?php if ($portfolio->link): ?>
+    <?php if ($portfolio->link) : ?>
       <p><strong>🔗 関連リンク:</strong> <a href="<?= h($portfolio->link) ?>" target="_blank"><?= h($portfolio->link) ?></a></p>
     <?php endif; ?>
   </div>
 
-  <?php if (!empty($portfolio->category) && $portfolio->category->slug === 'mechanical'): ?>
+  <?php if (!empty($portfolio->category) && $portfolio->category->slug === 'mechanical') : ?>
     <div class="fade-in">
       <h4 class="section-title">🔧 機械系ポートフォリオ詳細</h4>
 
-      <?php if ($portfolio->purpose || $portfolio->basic_spec): ?>
+      <?php if ($portfolio->purpose || $portfolio->basic_spec) : ?>
         <h5>[1] 設計構想・目的</h5>
         <?php if ($portfolio->purpose): ?><p><strong>目的:</strong> <?= nl2br(h($portfolio->purpose)) ?></p><?php endif; ?>
         <?php if ($portfolio->basic_spec): ?><p><strong>基本仕様:</strong> <?= nl2br(h($portfolio->basic_spec)) ?></p><?php endif; ?>
       <?php endif; ?>
 
-      <?php if ($portfolio->design_url || $portfolio->design_description || $portfolio->parts_list): ?>
+      <?php if ($portfolio->design_url || $portfolio->design_description || $portfolio->parts_list) : ?>
         <h5 class="mt-4">[2] 設計と部品情報</h5>
         <?php if ($portfolio->design_url): ?><p><strong>設計書:</strong> <a href="<?= h($portfolio->design_url) ?>" target="_blank"><?= h($portfolio->design_url) ?></a></p><?php endif; ?>
         <?php if ($portfolio->design_description): ?><p><strong>説明:</strong> <?= nl2br(h($portfolio->design_description)) ?></p><?php endif; ?>
@@ -198,17 +198,17 @@
       <?php
       // JSON or array どちらでも扱えるように補助変数を用意
       $suppPaths = [];
-      if (!empty($portfolio->supplement_pdf_paths)) {
-          $suppPaths = is_array($portfolio->supplement_pdf_paths)
-              ? $portfolio->supplement_pdf_paths
-              : (array)json_decode((string)$portfolio->supplement_pdf_paths, true);
-      }
+        if (!empty($portfolio->supplement_pdf_paths)) {
+            $suppPaths = is_array($portfolio->supplement_pdf_paths)
+                ? $portfolio->supplement_pdf_paths
+                : (array)json_decode((string)$portfolio->supplement_pdf_paths, true);
+        }
       ?>
 
-      <?php if (!empty($portfolio->drawing_pdf_path) || !empty($suppPaths)): ?>
+      <?php if (!empty($portfolio->drawing_pdf_path) || !empty($suppPaths)) : ?>
         <h5 class="mt-4">📄 図面・資料</h5>
 
-        <?php if (!empty($portfolio->drawing_pdf_path)): ?>
+        <?php if (!empty($portfolio->drawing_pdf_path)) : ?>
           <div class="pdf-frame mb-3">
             <iframe
               src="/<?= h($portfolio->drawing_pdf_path) ?>"
@@ -221,7 +221,7 @@
           </div>
         <?php endif; ?>
 
-        <?php if (!empty($suppPaths)): ?>
+        <?php if (!empty($suppPaths)) : ?>
           <div class="supplement-list">
             <ul class="list-unstyled">
               <?php foreach ($suppPaths as $i => $p): if (empty($p)) continue; ?>
@@ -246,8 +246,8 @@
   <div class="fade-in mt-5">
     <h3 class="section-title">💬 コメント</h3>
 
-    <?php if (!empty($comments)): ?>
-      <?php foreach ($comments as $comment): ?>
+    <?php if (!empty($comments)) : ?>
+      <?php foreach ($comments as $comment) : ?>
         <?php
           $isCompany  = !empty($comment->company_id);
           $authorName = $isCompany
@@ -255,23 +255,23 @@
             : ($comment->user->name ?? 'ユーザー');
           $authorIcon = $isCompany
             ? ($comment->company->logo_path ?? null)
-            : (!empty($comment->user->icon_path) ? '/img/'.$comment->user->icon_path : null);
+            : (!empty($comment->user->icon_path) ? '/img/' . $comment->user->icon_path : null);
         ?>
         <div class="card-comment">
           <strong><?= h($authorName) ?></strong>
           <p class="mb-1"><?= nl2br(h($comment->content)) ?></p>
           <small class="text-muted"><?= $comment->created->nice() ?></small>
 
-          <?php $actor = $currentActor ?? ['type'=>null,'id'=>null]; ?>
+          <?php $actor = $currentActor ?? ['type' => null, 'id' => null]; ?>
             <?php
               $canEditOrDelete =
-                ($actor['type'] === 'user'    && (int)$comment->user_id    === (int)$actor['id']) ||
+                ($actor['type'] === 'user' && (int)$comment->user_id === (int)$actor['id']) ||
                 ($actor['type'] === 'company' && (int)$comment->company_id === (int)$actor['id']);
             ?>
 
-          <?php if ($canEditOrDelete): ?>
+          <?php if ($canEditOrDelete) : ?>
             <div class="mt-2">
-              <?= $this->Html->link('編集', ['controller'=>'Comments','action'=>'edit',$comment->id], ['class'=>'btn btn-sm btn-outline-secondary me-2']) ?>
+              <?= $this->Html->link('編集', ['controller' => 'Comments', 'action' => 'edit',$comment->id], ['class'=>'btn btn-sm btn-outline-secondary me-2']) ?>
               <?= $this->Form->postLink('削除', ['controller'=>'Comments','action'=>'delete',$comment->id], [
                 'confirm'=>'本当に削除しますか？',
                 'class'=>'btn btn-sm btn-outline-danger'

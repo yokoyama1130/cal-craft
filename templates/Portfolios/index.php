@@ -7,12 +7,12 @@
 
     <h2 class="mb-4">検索結果一覧</h2>
 
-    <?php if (empty($portfolios)): ?>
+    <?php if (empty($portfolios)) : ?>
         <p class="text-muted">該当する投稿は見つかりませんでした。</p>
-    <?php else: ?>
+    <?php else : ?>
         <div class="row">
-            <?php foreach ($portfolios as $p): ?>
-                <?php if ($p->is_public): ?>
+            <?php foreach ($portfolios as $p) : ?>
+                <?php if ($p->is_public) : ?>
                     <div class="col-12 col-md-6 col-lg-4 mb-4">
                         <div class="youtube-card shadow-sm h-100">
                             <div class="youtube-thumb-wrapper">
@@ -22,9 +22,9 @@
                             </div>
                           <div class="youtube-info">
                               <div class="d-flex justify-content-between align-items-start mb-1">
-                              <?php if (!empty($p->user->icon_url)): ?>
+                              <?php if (!empty($p->user->icon_url)) : ?>
                                   <img src="<?= h($p->user->icon_url) ?>" alt="user icon" class="rounded-circle me-2" style="width: 36px; height: 36px; object-fit: cover;">
-                              <?php else: ?>
+                              <?php else : ?>
                                   <i class="fas fa-user-circle fa-2x text-muted me-2"></i>
                               <?php endif; ?>
                                   <div class="title">
