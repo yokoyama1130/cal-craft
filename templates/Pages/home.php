@@ -152,9 +152,13 @@ endif;
 
                         <?php $settings = Cache::getConfig('_cake_core_'); ?>
                         <?php if (!empty($settings)) : ?>
-                            <li class="bullet success">The <em><?= h($settings['className']) ?></em> is being used for core caching. To change the config edit config/app.php</li>
+                            <li class="bullet success">The <em><?= h($settings['className']) ?></em>
+                                is being used for core caching. To change the config edit config/app.php
+                            </li>
                         <?php else : ?>
-                            <li class="bullet problem">Your cache is NOT working. Please check the settings in config/app.php</li>
+                            <li class="bullet problem">
+                                Your cache is NOT working. Please check the settings in config/app.php
+                            </li>
                         <?php endif; ?>
                         </ul>
                     </div>
@@ -170,7 +174,9 @@ endif;
                         <?php if ($result['connected']) : ?>
                             <li class="bullet success">CakePHP is able to connect to the database.</li>
                         <?php else : ?>
-                            <li class="bullet problem">CakePHP is NOT able to connect to the database.<br /><?= h($result['error']) ?></li>
+                            <li class="bullet problem">CakePHP is NOT able to connect to the database.<br />
+                                <?= h($result['error']) ?>
+                            </li>
                         <?php endif; ?>
                         </ul>
                     </div>
@@ -185,7 +191,10 @@ endif;
                             <?php if ($result['connected']) : ?>
                                 <li class="bullet success">DebugKit can connect to the database.</li>
                             <?php else : ?>
-                                <li class="bullet problem">There are configuration problems present which need to be fixed:<br /><?= $result['error'] ?></li>
+                                <li class="bullet problem">
+                                    There are configuration problems present which need to be fixed:<br />
+                                    <?= $result['error'] ?>
+                                </li>
                             <?php endif; ?>
                         <?php else : ?>
                             <li class="bullet problem">DebugKit is <strong>not</strong> loaded.</li>
