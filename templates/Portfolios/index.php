@@ -16,25 +16,65 @@
                     <div class="col-12 col-md-6 col-lg-4 mb-4">
                         <div class="youtube-card shadow-sm h-100">
                             <div class="youtube-thumb-wrapper">
-                                <a href="<?= $this->Url->build(['controller' => 'Portfolios', 'action' => 'view', $p->id]) ?>">
+                                <a
+                                    href="<?= $this->Url->build([
+                                        'controller' => 'Portfolios',
+                                        'action' => 'view',
+                                        $p->id,
+                                    ]) ?>"
+                                >
                                     <img src="<?= h($p->thumbnail) ?>" class="youtube-thumb" alt="thumbnail">
                                 </a>
                             </div>
                           <div class="youtube-info">
                               <div class="d-flex justify-content-between align-items-start mb-1">
                               <?php if (!empty($p->user->icon_url)) : ?>
-                                  <img src="<?= h($p->user->icon_url) ?>" alt="user icon" class="rounded-circle me-2" style="width: 36px; height: 36px; object-fit: cover;">
+                                    <?php
+                                        $iconUrl = h($p->user->icon_url ?? '');
+                                        $altText = h(($p->user->name ?? 'user') . ' icon');
+                                    ?>
+                                    <img
+                                        src="<?= $iconUrl ?>"
+                                        alt="<?= $altText ?>"
+                                        class="rounded-circle me-2"
+                                        width="36"
+                                        height="36"
+                                        loading="lazy"
+                                        decoding="async"
+                                        style="object-fit: cover;"
+                                    >
                               <?php else : ?>
                                   <i class="fas fa-user-circle fa-2x text-muted me-2"></i>
                               <?php endif; ?>
                                   <div class="title">
-                                      <?= $this->Html->link(h($p->title), ['controller' => 'Portfolios', 'action' => 'view', $p->id], ['class' => 'text-dark fw-bold text-decoration-none']) ?>
+                                    <?= $this->Html->link(
+                                        h($p->title),
+                                        [
+                                            'controller' => 'Portfolios',
+                                            'action' => 'view',
+                                            $p->id,
+                                        ],
+                                        [
+                                            'class' => 'text-dark fw-bold text-decoration-none',
+                                        ]
+                                    ) ?>
                                   </div>
                                   <div class="like-section">
-                                      <?= $this->Form->create(null, ['url' => ['controller' => 'Likes', 'action' => 'add'], 'type' => 'post', 'class' => 'd-inline']) ?>
+                                    <?= $this->Form->create(
+                                        null,
+                                        [
+                                            'url' => [
+                                            'controller' => 'Likes',
+                                            'action' => 'add',
+                                            ],
+                                            'type' => 'post',
+                                            'class' => 'd-inline',
+                                        ]
+                                    ) ?>
                                       <?= $this->Form->hidden('portfolio_id', ['value' => $p->id]) ?>
                                       <button class="btn p-0 like-button" data-portfolio-id="<?= h($p->id) ?>">
-                                          <i class="fa-heart fa-lg <?= $p->liked_by_me ? 'fas liked' : 'far not-liked' ?>"></i>
+                                        <?php $iconClass = $p->liked_by_me ? 'fas liked' : 'far not-liked'; ?>
+                                        <i class="fa-heart fa-lg <?= h($iconClass) ?>"></i>
                                           <span class="like-count small"><?= h($p->like_count) ?></span>
                                       </button>
                                       <?= $this->Form->end() ?>
