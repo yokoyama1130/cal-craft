@@ -67,6 +67,11 @@ return function (RouteBuilder $routes): void {
     $routes->get('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteConfirm']);
     $routes->post('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteAccount']);
 
+    $routes->prefix('Api', function (\Cake\Routing\RouteBuilder $builder) {
+        $builder->setExtensions(['json']);
+        $builder->connect('/users/register', ['controller' => 'Users', 'action' => 'register']);
+    });
+
     // Employer prefix
     $routes->prefix('Employer', function (RouteBuilder $routes) {
         $routes->connect('/login', ['controller' => 'Auth', 'action' => 'login']);

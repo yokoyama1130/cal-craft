@@ -120,7 +120,7 @@ endif;
                                     <a
                                         target="_blank"
                                         rel="noopener"
-                                        href="https://book.cakephp.org/4/en/development/configuration.html#general-configuration"
+                            href="https://book.cakephp.org/4/en/development/configuration.html#general-configuration"
                                     >
                                         I don't / can't use URL rewriting
                                     </a>
@@ -243,7 +243,9 @@ endif;
                         <a target="_blank" rel="noopener" href="https://book.cakephp.org/4/en/">
                             CakePHP Documentation
                         </a>
-                        <a target="_blank" rel="noopener" href="https://book.cakephp.org/4/en/tutorials-and-examples/cms/installation.html">
+                        <a target="_blank"
+                            rel="noopener"
+                            href="https://book.cakephp.org/4/en/tutorials-and-examples/cms/installation.html">
                             The 20 min CMS Tutorial
                         </a>
                     </div>

@@ -41,7 +41,6 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             FactoryLocator::add('Table', (new TableLocator())->allowFallbackClass(false));
         }
 
-        // [直し]debugだから情報漏洩の可能性あり。消したいけど、消すとブラウザでエラー文が見える🥹
         if (Configure::read('debug')) {
             $this->addPlugin('DebugKit');
         }
@@ -62,28 +61,19 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
      */
     public function middleware(MiddlewareQueue $q): MiddlewareQueue
     {
-        /**
-         * Stripe Webhook を CSRF / 認証チェックから除外する共通判定
-         * - /webhook/stripe（単数）
-         * - /webhooks/stripe（複数：互換で残す）
-         * - /employer/billing/webhook（Employer配下を使う場合）
-         */
+        // 既存: Stripe Webhook 判定
         $isStripeWebhook = function ($request): bool {
             $params = (array)$request->getAttribute('params');
             $path = strtolower($request->getUri()->getPath() ?? '');
 
-            // ルーティング解決済みの controller/action でも拾う
-            $isAltByParams = (
+            $isAltByParams =
                 (strtolower((string)($params['controller'] ?? '')) === 'webhooks') &&
-                (strtolower((string)($params['action'] ?? '')) === 'stripe')
-            );
+                (strtolower((string)($params['action'] ?? '')) === 'stripe');
 
-            // パスでの直叩きも拾う（CLI の forward はここに該当）
             $isAltByPath =
-                ($path === '/webhook/stripe') || // ★ CLI の既定（今回の本命）
-                ($path === '/webhooks/stripe'); // 互換
+                ($path === '/webhook/stripe') ||
+                ($path === '/webhooks/stripe');
 
-            // Employer 側の別口を使う場合（前方一致でケア）
             $isEmployerWebhook =
                 (strtolower((string)($params['prefix'] ?? '')) === 'employer' &&
                  strtolower((string)($params['controller'] ?? '')) === 'billing' &&
@@ -93,21 +83,32 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             return $isAltByParams || $isAltByPath || $isEmployerWebhook;
         };
 
-        // CSRF はインスタンス化してから skipCheckCallback を設定する
+        // ★ 追加: API 判定（最小変更）
+        $isApi = function ($request): bool {
+            return strtolower((string)$request->getParam('prefix')) === 'api';
+        };
+
+        // CSRF（既存）+ API/Webhook を skip
         $csrf = new CsrfProtectionMiddleware([
             'httponly' => true,
+            'samesite' => 'Lax',
         ]);
-        $csrf->skipCheckCallback($isStripeWebhook);
+        $csrf->skipCheckCallback(function ($request) use ($isStripeWebhook, $isApi) {
+            return $isStripeWebhook($request) || $isApi($request);
+        });
 
         return $q
             ->add(new ErrorHandlerMiddleware(Configure::read('Error'), $this))
             ->add(new AssetMiddleware(['cacheTime' => Configure::read('Asset.cacheTime')]))
-            ->add(new RoutingMiddleware($this)) // params を解決
-            ->add(new BodyParserMiddleware()) // JSON / x-www-form-urlencoded などを解析
+            ->add(new RoutingMiddleware($this))
+            ->add(new BodyParserMiddleware())
+            // 認証ミドルウェアは Webhook と API をスキップ（APIでは未認証リダイレクトさせない）
             ->add(new AuthenticationMiddleware($this, [
-                'skipCheckCallback' => $isStripeWebhook, // ★ Webhook は認証スキップ
+                'skipCheckCallback' => function ($request) use ($isStripeWebhook, $isApi) {
+                    return $isStripeWebhook($request) || $isApi($request);
+                },
             ]))
-            ->add($csrf); // ★ Webhook は CSRF スキップ
+            ->add($csrf);
     }
 
     /**
@@ -156,10 +157,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         if ($prefix === 'Employer') {
             $service->loadIdentifier('Authentication.Password', [
                 'fields' => ['username' => 'auth_email', 'password' => 'auth_password'],
-                'resolver' => [
-                    'className' => 'Authentication.Orm',
-                    'userModel' => 'Companies',
-                ],
+                'resolver' => ['className' => 'Authentication.Orm', 'userModel' => 'Companies'],
             ]);
 
             $service->loadAuthenticator('Authentication.Session');
@@ -172,13 +170,30 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
                 'unauthenticatedRedirect' => '/employer/login',
                 'queryParam' => 'redirect',
             ]);
-        } else {
+        } elseif ($prefix === 'Api') {
+            // ★ 追加: API 用（最小限）
+            // Identifier は Users を対象（将来 /api/users/login で使い回せます）
             $service->loadIdentifier('Authentication.Password', [
                 'fields' => ['username' => 'email', 'password' => 'password'],
-                'resolver' => [
-                    'className' => 'Authentication.Orm',
-                    'userModel' => 'Users',
-                ],
+                'resolver' => ['className' => 'Authentication.Orm', 'userModel' => 'Users'],
+            ]);
+
+            // ★ 重要: Authenticator を 1 つはロード（これが無いと "No authenticators loaded"）
+            // APIでは基本的にセッションは使いませんが、コンポーネントが存在を要求するため軽量に Session を積んでおきます
+            $service->loadAuthenticator('Authentication.Session');
+
+            // APIは絶対にHTMLにリダイレクトさせない
+            $service->setConfig([
+                'unauthenticatedRedirect' => null,
+                'queryParam' => null,
+            ]);
+
+            // （将来JWT等を使うならここで Token/Jwt authenticator を追加）
+        } else {
+            // 一般ユーザー（Web）
+            $service->loadIdentifier('Authentication.Password', [
+                'fields' => ['username' => 'email', 'password' => 'password'],
+                'resolver' => ['className' => 'Authentication.Orm', 'userModel' => 'Users'],
             ]);
 
             $service->loadAuthenticator('Authentication.Session');
