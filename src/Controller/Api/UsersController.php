@@ -404,4 +404,75 @@ class UsersController extends AppController
 
         return JWT::encode($payload, $secret, 'HS256');
     }
+
+    // src/Controller/Api/UsersController.php のクラス内に追記
+    public function update()
+    {
+        $this->request->allowMethod(['post','patch','put']);
+
+        // 認証
+        $identity = $this->request->getAttribute('identity');
+        if (!$identity) {
+            $this->response = $this->response->withStatus(401);
+            $this->set(['success'=>false,'message'=>'Unauthorized','_serialize'=>['success','message']]);
+            return;
+        }
+        $userId = (int)$identity->get('id');
+
+        $user = $this->Users->get($userId);
+
+        // 通常フィールド
+        $name = (string)($this->request->getData('name') ?? $user->name ?? '');
+        $bio  = (string)($this->request->getData('bio')  ?? $user->bio  ?? '');
+
+        $data = ['name'=>$name, 'bio'=>$bio];
+
+        // 画像アップロード（input name="icon"）
+        $uploadedFiles = $this->request->getUploadedFiles();
+        if (isset($uploadedFiles['icon'])) {
+            $file = $uploadedFiles['icon'];
+            if ($file && $file->getError() === UPLOAD_ERR_OK && $file->getSize() > 0) {
+                $ext = pathinfo((string)$file->getClientFilename(), PATHINFO_EXTENSION) ?: 'jpg';
+                $filename   = time() . '_' . \Cake\Utility\Text::uuid() . '.' . $ext;
+
+                $targetDir  = WWW_ROOT . 'img' . DS . 'icons';
+                if (!is_dir($targetDir)) {
+                    mkdir($targetDir, 0775, true);
+                }
+                $file->moveTo($targetDir . DS . $filename);
+
+                // DB保存用の相対パス
+                $data['icon_path'] = 'icons/' . $filename;
+            }
+        }
+
+        $user = $this->Users->patchEntity($user, $data);
+        if ($this->Users->save($user)) {
+            // レスポンス
+            $iconUrl = !empty($user->icon_path)
+                ? \Cake\Routing\Router::url('/img/' . ltrim((string)$user->icon_path, '/'), true)
+                : null;
+
+            $sns = [];
+            try { $sns = json_decode((string)$user->sns_links, true) ?? []; } catch (\Throwable $e) {}
+
+            $payload = [
+                'success' => true,
+                'message' => 'プロフィールを更新しました',
+                'user' => [
+                    'id'        => (int)$user->id,
+                    'name'      => (string)$user->name,
+                    'bio'       => (string)($user->bio ?? ''),
+                    'icon_url'  => $iconUrl,
+                    'sns_links' => $sns,
+                ],
+            ];
+            $this->set($payload + ['_serialize' => array_keys($payload)]);
+            return;
+        }
+
+        $this->response = $this->response->withStatus(422);
+        $this->set(['success'=>false,'message'=>'更新に失敗しました','errors'=>$user->getErrors(),'_serialize'=>['success','message','errors']]);
+    }
+
 }
