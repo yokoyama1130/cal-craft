@@ -1,6 +1,5 @@
 <?php
 /**
- *
  * @copyright     Copyright (c) Cake Software Foundation
  * @link          https://cakephp.org CakePHP(tm) Project
  * @license       https://opensource.org/licenses/mit-license.php MIT License
@@ -67,9 +66,22 @@ return function (RouteBuilder $routes): void {
     $routes->get('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteConfirm']);
     $routes->post('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteAccount']);
 
-    $routes->prefix('Api', function (\Cake\Routing\RouteBuilder $builder) {
-        $builder->setExtensions(['json']);
-        $builder->connect('/users/register', ['controller' => 'Users', 'action' => 'register']);
+    $routes->prefix('Api', function ($routes) {
+        $routes->setExtensions(['json']);
+
+        $routes->connect('/users/login', ['controller' => 'Users', 'action' => 'login']);
+        $routes->connect('/users/register', ['controller' => 'Users', 'action' => 'register']);
+
+        $routes->connect('/users/profile', ['controller' => 'Users', 'action' => 'profile']);
+        $routes->connect('/users/view/:id', ['controller' => 'Users', 'action' => 'view'])
+            ->setPass(['id'])->setPatterns(['id' => '\d+']);
+
+        $routes->connect('/users/:id/followers', ['controller' => 'Users', 'action' => 'followers'])
+            ->setPass(['id'])->setPatterns(['id' => '\d+']);
+        $routes->connect('/users/:id/followings', ['controller' => 'Users', 'action' => 'followings'])
+            ->setPass(['id'])->setPatterns(['id' => '\d+']);
+
+        $routes->fallbacks();
     });
 
     // Employer prefix
