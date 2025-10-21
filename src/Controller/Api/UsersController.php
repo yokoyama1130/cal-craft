@@ -168,20 +168,22 @@ class UsersController extends AppController
 
             return;
         }
-        $user = $this->Users->find()->where(['email_token'=>$token])->first();
+        $user = $this->Users->find()->where(['email_token' => $token])->first();
         if (!$user) {
             $this->response = $this->response->withStatus(404);
-            $this->set(['success'=>false,'message'=>'無効なトークンです','_serialize'=>['success','message']]);
+            $this->set(['success' => false, 'message' => '無効なトークンです', '_serialize' => ['success','message']]);
+
             return;
         }
         $user->email_verified = true;
         $user->email_token = null;
         if ($this->Users->save($user)) {
-            $this->set(['success'=>true,'message'=>'メール認証が完了しました','_serialize'=>['success','message']]);
+            $this->set(['success' => true, 'message' => 'メール認証が完了しました', '_serialize' => ['success','message']]);
+
             return;
         }
         $this->response = $this->response->withStatus(500);
-        $this->set(['success'=>false,'message'=>'認証に失敗しました','_serialize'=>['success','message']]);
+        $this->set(['success' => false, 'message' => '認証に失敗しました', '_serialize' => ['success','message']]);
     }
 
     // ---------------- Profile ----------------
@@ -193,7 +195,8 @@ class UsersController extends AppController
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
             $this->response = $this->response->withStatus(401);
-            $this->set(['success'=>false,'message'=>'Unauthorized','_serialize'=>['success','message']]);
+            $this->set(['success' => false, 'message' => 'Unauthorized', '_serialize' => ['success','message']]);
+
             return;
         }
 
@@ -218,6 +221,7 @@ class UsersController extends AppController
                 return $col;
             }
         }
+
         return null;
     }
 
@@ -227,7 +231,7 @@ class UsersController extends AppController
     private function setProfilePayload(int $userId, int $authId): void
     {
         // ---- Users 側（created / created_at 吸収）----
-        $usersSchema     = $this->Users->getSchema();
+        $usersSchema = $this->Users->getSchema();
         $usersCreatedCol = $this->pickColumn($usersSchema, ['created','created_at']);
 
         $userSelect = ['id','name','email','bio','icon_path','sns_links'];
@@ -240,28 +244,29 @@ class UsersController extends AppController
 
         if (!$user) {
             $this->response = $this->response->withStatus(404);
-            $this->set(['success'=>false,'message'=>'User not found','_serialize'=>['success','message']]);
+            $this->set(['success' => false, 'message' => 'User not found', '_serialize' => ['success','message']]);
+
             return;
         }
 
         // ---- フォロー統計 ----
-        $followerCount  = $this->Follows->find()->where(['followed_id' => $userId])->count();
+        $followerCount = $this->Follows->find()->where(['followed_id' => $userId])->count();
         $followingCount = $this->Follows->find()->where(['follower_id' => $userId])->count();
         $isFollowing = ($authId && $authId !== $userId)
-            ? $this->Follows->exists(['follower_id'=>$authId,'followed_id'=>$userId])
+            ? $this->Follows->exists(['follower_id' => $authId, 'followed_id' => $userId])
             : false;
 
         // ---- Portfolios 側（created / thumbnail / likes を動的解決）----
-        $portfolioSchema      = $this->Portfolios->getSchema();
-        $portfolioCreatedCol  = $this->pickColumn($portfolioSchema, ['created','created_at']);
-        $portfolioThumbCol    = $this->pickColumn($portfolioSchema, [
-            'thumbnail_path','image_path','image','thumbnail','cover_path','cover_url','photo_path'
+        $portfolioSchema = $this->Portfolios->getSchema();
+        $portfolioCreatedCol = $this->pickColumn($portfolioSchema, ['created','created_at']);
+        $portfolioThumbCol = $this->pickColumn($portfolioSchema, [
+            'thumbnail_path', 'image_path', 'image', 'thumbnail', 'cover_path', 'cover_url', 'photo_path',
         ]);
-        $portfolioLikesCol    = $this->pickColumn($portfolioSchema, ['likes','like_count','likes_count']);
+        $portfolioLikesCol = $this->pickColumn($portfolioSchema, ['likes','like_count','likes_count']);
 
         $portfolioSelect = ['id','user_id','title'];
-        if ($portfolioThumbCol)  $portfolioSelect[] = $portfolioThumbCol;
-        if ($portfolioLikesCol)  $portfolioSelect[] = $portfolioLikesCol;
+        if ($portfolioThumbCol) $portfolioSelect[] = $portfolioThumbCol;
+        if ($portfolioLikesCol) $portfolioSelect[] = $portfolioLikesCol;
         if ($portfolioCreatedCol)$portfolioSelect[] = $portfolioCreatedCol;
 
         $orderCol = $portfolioCreatedCol ?? 'id';
@@ -304,11 +309,11 @@ class UsersController extends AppController
                 }
 
                 return [
-                    'id'        => (int)$p->id,
-                    'title'     => (string)$p->title,
+                    'id' => (int)$p->id,
+                    'title' => (string)$p->title,
                     'image_url' => $imageUrl,
-                    'likes'     => $likes,
-                    'created'   => $createdStr,
+                    'likes' => $likes,
+                    'created' => $createdStr,
                 ];
             })->toList();
 
@@ -323,7 +328,7 @@ class UsersController extends AppController
         $userCreated = null;
         if ($usersCreatedCol && isset($user->{$usersCreatedCol})) {
             $val = $user->{$usersCreatedCol};
-            $userCreated = (is_object($val) && method_exists($val,'i18nFormat'))
+            $userCreated = (is_object($val) && method_exists($val, 'i18nFormat'))
                 ? $val->i18nFormat('yyyy-MM-dd HH:mm:ss')
                 : (is_string($val) ? $val : null);
         }
@@ -331,16 +336,16 @@ class UsersController extends AppController
         $payload = [
             'success' => true,
             'user' => [
-                'id'        => (int)$user->id,
-                'name'      => (string)$user->name,
-                'bio'       => (string)($user->bio ?? ''),
-                'icon_url'  => $iconUrl,
+                'id' => (int)$user->id,
+                'name' => (string)$user->name,
+                'bio' => (string)($user->bio ?? ''),
+                'icon_url' => $iconUrl,
                 'sns_links' => $sns,
-                'created'   => $userCreated,
+                'created' => $userCreated,
             ],
             'stats' => [
-                'followers'    => $followerCount,
-                'followings'   => $followingCount,
+                'followers' => $followerCount,
+                'followings' => $followingCount,
                 'is_following' => $isFollowing,
             ],
             'portfolios' => $portfolios,
@@ -348,7 +353,6 @@ class UsersController extends AppController
 
         $this->set($payload + ['_serialize' => array_keys($payload)]);
     }
-
 
     // ---------------- Follow lists ----------------
 
@@ -362,14 +366,15 @@ class UsersController extends AppController
             ->all()
             ->map(function($f){
                 $u = $f->user;
+
                 return [
-                    'id'       => (int)$u->id,
-                    'name'     => (string)$u->name,
+                    'id' => (int)$u->id,
+                    'name' => (string)$u->name,
                     'icon_url' => $u->icon_path ? Router::url('/img/' . ltrim((string)$u->icon_path, '/'), true) : null,
                 ];
             })->toList();
 
-        $this->set(['success'=>true,'users'=>$rows,'_serialize'=>['success','users']]);
+        $this->set(['success' => true, 'users' => $rows, '_serialize' => ['success','users']]);
     }
 
     public function followings($id)
@@ -382,14 +387,15 @@ class UsersController extends AppController
             ->all()
             ->map(function($f){
                 $u = $f->followed_user;
+
                 return [
-                    'id'       => (int)$u->id,
-                    'name'     => (string)$u->name,
+                    'id' => (int)$u->id,
+                    'name' => (string)$u->name,
                     'icon_url' => $u->icon_path ? Router::url('/img/' . ltrim((string)$u->icon_path, '/'), true) : null,
                 ];
             })->toList();
 
-        $this->set(['success'=>true,'users'=>$rows,'_serialize'=>['success','users']]);
+        $this->set(['success' => true, 'users' => $rows, '_serialize' => ['success','users']]);
     }
 
     // ---------------- Helpers ----------------
@@ -397,10 +403,10 @@ class UsersController extends AppController
     private function generateJwt(int $userId): string
     {
         $secret = env('JWT_SECRET', 'dev-secret-change-me');
-        $now    = time();
-        $exp    = $now + 60*60*24*7; // 7日
+        $now = time();
+        $exp = $now + 60 * 60 * 24 * 7; // 7日
 
-        $payload = ['iss'=>'orcafolio','sub'=>$userId,'iat'=>$now,'exp'=>$exp];
+        $payload = ['iss' => 'orcafolio', 'sub' => $userId, 'iat' => $now, 'exp' => $exp];
 
         return JWT::encode($payload, $secret, 'HS256');
     }
@@ -414,7 +420,8 @@ class UsersController extends AppController
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
             $this->response = $this->response->withStatus(401);
-            $this->set(['success'=>false,'message'=>'Unauthorized','_serialize'=>['success','message']]);
+            $this->set(['success' => false, 'message' => 'Unauthorized', '_serialize' => ['success','message']]);
+
             return;
         }
         $userId = (int)$identity->get('id');
@@ -423,9 +430,9 @@ class UsersController extends AppController
 
         // 通常フィールド
         $name = (string)($this->request->getData('name') ?? $user->name ?? '');
-        $bio  = (string)($this->request->getData('bio')  ?? $user->bio  ?? '');
+        $bio = (string)($this->request->getData('bio') ?? $user->bio ?? '');
 
-        $data = ['name'=>$name, 'bio'=>$bio];
+        $data = ['name' => $name, 'bio' => $bio];
 
         // 画像アップロード（input name="icon"）
         $uploadedFiles = $this->request->getUploadedFiles();
@@ -433,9 +440,9 @@ class UsersController extends AppController
             $file = $uploadedFiles['icon'];
             if ($file && $file->getError() === UPLOAD_ERR_OK && $file->getSize() > 0) {
                 $ext = pathinfo((string)$file->getClientFilename(), PATHINFO_EXTENSION) ?: 'jpg';
-                $filename   = time() . '_' . \Cake\Utility\Text::uuid() . '.' . $ext;
+                $filename = time() . '_' . \Cake\Utility\Text::uuid() . '.' . $ext;
 
-                $targetDir  = WWW_ROOT . 'img' . DS . 'icons';
+                $targetDir = WWW_ROOT . 'img' . DS . 'icons';
                 if (!is_dir($targetDir)) {
                     mkdir($targetDir, 0775, true);
                 }
@@ -460,19 +467,20 @@ class UsersController extends AppController
                 'success' => true,
                 'message' => 'プロフィールを更新しました',
                 'user' => [
-                    'id'        => (int)$user->id,
-                    'name'      => (string)$user->name,
-                    'bio'       => (string)($user->bio ?? ''),
-                    'icon_url'  => $iconUrl,
+                    'id' => (int)$user->id,
+                    'name' => (string)$user->name,
+                    'bio' => (string)($user->bio ?? ''),
+                    'icon_url' => $iconUrl,
                     'sns_links' => $sns,
                 ],
             ];
             $this->set($payload + ['_serialize' => array_keys($payload)]);
+
             return;
         }
 
         $this->response = $this->response->withStatus(422);
-        $this->set(['success'=>false,'message'=>'更新に失敗しました','errors'=>$user->getErrors(),'_serialize'=>['success','message','errors']]);
+        $this->set(['success' => false, 'message' => '更新に失敗しました', 'errors' => $user->getErrors(), '_serialize' => ['success','message','errors']]);
     }
 
 }

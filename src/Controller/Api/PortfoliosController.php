@@ -39,6 +39,7 @@ class PortfoliosController extends AppController
             // ※ _serialize は非推奨なので setOption('serialize') を使用
             $this->set(['success' => false, 'message' => 'Unauthorized']);
             $this->viewBuilder()->setOption('serialize', ['success','message']);
+
             return;
         }
 
@@ -46,7 +47,7 @@ class PortfoliosController extends AppController
         Log::debug('[add] CT=' . $this->request->getHeaderLine('Content-Type'));
 
         $p = $this->Portfolios->newEmptyEntity();
-        $p->user_id    = (int)$identity->get('id');
+        $p->user_id = (int)$identity->get('id');
         $p->company_id = null;
 
         $data = (array)$this->request->getData();
@@ -61,15 +62,15 @@ class PortfoliosController extends AppController
         }
 
         if ($thumbnailFile instanceof UploadedFileInterface && $thumbnailFile->getError() === UPLOAD_ERR_OK) {
-            $ext     = strtolower(pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION));
+            $ext = strtolower(pathinfo($thumbnailFile->getClientFilename(), PATHINFO_EXTENSION));
             $safeExt = in_array($ext, ['jpg','jpeg','png','webp'], true) ? $ext : 'jpg';
             $filename = Text::uuid() . '.' . $safeExt;
 
-            $dir = WWW_ROOT . 'img' . DS . 'uploads' . DS;
+            $dir = WWW_ROOT . 'uploads' . DS;
             if (!is_dir($dir)) mkdir($dir, 0755, true);
             $thumbnailFile->moveTo($dir . $filename);
 
-            $data['thumbnail'] = '/img/uploads/' . $filename;
+            $data['thumbnail'] = '/uploads/' . $filename;
         }
 
         if (empty($data['thumbnail'])) {
@@ -79,6 +80,7 @@ class PortfoliosController extends AppController
                 'message' => 'サムネイル画像は必須です（multipart/form-data で thumbnail_file を送ってください）',
             ]);
             $this->viewBuilder()->setOption('serialize', ['success','message']);
+
             return;
         }
 
@@ -111,9 +113,10 @@ class PortfoliosController extends AppController
             $this->set([
                 'success' => false,
                 'message' => '保存に失敗しました',
-                'errors'  => $p->getErrors(),
+                'errors' => $p->getErrors(),
             ]);
             $this->viewBuilder()->setOption('serialize', ['success','message','errors']);
+
             return;
         }
 
@@ -130,9 +133,9 @@ class PortfoliosController extends AppController
 
     private function _handlePdfUploads(\App\Model\Entity\Portfolio $p): void
     {
-        $req     = $this->request;
+        $req = $this->request;
         $drawing = $req->getData('drawing_pdf');
-        $supps   = (array)$req->getData('supplement_pdfs');
+        $supps = (array)$req->getData('supplement_pdfs');
 
         if (!$drawing && empty(array_filter($supps))) return;
 
@@ -153,7 +156,7 @@ class PortfoliosController extends AppController
         }
 
         if ($suppPaths) {
-            $current    = $p->supplement_pdf_paths;
+            $current = $p->supplement_pdf_paths;
             $currentArr = is_string($current) ? (array)json_decode($current, true) : (array)$current;
             $p->supplement_pdf_paths = json_encode(array_values(array_merge($currentArr, $suppPaths)), JSON_UNESCAPED_SLASHES);
         }
@@ -166,12 +169,12 @@ class PortfoliosController extends AppController
         $ext = strtolower(pathinfo($file->getClientFilename(), PATHINFO_EXTENSION));
         if ($ext !== 'pdf') throw new \RuntimeException('PDFのみアップロードできます。');
 
-        $stream   = $file->getStream();
+        $stream = $file->getStream();
         $contents = $stream->getContents();
         $stream->rewind();
 
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        $mime  = $finfo->buffer($contents);
+        $mime = $finfo->buffer($contents);
         if (!in_array($mime, ['application/pdf','application/x-pdf'], true)) {
             throw new \RuntimeException('PDF以外のファイルです。');
         }
@@ -181,6 +184,7 @@ class PortfoliosController extends AppController
 
         $safeName = sprintf('p-%d-%s-%s.pdf', $pid, $kind, bin2hex(random_bytes(8)));
         $file->moveTo($baseDir . $safeName);
+
         return $safeName;
     }
 }
