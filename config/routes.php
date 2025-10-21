@@ -66,22 +66,31 @@ return function (RouteBuilder $routes): void {
     $routes->get('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteConfirm']);
     $routes->post('/settings/delete', ['controller' => 'Settings', 'action' => 'deleteAccount']);
 
-    $routes->prefix('Api', function ($routes) {
+    $routes->prefix('Api', function (RouteBuilder $routes) {
+        // /api/... で .json を受け付ける
         $routes->setExtensions(['json']);
 
-        $routes->connect('/users/login', ['controller' => 'Users', 'action' => 'login']);
-        $routes->connect('/users/register', ['controller' => 'Users', 'action' => 'register']);
+        // Users
+        $routes->post('/users/login', ['controller' => 'Users', 'action' => 'login']);
+        $routes->post('/users/register', ['controller' => 'Users', 'action' => 'register']);
 
-        $routes->connect('/users/profile', ['controller' => 'Users', 'action' => 'profile']);
-        $routes->connect('/users/view/:id', ['controller' => 'Users', 'action' => 'view'])
+        $routes->get('/users/profile', ['controller' => 'Users', 'action' => 'profile']);
+        $routes->get('/users/view/:id', ['controller' => 'Users', 'action' => 'view'])
             ->setPass(['id'])->setPatterns(['id' => '\d+']);
 
-        $routes->connect('/users/:id/followers', ['controller' => 'Users', 'action' => 'followers'])
+        $routes->get('/users/:id/followers', ['controller' => 'Users', 'action' => 'followers'])
             ->setPass(['id'])->setPatterns(['id' => '\d+']);
-        $routes->connect('/users/:id/followings', ['controller' => 'Users', 'action' => 'followings'])
+        $routes->get('/users/:id/followings', ['controller' => 'Users', 'action' => 'followings'])
             ->setPass(['id'])->setPatterns(['id' => '\d+']);
 
-        $routes->fallbacks();
+        // Portfolios
+        // POST /api/portfolios/add(.json)
+        $routes->post('/portfolios/add', ['controller' => 'Portfolios', 'action' => 'add']);
+
+        // 必要なら RESTful も可（/api/portfolios/:id など）
+        // $routes->resources('Portfolios'); // ← add 独自なら無くてもOK
+
+        $routes->fallbacks(DashedRoute::class);
     });
 
     // Employer prefix

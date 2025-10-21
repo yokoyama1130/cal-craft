@@ -101,11 +101,11 @@ class PortfoliosTable extends Table
             ->requirePresence('description', 'create')
             ->notEmptyString('description');
 
-        // サムネ必須にしないなら allowEmpty に変更
         $validator
             ->scalar('thumbnail')
             ->maxLength('thumbnail', 255)
-            ->allowEmptyString('thumbnail');
+            ->requirePresence('thumbnail', 'create')
+            ->notEmptyString('thumbnail', 'サムネイルは必須です');
 
         return $validator;
     }

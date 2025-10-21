@@ -62,7 +62,6 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
      */
     public function middleware(MiddlewareQueue $q): MiddlewareQueue
     {
-        // 既存: Stripe Webhook 判定
         $isStripeWebhook = function ($request): bool {
             $params = (array)$request->getAttribute('params');
             $path = strtolower($request->getUri()->getPath() ?? '');
@@ -77,19 +76,18 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
             $isEmployerWebhook =
                 (strtolower((string)($params['prefix'] ?? '')) === 'employer' &&
-                 strtolower((string)($params['controller'] ?? '')) === 'billing' &&
-                 strtolower((string)($params['action'] ?? '')) === 'webhook')
+                strtolower((string)($params['controller'] ?? '')) === 'billing' &&
+                strtolower((string)($params['action'] ?? '')) === 'webhook')
                 || str_starts_with($path, '/employer/billing/webhook');
 
             return $isAltByParams || $isAltByPath || $isEmployerWebhook;
         };
 
-        // ★ 追加: API 判定（最小変更）
         $isApi = function ($request): bool {
             return strtolower((string)$request->getParam('prefix')) === 'api';
         };
 
-        // CSRF（既存）+ API/Webhook を skip
+        // CSRF は API / Webhook を除外（JSON, multipart のため）
         $csrf = new CsrfProtectionMiddleware([
             'httponly' => true,
             'samesite' => 'Lax',
@@ -103,12 +101,21 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             ->add(new AssetMiddleware(['cacheTime' => Configure::read('Asset.cacheTime')]))
             ->add(new RoutingMiddleware($this))
             ->add(new BodyParserMiddleware())
-            // 認証ミドルウェアは Webhook と API をスキップ（APIでは未認証リダイレクトさせない）
+
+            // ❌ ここで API を skip してはいけない
+            // ->add(new AuthenticationMiddleware($this, [
+            //     'skipCheckCallback' => function ($request) use ($isStripeWebhook, $isApi) {
+            //         return $isStripeWebhook($request) || $isApi($request);
+            //     },
+            // ]))
+
+            // ✅ Webhook だけを除外（API は認証通す）
             ->add(new AuthenticationMiddleware($this, [
-                'skipCheckCallback' => function ($request) use ($isStripeWebhook, $isApi) {
-                    return $isStripeWebhook($request) || $isApi($request);
+                'skipCheckCallback' => function ($request) use ($isStripeWebhook) {
+                    return $isStripeWebhook($request);
                 },
             ]))
+
             ->add($csrf);
     }
 
