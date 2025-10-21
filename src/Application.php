@@ -19,7 +19,6 @@ use Cake\ORM\Locator\TableLocator;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
-use Authentication\Identifier\IdentifierInterface;
 
 class Application extends BaseApplication implements AuthenticationServiceProviderInterface
 {
@@ -159,25 +158,25 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
         $service = new AuthenticationService();
-        $params  = (array)$request->getAttribute('params');
-        $prefix  = $params['prefix'] ?? null;
+        $params = (array)$request->getAttribute('params');
+        $prefix = $params['prefix'] ?? null;
 
         if ($prefix === 'Employer') {
             // 既存：企業向け（セッション＋フォーム）
             $service->loadIdentifier('Authentication.Password', [
-                'fields'   => ['username' => 'auth_email', 'password' => 'auth_password'],
+                'fields' => ['username' => 'auth_email', 'password' => 'auth_password'],
                 'resolver' => ['className' => 'Authentication.Orm', 'userModel' => 'Companies'],
             ]);
 
             $service->loadAuthenticator('Authentication.Session');
             $service->loadAuthenticator('Authentication.Form', [
                 'loginUrl' => '/employer/login',
-                'fields'   => ['username' => 'auth_email', 'password' => 'auth_password'],
+                'fields' => ['username' => 'auth_email', 'password' => 'auth_password'],
             ]);
 
             $service->setConfig([
                 'unauthenticatedRedirect' => '/employer/login',
-                'queryParam'              => 'redirect',
+                'queryParam' => 'redirect',
             ]);
 
             return $service;
@@ -193,16 +192,16 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
                 'resolver' => [
                     'className' => 'Authentication.Orm',
                     'userModel' => 'Users',
-                    'finder'    => 'all',
+                    'finder' => 'all',
                 ],
             ]);
 
             // Authorization: Bearer <token>
             $service->loadAuthenticator('Authentication.Jwt', [
-                'secretKey'     => env('JWT_SECRET', 'dev-secret-change-me'),
-                'header'        => 'Authorization',
-                'prefix'        => 'Bearer',
-                'algorithms'    => ['HS256'],
+                'secretKey' => env('JWT_SECRET', 'dev-secret-change-me'),
+                'header' => 'Authorization',
+                'prefix' => 'Bearer',
+                'algorithms' => ['HS256'],
                 'returnPayload' => false, // true にすると payload を identity として返す
                 // 'queryParam'  => 'token', // URL クエリで受けたい場合は有効化
             ]);
@@ -210,7 +209,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             // 401時にHTMLリダイレクトさせない
             $service->setConfig([
                 'unauthenticatedRedirect' => null,
-                'queryParam'              => null,
+                'queryParam' => null,
             ]);
 
             return $service;
@@ -218,19 +217,19 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
         // 既存：一般Webユーザー（セッション＋フォーム）
         $service->loadIdentifier('Authentication.Password', [
-            'fields'   => ['username' => 'email', 'password' => 'password'],
+            'fields' => ['username' => 'email', 'password' => 'password'],
             'resolver' => ['className' => 'Authentication.Orm', 'userModel' => 'Users'],
         ]);
 
         $service->loadAuthenticator('Authentication.Session');
         $service->loadAuthenticator('Authentication.Form', [
             'loginUrl' => '/users/login',
-            'fields'   => ['username' => 'email', 'password' => 'password'],
+            'fields' => ['username' => 'email', 'password' => 'password'],
         ]);
 
         $service->setConfig([
             'unauthenticatedRedirect' => '/users/login',
-            'queryParam'              => 'redirect',
+            'queryParam' => 'redirect',
         ]);
 
         return $service;
