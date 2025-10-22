@@ -86,6 +86,7 @@ return function (RouteBuilder $routes): void {
         // Portfolios
         // POST /api/portfolios/add(.json)
         $routes->post('/portfolios/add', ['controller' => 'Portfolios', 'action' => 'add']);
+        $routes->post('/portfolios/view', ['controller' => 'Portfolios', 'action' => 'view']);
 
         // 必要なら RESTful も可（/api/portfolios/:id など）
         // $routes->resources('Portfolios'); // ← add 独自なら無くてもOK

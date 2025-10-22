@@ -11,6 +11,18 @@ use Psr\Http\Message\UploadedFileInterface;
 
 class PortfoliosController extends AppController
 {
+    /**
+     * コントローラ初期化処理。
+     *
+     * - `Portfolios` テーブルを取得して `$this->Portfolios` にセットします。
+     * - レンダラーとして JSON 用のビュービルダーを指定します（`Json` クラス）。
+     *
+     * CakePHP における各アクション実行前に 1 度だけ呼び出され、
+     * コントローラ全体の共通セットアップを行います。
+     *
+     * @inheritDoc
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
@@ -18,16 +30,31 @@ class PortfoliosController extends AppController
         $this->viewBuilder()->setClassName('Json');
     }
 
+    /**
+     * 各アクション実行前のフィルタ処理。
+     *
+     * - 親クラスの `beforeFilter()` を呼び出して共通前処理を実行します。
+     * - Authentication コンポーネントが有効な場合、
+     *   `view` アクションのみ未ログイン（未認証）でもアクセス可能にします。
+     *
+     * 主にアクセス制御やリクエスト前の共通初期化を行うためのフックです。
+     *
+     * @param \Cake\Event\EventInterface $event ディスパッチャーが渡すイベントオブジェクト
+     * @return void
+     */
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
+        // 詳細APIは未ログインでも閲覧可
         if ($this->components()->has('Authentication')) {
-            $this->Authentication->allowUnauthenticated([]);
+            $this->Authentication->allowUnauthenticated(['view']);
         }
     }
 
     /**
      * POST /api/portfolios/add.json
+     *
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却。状況により早期 return。
      */
     public function add()
     {
@@ -36,14 +63,12 @@ class PortfoliosController extends AppController
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
             $this->response = $this->response->withStatus(401);
-            // ※ _serialize は非推奨なので setOption('serialize') を使用
             $this->set(['success' => false, 'message' => 'Unauthorized']);
             $this->viewBuilder()->setOption('serialize', ['success','message']);
 
             return;
         }
 
-        // デバッグ（必要なら残す）
         Log::debug('[add] CT=' . $this->request->getHeaderLine('Content-Type'));
 
         $p = $this->Portfolios->newEmptyEntity();
@@ -52,7 +77,7 @@ class PortfoliosController extends AppController
 
         $data = (array)$this->request->getData();
 
-        // ===== サムネ処理 =====
+        // ---- サムネ（/webroot/uploads 配下に保存し、/uploads/xxx.jpg を返す）----
         $thumbnailFile = $this->request->getData('thumbnail_file');
         if (!$thumbnailFile instanceof UploadedFileInterface) {
             $uploaded = $this->request->getUploadedFiles();
@@ -67,10 +92,12 @@ class PortfoliosController extends AppController
             $filename = Text::uuid() . '.' . $safeExt;
 
             $dir = WWW_ROOT . 'uploads' . DS;
-            if (!is_dir($dir)) mkdir($dir, 0755, true);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
             $thumbnailFile->moveTo($dir . $filename);
 
-            $data['thumbnail'] = '/uploads/' . $filename;
+            $data['thumbnail'] = '/uploads/' . $filename; // ← ブラウザから参照する公開パス
         }
 
         if (empty($data['thumbnail'])) {
@@ -84,29 +111,24 @@ class PortfoliosController extends AppController
             return;
         }
 
-        // ===== ここがポイント：TEXT NOT NULL 欄は未指定/NULLなら空文字に埋める =====
+        // ---- TEXT NOT NULL を空文字で埋める（DB制約対策）----
         $textNotNull = [
-            // 共通
             'link',
-            // 機械系
             'purpose','basic_spec','design_url','design_description','parts_list',
             'processing_method','processing_notes','analysis_method','analysis_result',
             'development_period','mechanical_notes','reference_links','tool_used','material_used',
-            // プログラミング／化学
             'github_url','experiment_summary',
         ];
         foreach ($textNotNull as $f) {
             if (!array_key_exists($f, $data) || $data[$f] === null) {
-                $data[$f] = ''; // TEXT はデフォルト不可なので必ず '' を入れる
+                $data[$f] = '';
             }
         }
-        // description はバリデーションで必須なので、最低1文字は入っている想定
-        // 念のためNULLなら空文字に
         if (!isset($data['description'])) {
             $data['description'] = '';
         }
 
-        // ===== 保存 =====
+        // ---- 保存 ----
         $p = $this->Portfolios->patchEntity($p, $data);
         if (!$this->Portfolios->save($p)) {
             $this->response = $this->response->withStatus(422);
@@ -120,7 +142,7 @@ class PortfoliosController extends AppController
             return;
         }
 
-        // ===== PDF（任意） =====
+        // ---- PDF（任意）----
         try {
             $this->_handlePdfUploads($p);
         } catch (\Throwable $e) {
@@ -131,43 +153,193 @@ class PortfoliosController extends AppController
         $this->viewBuilder()->setOption('serialize', ['success','id']);
     }
 
+    /**
+     * GET /api/portfolios/view/{id}.json
+     * ポートフォリオ詳細を返す（公開チェックあり）。`Users`, `Categories` を含め、いいね数等を整形。
+     * 非公開は本人以外 403、例外時 500。
+     *
+     * @param int|string|null $id 対象ID
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
+    public function view($id = null)
+    {
+        $this->request->allowMethod(['get']);
+
+        try {
+            // ★ 列を絞らない contain（icon_url が無くても落ちない）
+            $p = $this->Portfolios->get($id, [
+                'contain' => ['Users', 'Categories'],
+            ]);
+
+            // 公開チェック（必要なら）
+            if ($p->is_public === false) {
+                $identity = $this->request->getAttribute('identity');
+                $authId = $identity ? (int)$identity->get('id') : null;
+                if ($authId === null || (int)$p->user_id !== $authId) {
+                    $this->response = $this->response->withStatus(403);
+                    $this->set(['success' => false, 'message' => 'Forbidden']);
+                    $this->viewBuilder()->setOption('serialize', ['success','message']);
+
+                    return;
+                }
+            }
+
+            // いいね数（テーブルが無くても動くように）
+            $likeCount = 0;
+            try {
+                $this->Likes = $this->fetchTable('Likes');
+                $likeCount = $this->Likes->find()->where(['portfolio_id' => $p->id])->count();
+            } catch (\Throwable $e) {
+                Log::warning('Likes lookup skipped: ' . $e->getMessage());
+            }
+
+            // サムネパスを /uploads/ に正規化（昔の /img/uploads を救済）
+            $thumb = (string)($p->thumbnail ?? '');
+            if (strpos($thumb, '/img/uploads/') === 0) {
+                $thumb = preg_replace('#^/img/uploads/#', '/uploads/', $thumb);
+            }
+
+            // 補足PDF: 配列/JSON両対応で最終的に配列に
+            $supp = $p->supplement_pdf_paths ?? [];
+            if (is_string($supp)) {
+                try {
+                    $supp = json_decode($supp, true) ?: [];
+                } catch (\Throwable $e) {
+                    $supp = [];
+                }
+            }
+            if (!is_array($supp)) {
+                $supp = [];
+            }
+            $supp = array_values(array_map('strval', $supp));
+
+            // ユーザー情報（アイコンは存在していそうな複数候補を順に）
+            $userArr = null;
+            if ($p->user) {
+                $icon =
+                    ($p->user->icon_url ?? null) ??
+                    ($p->user->icon ?? null) ??
+                    ($p->user->avatar ?? null) ??
+                    ($p->user->image_url ?? null) ?? '';
+                $userArr = [
+                    'id' => (int)$p->user->id,
+                    'name' => (string)($p->user->name ?? ''),
+                    'icon_url' => (string)$icon,
+                ];
+            }
+
+            $portfolio = [
+                'id' => (int)$p->id,
+                'title' => (string)($p->title ?? ''),
+                'description' => (string)($p->description ?? ''),
+                'thumbnail' => $thumb,
+                'like_count' => (int)$likeCount,
+
+                // 追加詳細
+                'purpose' => (string)($p->purpose ?? ''),
+                'basic_spec' => (string)($p->basic_spec ?? ''),
+                'design_url' => (string)($p->design_url ?? ''),
+                'design_description' => (string)($p->design_description ?? ''),
+                'parts_list' => (string)($p->parts_list ?? ''),
+                'processing_method' => (string)($p->processing_method ?? ''),
+                'processing_notes' => (string)($p->processing_notes ?? ''),
+                'analysis_method' => (string)($p->analysis_method ?? ''),
+                'analysis_result' => (string)($p->analysis_result ?? ''),
+                'development_period' => (string)($p->development_period ?? ''),
+                'mechanical_notes' => (string)($p->mechanical_notes ?? ''),
+                'reference_links' => (string)($p->reference_links ?? ''),
+                'tool_used' => (string)($p->tool_used ?? ''),
+                'material_used' => (string)($p->material_used ?? ''),
+                'github_url' => (string)($p->github_url ?? ''),
+                'experiment_summary' => (string)($p->experiment_summary ?? ''),
+
+                // PDF
+                'drawing_pdf_path' => (string)($p->drawing_pdf_path ?? ''),
+                'supplement_pdf_paths' => $supp,
+
+                // 関連
+                'user' => $userArr,
+                'category' => $p->category ? [
+                    'id' => (int)$p->category->id,
+                    'name' => (string)($p->category->name ?? ''),
+                    'slug' => (string)($p->category->slug ?? ''),
+                ] : null,
+            ];
+
+            $this->set(['success' => true, 'portfolio' => $portfolio]);
+            $this->viewBuilder()->setOption('serialize', ['success','portfolio']);
+        } catch (\Throwable $e) {
+            Log::error('API portfolios/view error: ' . $e->getMessage());
+            $this->response = $this->response->withStatus(500);
+            $this->set(['success' => false, 'message' => $e->getMessage()]);
+            $this->viewBuilder()->setOption('serialize', ['success','message']);
+        }
+    }
+
+    // ---------------- PDF 保存ユーティリティ ----------------
+
+    /**
+     * ポートフォリオに紐づく PDF ファイル（図面・補足）を保存し、エンティティにパスを反映する。
+     *
+     * @param \App\Model\Entity\Portfolio $p 対象ポートフォリオ
+     * @return void
+     */
     private function _handlePdfUploads(\App\Model\Entity\Portfolio $p): void
     {
         $req = $this->request;
-        $drawing = $req->getData('drawing_pdf');
+        $draw = $req->getData('drawing_pdf');
         $supps = (array)$req->getData('supplement_pdfs');
 
-        if (!$drawing && empty(array_filter($supps))) return;
+        if (!$draw && empty(array_filter($supps))) {
+            return;
+        }
 
         $baseDir = WWW_ROOT . 'files' . DS . 'portfolios' . DS . $p->id . DS;
-        if (!is_dir($baseDir)) mkdir($baseDir, 0755, true);
 
-        if ($drawing instanceof UploadedFileInterface && $drawing->getError() === UPLOAD_ERR_OK) {
-            $fname = $this->_moveOnePdf($drawing, $baseDir, 'drawing', (int)$p->id);
+        if (!is_dir($baseDir)) {
+            mkdir($baseDir, 0755, true);
+        }
+
+        if ($draw instanceof UploadedFileInterface && $draw->getError() === UPLOAD_ERR_OK) {
+            $fname = $this->_moveOnePdf($draw, $baseDir, 'drawing', (int)$p->id);
             $p->drawing_pdf_path = 'files/portfolios/' . $p->id . '/' . $fname;
         }
 
-        $suppPaths = [];
+        $paths = [];
         foreach ($supps as $f) {
             if ($f instanceof UploadedFileInterface && $f->getError() === UPLOAD_ERR_OK) {
                 $fname = $this->_moveOnePdf($f, $baseDir, 'supplement', (int)$p->id);
-                $suppPaths[] = 'files/portfolios/' . $p->id . '/' . $fname;
+                $paths[] = 'files/portfolios/' . $p->id . '/' . $fname;
             }
         }
 
-        if ($suppPaths) {
+        if ($paths) {
             $current = $p->supplement_pdf_paths;
             $currentArr = is_string($current) ? (array)json_decode($current, true) : (array)$current;
-            $p->supplement_pdf_paths = json_encode(array_values(array_merge($currentArr, $suppPaths)), JSON_UNESCAPED_SLASHES);
+            $p->supplement_pdf_paths = json_encode(array_values(array_merge($currentArr, $paths)), JSON_UNESCAPED_SLASHES);
         }
 
         $this->Portfolios->saveOrFail($p);
     }
 
+    /**
+     * 単一のPDFを検証して保存し、保存ファイル名を返す。
+     * - 拡張子・MIME が PDF か検証、20MB超は拒否。
+     * - 保存先は `$baseDir` に `p-{pid}-{kind}-{rand}.pdf` で配置。
+     *
+     * @param \Psr\Http\Message\UploadedFileInterface $file アップロードファイル
+     * @param string $baseDir 保存ディレクトリ（末尾に DS を想定）
+     * @param string $kind 種別（例: 'drawing' | 'supplement'）
+     * @param int $pid ポートフォリオID
+     * @return string 保存されたファイル名
+     * @throws \RuntimeException 検証失敗やサイズ超過時
+     */
     private function _moveOnePdf(UploadedFileInterface $file, string $baseDir, string $kind, int $pid): string
     {
         $ext = strtolower(pathinfo($file->getClientFilename(), PATHINFO_EXTENSION));
-        if ($ext !== 'pdf') throw new \RuntimeException('PDFのみアップロードできます。');
+        if ($ext !== 'pdf') {
+            throw new \RuntimeException('PDFのみアップロードできます。');
+        }
 
         $stream = $file->getStream();
         $contents = $stream->getContents();
