@@ -12,6 +12,13 @@ use Firebase\JWT\JWT;
 
 class UsersController extends AppController
 {
+    /**
+     * コントローラ初期化。
+     * - `Users`/`Follows`/`Portfolios` テーブルを取得してプロパティに設定。
+     * - JSON ビュークラスを使用。
+     *
+     * @return void
+     */
     public function initialize(): void
     {
         parent::initialize();
@@ -23,6 +30,14 @@ class UsersController extends AppController
         $this->viewBuilder()->setClassName('Json');
     }
 
+    /**
+     * 各アクション実行前のフィルタ。
+     * - 認証コンポーネントがある場合、`register`,`login`,`view`,
+     *   `resendVerification`,`verifyEmail` を未認証で許可。
+     *
+     * @param \Cake\Event\EventInterface $event イベント
+     * @return void
+     */
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
@@ -33,6 +48,15 @@ class UsersController extends AppController
 
     // ---------------- Auth ----------------
 
+    /**
+     * POST /api/users/login.json
+     * 認証API。email/password を検証し、成功時に JWT を返す。
+     * - 入力: {email, password}（JSON もしくは form）
+     * - 401: 資格情報不正 / 403: メール未認証 / 422: 必須不足
+     * - 200: { success, token, user:{id,name,email} }
+     *
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
     public function login()
     {
         $this->request->allowMethod(['post']);
@@ -43,7 +67,7 @@ class UsersController extends AppController
 
         if ($email === '' || $password === '') {
             $this->response = $this->response->withStatus(422);
-            $this->set(['success' => false, 'message' => 'email と password は必須です', '_serialize' => ['success','message']]);
+            $this->set(['success' => false, 'message' => 'email と password は必須です', '_serialize' => ['success', 'message']]);
 
             return;
         }
@@ -55,7 +79,7 @@ class UsersController extends AppController
 
         if (!$user || !(new DefaultPasswordHasher())->check($password, (string)$user->password)) {
             $this->response = $this->response->withStatus(401);
-            $this->set(['success' => false, 'message' => 'メールアドレスまたはパスワードが不正です', '_serialize' => ['success','message']]);
+            $this->set(['success' => false, 'message' => 'メールアドレスまたはパスワードが不正です', '_serialize' => ['success', 'message']]);
 
             return;
         }
@@ -76,6 +100,15 @@ class UsersController extends AppController
         ]);
     }
 
+    /**
+     * POST /api/users/register.json
+     * 新規ユーザー登録。エンティティを作成し保存後、メール認証用トークンを発行し確認メールを送信。
+     * - 入力: ユーザー情報（JSON または form）。`sns_links` は初期JSONを付与。
+     * - 成功: 200 `{ success, message, user_id }`
+     * - 失敗: 422 `{ success:false, errors }`
+     *
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
     public function register()
     {
         $this->request->allowMethod(['post']);
@@ -111,7 +144,13 @@ class UsersController extends AppController
         $this->set(['success' => false, 'errors' => $user->getErrors(), '_serialize' => ['success','errors']]);
     }
 
-    // 任意：再送とAPIでの検証
+    /**
+     * POST /api/users/resendVerification.json
+     * メール認証リンクの再送。email を受け取り、未認証ユーザーに新トークンを発行して送信。
+     * - 422: email 未入力 / 404: ユーザーなし / 200: 送信完了 or 既に認証済み / 500: 送信失敗
+     *
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
     public function resendVerification()
     {
         $this->request->allowMethod(['post']);
@@ -159,6 +198,14 @@ class UsersController extends AppController
         $this->set(['success' => false, 'message' => '再送に失敗しました', '_serialize' => ['success','message']]);
     }
 
+    /**
+     * GET /api/users/verifyEmail/{token}.json
+     * メール認証処理。トークンでユーザーを特定し、`email_verified` を true に更新。
+     * - 400: token 不足 / 404: 無効トークン / 500: 更新失敗 / 200: 認証完了
+     *
+     * @param string|null $token 認証トークン
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
     public function verifyEmail($token = null)
     {
         $this->request->allowMethod(['get']);
@@ -188,6 +235,13 @@ class UsersController extends AppController
 
     // ---------------- Profile ----------------
 
+    /**
+     * GET /api/users/profile.json
+     * ログイン中ユーザーのプロフィールを返す（要認証）。
+     * - 未認証は 401。認証済みは `setProfilePayload()` でレスポンス生成。
+     *
+     * @return \Cake\Http\Response|null|void
+     */
     public function profile()
     {
         $this->request->allowMethod(['get']);
@@ -204,6 +258,13 @@ class UsersController extends AppController
         $this->setProfilePayload($userId, $userId);
     }
 
+    /**
+     * GET /api/users/view/{id}.json
+     * 指定ユーザーのプロフィールを返す。閲覧者IDを付与して `setProfilePayload()` で整形。
+     *
+     * @param int $id 対象ユーザーID
+     * @return \Cake\Http\Response|null|void
+     */
     public function view($id)
     {
         $this->request->allowMethod(['get']);
@@ -212,7 +273,12 @@ class UsersController extends AppController
     }
 
     /**
-     * スキーマを見て存在する方のカラム名を返す（無ければ null）
+     * スキーマから候補カラム名を先頭から順に探して返す。
+     * 見つからなければ null。
+     *
+     * @param \Cake\Database\Schema\TableSchemaInterface $schema テーブルスキーマ
+     * @param string[] $candidates 候補カラム名の配列（優先順）
+     * @return string|null 見つかったカラム名
      */
     private function pickColumn(\Cake\Database\Schema\TableSchemaInterface $schema, array $candidates): ?string
     {
@@ -226,7 +292,14 @@ class UsersController extends AppController
     }
 
     /**
-     * プロフィールJSON生成（created/thumbnail/likes 等のカラム名差異を吸収）
+     * プロフィール応答ペイロードを組み立てて `set()` するヘルパ。
+     * - Users/Follows/Portfolios を参照し、動的に作成日時・サムネ・いいね等を解決
+     * - フォロー統計と閲覧者（$authId）視点の `is_following` を含む
+     * - 最終的に JSON シリアライズ用の配列を `set()` する
+     *
+     * @param int $userId 対象ユーザーID
+     * @param int $authId 閲覧者ユーザーID（未ログインは0）
+     * @return void
      */
     private function setProfilePayload(int $userId, int $authId): void
     {
@@ -235,7 +308,9 @@ class UsersController extends AppController
         $usersCreatedCol = $this->pickColumn($usersSchema, ['created','created_at']);
 
         $userSelect = ['id','name','email','bio','icon_path','sns_links'];
-        if ($usersCreatedCol) $userSelect[] = $usersCreatedCol;
+        if ($usersCreatedCol) {
+            $userSelect[] = $usersCreatedCol;
+        }
 
         $user = $this->Users->find()
             ->select($userSelect)
@@ -252,7 +327,7 @@ class UsersController extends AppController
         // ---- フォロー統計 ----
         $followerCount = $this->Follows->find()->where(['followed_id' => $userId])->count();
         $followingCount = $this->Follows->find()->where(['follower_id' => $userId])->count();
-        $isFollowing = ($authId && $authId !== $userId)
+        $isFollowing = $authId && $authId !== $userId
             ? $this->Follows->exists(['follower_id' => $authId, 'followed_id' => $userId])
             : false;
 
@@ -265,9 +340,17 @@ class UsersController extends AppController
         $portfolioLikesCol = $this->pickColumn($portfolioSchema, ['likes','like_count','likes_count']);
 
         $portfolioSelect = ['id','user_id','title'];
-        if ($portfolioThumbCol) $portfolioSelect[] = $portfolioThumbCol;
-        if ($portfolioLikesCol) $portfolioSelect[] = $portfolioLikesCol;
-        if ($portfolioCreatedCol)$portfolioSelect[] = $portfolioCreatedCol;
+        if ($portfolioThumbCol) {
+            $portfolioSelect[] = $portfolioThumbCol;
+        }
+
+        if ($portfolioLikesCol) {
+            $portfolioSelect[] = $portfolioLikesCol;
+        }
+
+        if ($portfolioCreatedCol) {
+            $portfolioSelect[] = $portfolioCreatedCol;
+        }
 
         $orderCol = $portfolioCreatedCol ?? 'id';
 
@@ -323,12 +406,15 @@ class UsersController extends AppController
             : null;
 
         $sns = [];
-        try { $sns = json_decode((string)$user->sns_links, true) ?? []; } catch (\Throwable $e) {}
+        try {
+            $sns = json_decode((string)$user->sns_links, true) ?? [];
+        } catch (\Throwable $e) {
+        }
 
         $userCreated = null;
         if ($usersCreatedCol && isset($user->{$usersCreatedCol})) {
             $val = $user->{$usersCreatedCol};
-            $userCreated = (is_object($val) && method_exists($val, 'i18nFormat'))
+            $userCreated = is_object($val) && method_exists($val, 'i18nFormat')
                 ? $val->i18nFormat('yyyy-MM-dd HH:mm:ss')
                 : (is_string($val) ? $val : null);
         }
@@ -356,15 +442,24 @@ class UsersController extends AppController
 
     // ---------------- Follow lists ----------------
 
+    /**
+     * GET /api/users/{id}/followers.json
+     * 指定ユーザーのフォロワー一覧を取得し、id・name・icon_url を返す。
+     *
+     * @param int $id ユーザーID
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
     public function followers($id)
     {
         $this->request->allowMethod(['get']);
 
         $rows = $this->Follows->find()
             ->where(['followed_id' => (int)$id])
-            ->contain(['Users' => function($q){ return $q->select(['id','name','icon_path']); }])
+            ->contain(['Users' => function ($q) {
+                return $q->select(['id', 'name', 'icon_path']);
+            }])
             ->all()
-            ->map(function($f){
+            ->map(function ($f) {
                 $u = $f->user;
 
                 return [
@@ -377,15 +472,24 @@ class UsersController extends AppController
         $this->set(['success' => true, 'users' => $rows, '_serialize' => ['success','users']]);
     }
 
+    /**
+     * GET /api/users/{id}/followers.json
+     * 指定ユーザーのフォロワー一覧を返す（id, name, icon_url）。
+     *
+     * @param int $id ユーザーID
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
     public function followings($id)
     {
         $this->request->allowMethod(['get']);
 
         $rows = $this->Follows->find()
             ->where(['follower_id' => (int)$id])
-            ->contain(['FollowedUsers' => function($q){ return $q->select(['id','name','icon_path']); }])
+            ->contain(['FollowedUsers' => function ($q) {
+                return $q->select(['id','name','icon_path']);
+            }])
             ->all()
-            ->map(function($f){
+            ->map(function ($f) {
                 $u = $f->followed_user;
 
                 return [
@@ -400,6 +504,14 @@ class UsersController extends AppController
 
     // ---------------- Helpers ----------------
 
+    /**
+     * JWT トークンを生成するヘルパ。
+     * - HS256 署名で7日間有効のトークンを発行。
+     * - `JWT_SECRET` 環境変数がなければデフォルト文字列を使用。
+     *
+     * @param int $userId 対象ユーザーID
+     * @return string 生成されたJWTトークン
+     */
     private function generateJwt(int $userId): string
     {
         $secret = env('JWT_SECRET', 'dev-secret-change-me');
@@ -411,7 +523,16 @@ class UsersController extends AppController
         return JWT::encode($payload, $secret, 'HS256');
     }
 
-    // src/Controller/Api/UsersController.php のクラス内に追記
+    /**
+     * POST /api/users/update.json
+     * プロフィール更新API（要認証）。
+     * - name / bio の更新、および `icon` ファイルのアップロード対応。
+     * - 画像は `/webroot/img/icons/` に保存し、`icon_path` に相対パスを登録。
+     * - 成功時: 更新後のユーザー情報を返却。
+     * - 401: 未認証 / 422: 保存失敗。
+     *
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
     public function update()
     {
         $this->request->allowMethod(['post','patch','put']);
@@ -461,7 +582,10 @@ class UsersController extends AppController
                 : null;
 
             $sns = [];
-            try { $sns = json_decode((string)$user->sns_links, true) ?? []; } catch (\Throwable $e) {}
+            try {
+                $sns = json_decode((string)$user->sns_links, true) ?? [];
+            } catch (\Throwable $e) {
+            }
 
             $payload = [
                 'success' => true,
@@ -482,5 +606,4 @@ class UsersController extends AppController
         $this->response = $this->response->withStatus(422);
         $this->set(['success' => false, 'message' => '更新に失敗しました', 'errors' => $user->getErrors(), '_serialize' => ['success','message','errors']]);
     }
-
 }
