@@ -317,11 +317,15 @@ class UsersController extends AppController
      * @param int $id 対象ユーザーID
      * @return \Cake\Http\Response|null|void
      */
-    public function view($id)
+    public function view($id = null)
     {
         $this->request->allowMethod(['get']);
-        $authId = (int)($this->request->getAttribute('identity')->get('id') ?? 0);
-        $this->setProfilePayload((int)$id, $authId);
+
+        $identity = $this->request->getAttribute('identity');
+        $authId = $identity ? (int)$identity->get('id') : 0;
+
+        // 公開プロフィールなので公開ポートフォリオのみ
+        $this->setProfilePayload((int)$id, $authId, /* publicOnly */ true);
     }
 
     /**
@@ -344,18 +348,17 @@ class UsersController extends AppController
     }
 
     /**
-     * プロフィール応答ペイロードを組み立てて `set()` するヘルパ。
-     * - Users/Follows/Portfolios を参照し、動的に作成日時・サムネ・いいね等を解決
-     * - フォロー統計と閲覧者（$authId）視点の `is_following` を含む
-     * - 最終的に JSON シリアライズ用の配列を `set()` する
+     * プロフィール応答ペイロードを組み立てて JSON を set() するヘルパ
      *
-     * @param int $userId 対象ユーザーID
-     * @param int $authId 閲覧者ユーザーID（未ログインは0）
+     * @param int  $userId     対象ユーザーID
+     * @param int  $authId     閲覧者ユーザーID（未ログインは 0）
+     * @param bool $publicOnly true のとき公開ポートフォリオのみ返す（/api/users/view 用）
+     *                         false のとき全件（/api/users/profile 用）
      * @return void
      */
-    private function setProfilePayload(int $userId, int $authId): void
+    private function setProfilePayload(int $userId, int $authId, bool $publicOnly = false): void
     {
-        // ---- Users 側（created / created_at 吸収）----
+        // ---- Users 側（created / created_at を吸収）----
         $usersSchema = $this->Users->getSchema();
         $usersCreatedCol = $this->pickColumn($usersSchema, ['created','created_at']);
 
@@ -371,7 +374,11 @@ class UsersController extends AppController
 
         if (!$user) {
             $this->response = $this->response->withStatus(404);
-            $this->set(['success' => false, 'message' => 'User not found', '_serialize' => ['success','message']]);
+            $this->set([
+                'success' => false,
+                'message' => 'User not found',
+                '_serialize' => ['success','message'],
+            ]);
 
             return;
         }
@@ -384,75 +391,92 @@ class UsersController extends AppController
             : false;
 
         // ---- Portfolios 側（created / thumbnail / likes を動的解決）----
-        $portfolioSchema = $this->Portfolios->getSchema();
-        $portfolioCreatedCol = $this->pickColumn($portfolioSchema, ['created','created_at']);
-        $portfolioThumbCol = $this->pickColumn($portfolioSchema, [
-            'thumbnail_path', 'image_path', 'image', 'thumbnail', 'cover_path', 'cover_url', 'photo_path',
+        $pfSchema = $this->Portfolios->getSchema();
+        $createdCol = $this->pickColumn($pfSchema, ['created','created_at']);
+        $thumbCol = $this->pickColumn($pfSchema, [
+            'thumbnail','thumbnail_path','image_path','image','cover_path','cover_url','photo_path',
         ]);
-        $portfolioLikesCol = $this->pickColumn($portfolioSchema, ['likes','like_count','likes_count']);
+        $likesCol = $this->pickColumn($pfSchema, ['likes','like_count','likes_count']);
 
-        $portfolioSelect = ['id','user_id','title'];
-        if ($portfolioThumbCol) {
-            $portfolioSelect[] = $portfolioThumbCol;
+        $select = ['id','user_id','title'];
+        if ($thumbCol) {
+            $select[] = $thumbCol;
+        }
+        if ($likesCol) {
+            $select[] = $likesCol;
+        }
+        if ($createdCol) {
+            $select[] = $createdCol;
         }
 
-        if ($portfolioLikesCol) {
-            $portfolioSelect[] = $portfolioLikesCol;
+        $q = $this->Portfolios->find()
+            ->select($select)
+            ->where(['user_id' => $userId]);
+
+        if ($publicOnly && $pfSchema->getColumn('is_public') !== null) {
+            $q->andWhere(['is_public' => true]);
         }
 
-        if ($portfolioCreatedCol) {
-            $portfolioSelect[] = $portfolioCreatedCol;
-        }
+        $orderCol = $createdCol ?? 'id';
 
-        $orderCol = $portfolioCreatedCol ?? 'id';
-
-        $portfolios = $this->Portfolios->find()
-            ->select($portfolioSelect)
-            ->where(['user_id' => $userId /*, 'is_public' => true */])
-            ->order([$orderCol => 'DESC'])
+        $rows = $q->order([$orderCol => 'DESC'])
             ->limit(50)
-            ->all()
-            ->map(function ($p) use ($portfolioThumbCol, $portfolioLikesCol, $portfolioCreatedCol) {
+            ->all();
 
-                // 画像URLの整形（絶対URLならそのまま、相対なら /img/ を付けて絶対URL化）
-                $imageUrl = null;
-                if ($portfolioThumbCol && !empty($p->{$portfolioThumbCol})) {
-                    $raw = (string)$p->{$portfolioThumbCol};
-                    if (\preg_match('/^https?:\/\//i', $raw)) {
-                        $imageUrl = $raw;
-                    } else {
-                        $imageUrl = \Cake\Routing\Router::url('/img/' . ltrim($raw, '/'), true);
+        $items = [];
+        foreach ($rows as $p) {
+            // 元のサムネ
+            $rawThumb = $thumbCol && isset($p->{$thumbCol}) ? (string)$p->{$thumbCol} : '';
+
+            // 相対サムネを /uploads に寄せる（/img/uploads → /uploads、裸ファイル名なら /uploads/xxx）
+            $thumbnail = $rawThumb;
+            if ($thumbnail !== '') {
+                if (preg_match('#^https?://#i', $thumbnail)) {
+                    // すでに絶対URL → そのまま（下で image_url として使う）
+                } else {
+                    // 相対 → /uploads 系に正規化
+                    if (strpos($thumbnail, '/img/uploads/') === 0) {
+                        $thumbnail = preg_replace('#^/img/uploads/#', '/uploads/', $thumbnail);
+                    } elseif (strpos($thumbnail, 'img/uploads/') === 0) {
+                        $thumbnail = '/' . $thumbnail; // -> /img/uploads/...
+                        $thumbnail = preg_replace('#^/img/uploads/#', '/uploads/', $thumbnail);
+                    } elseif (strpos($thumbnail, '/uploads/') !== 0) {
+                        // 先頭 / が無い or uploads/ で始まらない → /uploads/ を前置
+                        $thumbnail = '/uploads/' . ltrim($thumbnail, '/');
                     }
                 }
+            }
 
-                // likes の取得（存在しなければ 0）
-                $likes = 0;
-                if ($portfolioLikesCol && isset($p->{$portfolioLikesCol})) {
-                    $likes = (int)$p->{$portfolioLikesCol};
-                }
+            // 絶対URL（クライアント即描画用）
+            if ($thumbnail !== '' && !preg_match('#^https?://#i', $thumbnail)) {
+                $imageUrl = \Cake\Routing\Router::url($thumbnail, true);
+            } else {
+                $imageUrl = $thumbnail !== '' ? $thumbnail : null; // 既に絶対ならそれを使う
+            }
 
-                // created の整形（存在しなければ null）
-                $createdStr = null;
-                if ($portfolioCreatedCol && isset($p->{$portfolioCreatedCol})) {
-                    $created = $p->{$portfolioCreatedCol};
-                    // 型が FrozenTime/DateTime ならフォーマット、文字列ならそのまま
-                    if (is_object($created) && method_exists($created, 'i18nFormat')) {
-                        $createdStr = $created->i18nFormat('yyyy-MM-dd HH:mm:ss');
-                    } elseif (is_string($created)) {
-                        $createdStr = $created;
-                    }
-                }
+            // likes
+            $likes = $likesCol && isset($p->{$likesCol}) ? (int)$p->{$likesCol} : 0;
 
-                return [
-                    'id' => (int)$p->id,
-                    'title' => (string)$p->title,
-                    'image_url' => $imageUrl,
-                    'likes' => $likes,
-                    'created' => $createdStr,
-                ];
-            })->toList();
+            // created
+            $createdStr = null;
+            if ($createdCol && isset($p->{$createdCol})) {
+                $val = $p->{$createdCol};
+                $createdStr = is_object($val) && method_exists($val, 'i18nFormat')
+                    ? $val->i18nFormat('yyyy-MM-dd HH:mm:ss')
+                    : (is_string($val) ? $val : null);
+            }
 
-        // ---- Users: 画像URL/SNS/created ----
+            $items[] = [
+                'id' => (int)$p->id,
+                'title' => (string)$p->title,
+                'thumbnail' => $thumbnail,
+                'image_url' => $imageUrl,
+                'likes' => $likes,
+                'created' => $createdStr,
+            ];
+        }
+
+        // ---- Users: 画像URL / SNS / created ----
         $iconUrl = !empty($user->icon_path)
             ? \Cake\Routing\Router::url('/img/' . ltrim((string)$user->icon_path, '/'), true)
             : null;
@@ -486,7 +510,7 @@ class UsersController extends AppController
                 'followings' => $followingCount,
                 'is_following' => $isFollowing,
             ],
-            'portfolios' => $portfolios,
+            'portfolios' => $items,
         ];
 
         $this->set($payload + ['_serialize' => array_keys($payload)]);
