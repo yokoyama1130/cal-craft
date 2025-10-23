@@ -26,6 +26,7 @@ class UsersController extends AppController
         $this->Users = $this->fetchTable('Users');
         $this->Follows = $this->fetchTable('Follows');
         $this->Portfolios = $this->fetchTable('Portfolios');
+        $this->Users = $this->fetchTable('Users');
 
         $this->viewBuilder()->setClassName('Json');
     }
@@ -42,8 +43,59 @@ class UsersController extends AppController
     {
         parent::beforeFilter($event);
         if ($this->components()->has('Authentication')) {
-            $this->Authentication->allowUnauthenticated(['register','login','view','resendVerification','verifyEmail']);
+            $this->Authentication->allowUnauthenticated(['register','login','view','resendVerification','verifyEmail', 'search']);
         }
+    }
+
+    /**
+     * GET /api/users/search.json
+     * ユーザー検索API。名前部分一致で最大50件を返す。
+     * - クエリパラメータ `q` が空なら最新10件を返す。
+     * - 返却: id, name, bio, icon_url。
+     *
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
+    public function search()
+    {
+        $this->request->allowMethod(['get']);
+
+        $q = (string)$this->request->getQuery('q', '');
+
+        // 必要な列だけを明示
+        $query = $this->Users->find()
+            ->select(['id', 'name', 'bio', 'icon_path']);
+
+        if ($q !== '') {
+            $query->where(['Users.name LIKE' => '%' . $q . '%']);
+        }
+
+        // ★ created が無い環境でも安全な並び替え（id DESC）
+        $query->order(['Users.id' => 'DESC']);
+
+        // キーワード無しの時だけ件数を絞る
+        if ($q === '') {
+            $query->limit(10);
+        } else {
+            $query->limit(50);
+        }
+
+        $items = [];
+        foreach ($query as $u) {
+            // 例: 'icons/xxx.png' → '/img/icons/xxx.png'
+            $icon = (string)($u->icon_path ?? '');
+            if ($icon !== '' && strpos($icon, 'icons/') === 0) {
+                $icon = '/img/' . ltrim($icon, '/'); // => /img/icons/xxx.png
+            }
+            $items[] = [
+                'id' => (int)$u->id,
+                'name' => (string)($u->name ?? ''),
+                'bio' => (string)($u->bio ?? ''),
+                'icon_url' => $icon,
+            ];
+        }
+
+        $this->set(['success' => true, 'items' => $items]);
+        $this->viewBuilder()->setOption('serialize', ['success', 'items']);
     }
 
     // ---------------- Auth ----------------

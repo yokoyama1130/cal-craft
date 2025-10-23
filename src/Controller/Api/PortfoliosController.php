@@ -47,8 +47,72 @@ class PortfoliosController extends AppController
         parent::beforeFilter($event);
         // 詳細APIは未ログインでも閲覧可
         if ($this->components()->has('Authentication')) {
-            $this->Authentication->allowUnauthenticated(['view']);
+            $this->Authentication->allowUnauthenticated(['view', 'search']);
         }
+    }
+
+    /**
+     * GET /api/users/search.json
+     * ユーザー検索API。名前部分一致で最大50件を返す。
+     * - クエリパラメータ `q` が空なら最新10件を返す。
+     * - 返却: id, name, bio, icon_url。
+     *
+     * @return \Cake\Http\Response|null|void JSON をシリアライズして返却
+     */
+    public function search()
+    {
+        $this->request->allowMethod(['get']);
+
+        $q = (string)$this->request->getQuery('q', '');
+        $Portfolios = $this->Portfolios;
+        $Likes = $this->fetchTable('Likes');
+
+        $query = $Portfolios->find()
+            ->contain(['Users' => function ($q) {
+                return $q->select(['Users.id', 'Users.name', 'Users.icon_path']);
+            }])
+            ->where(['Portfolios.is_public' => true]);
+
+        if ($q !== '') {
+            $query->andWhere([
+                'OR' => [
+                    'Portfolios.title LIKE' => '%' . $q . '%',
+                    'Portfolios.description LIKE' => '%' . $q . '%',
+                ],
+            ]);
+        }
+
+        $items = $query
+            ->order(['Portfolios.created' => 'DESC'])
+            ->limit(50)
+            ->all()
+            ->map(function ($p) use ($Likes) {
+                // サムネ正規化（/img/uploads → /uploads へ寄せたい場合の例）
+                $thumb = (string)($p->thumbnail ?? '');
+                if (strpos($thumb, '/img/uploads/') === 0) {
+                    $thumb = preg_replace('#^/img/uploads/#', '/uploads/', $thumb);
+                }
+
+                $likeCount = $Likes->find()->where(['portfolio_id' => $p->id])->count();
+
+                return [
+                    'id' => (int)$p->id,
+                    'title' => (string)($p->title ?? ''),
+                    'thumbnail' => $thumb,
+                    'like_count' => (int)$likeCount,
+                    'user' => $p->user ? [
+                        'id' => (int)$p->user->id,
+                        'name' => (string)($p->user->name ?? ''),
+                        // Webは icon_path を img/icons 配下に置いている想定
+                        'icon_url' => $p->user->icon_path ? '/img/' . ltrim($p->user->icon_path, '/') : '',
+                    ] : null,
+                    'created' => $p->created ? $p->created->format('c') : null,
+                ];
+            })
+            ->toList();
+
+        $this->set(['success' => true, 'items' => $items]);
+        $this->viewBuilder()->setOption('serialize', ['success','items']);
     }
 
     /**
