@@ -379,8 +379,14 @@ class PortfoliosController extends AppController
 
         if ($paths) {
             $current = $p->supplement_pdf_paths;
-            $currentArr = is_string($current) ? (array)json_decode($current, true) : (array)$current;
-            $p->supplement_pdf_paths = json_encode(array_values(array_merge($currentArr, $paths)), JSON_UNESCAPED_SLASHES);
+            $currentArr = is_string($current)
+                ? (array)json_decode($current, true)
+                : (array)$current;
+
+            $p->supplement_pdf_paths = json_encode(
+                array_values(array_merge($currentArr, $paths)),
+                JSON_UNESCAPED_SLASHES
+            );
         }
 
         $this->Portfolios->saveOrFail($p);
