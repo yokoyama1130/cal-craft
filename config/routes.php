@@ -91,6 +91,10 @@ return function (RouteBuilder $routes): void {
         // 必要なら RESTful も可（/api/portfolios/:id など）
         // $routes->resources('Portfolios'); // ← add 独自なら無くてもOK
 
+        $routes->connect('/messages', ['controller' => 'Messages', 'action' => 'index', '_method' => 'GET']);
+        $routes->connect('/messages/send', ['controller' => 'Messages', 'action' => 'send', '_method' => 'POST']);
+        $routes->connect('/conversations/view', ['controller' => 'Conversations', 'action' => 'view', '_method' => 'GET']);
+
         $routes->fallbacks(DashedRoute::class);
     });
 
