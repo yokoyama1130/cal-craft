@@ -95,6 +95,11 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/messages/send', ['controller' => 'Messages', 'action' => 'send', '_method' => 'POST']);
         $routes->connect('/conversations/view', ['controller' => 'Conversations', 'action' => 'view', '_method' => 'GET']);
 
+        $routes->connect('/follows/followings/:id', ['controller' => 'Follows', 'action' => 'followings'])
+            ->setPass(['id'])->setPatterns(['id' => '\d+'])->setMethods(['GET']);
+        $routes->connect('/follows/followers/:id', ['controller' => 'Follows', 'action' => 'followers'])
+            ->setPass(['id'])->setPatterns(['id' => '\d+'])->setMethods(['GET']);
+
         $routes->fallbacks(DashedRoute::class);
     });
 
