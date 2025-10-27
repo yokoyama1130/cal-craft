@@ -54,6 +54,7 @@ yarn-error.log
 
 /webroot/uploads/
 /webroot/img/uploads/
+/webroot/img/icons/
 /webroot/files/
 # もしサムネやPDFを保存するなら
 /files/portfolios/
