@@ -93,7 +93,10 @@ return function (RouteBuilder $routes): void {
 
         $routes->connect('/messages', ['controller' => 'Messages', 'action' => 'index', '_method' => 'GET']);
         $routes->connect('/messages/send', ['controller' => 'Messages', 'action' => 'send', '_method' => 'POST']);
-        $routes->connect('/conversations/view', ['controller' => 'Conversations', 'action' => 'view', '_method' => 'GET']);
+        $routes->connect('/conversations/view', [
+            'controller' => 'Conversations',
+            'action' => 'view', '_method' => 'GET',
+        ]);
 
         $routes->connect('/follows/followings/:id', ['controller' => 'Follows', 'action' => 'followings'])
             ->setPass(['id'])->setPatterns(['id' => '\d+'])->setMethods(['GET']);
@@ -123,10 +126,14 @@ return function (RouteBuilder $routes): void {
             ['_method' => 'POST']
         );
 
-        $routes->connect('/billing/cancel', ['controller' => 'Billing', 'action' => 'cancelAtPeriodEnd'], ['_method' => 'POST']);
-        $routes->connect('/billing/cancel_now', ['controller' => 'Billing', 'action' => 'cancelNow'], ['_method' => 'POST']);
-        $routes->connect('/billing/change/:plan', ['controller' => 'Billing', 'action' => 'changePlan'], ['pass' => ['plan'], '_method' => 'POST']);
-        $routes->connect('/billing/checkout/:plan', ['controller' => 'Billing', 'action' => 'checkout'], ['pass' => ['plan'], '_method' => 'POST']);
+        $routes->connect('/billing/cancel', [
+            'controller' => 'Billing', 'action' => 'cancelAtPeriodEnd'], ['_method' => 'POST']);
+        $routes->connect('/billing/cancel_now', [
+            'controller' => 'Billing', 'action' => 'cancelNow'], ['_method' => 'POST']);
+        $routes->connect('/billing/change/:plan', [
+            'controller' => 'Billing', 'action' => 'changePlan'], ['pass' => ['plan'], '_method' => 'POST']);
+        $routes->connect('/billing/checkout/:plan', [
+            'controller' => 'Billing', 'action' => 'checkout'], ['pass' => ['plan'], '_method' => 'POST']);
 
         $routes->fallbacks(DashedRoute::class);
 

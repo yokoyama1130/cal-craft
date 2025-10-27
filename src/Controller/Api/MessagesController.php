@@ -118,7 +118,11 @@ class MessagesController extends AppController
         ];
     }
 
-    /** Messages のテキスト用実カラム名を決める（content優先、なければbody） */
+    /**
+     * textColumn
+     *
+     * @return string 使用すべき本文カラム名（content または body）
+     */
     private function textColumn(): string
     {
         $schema = $this->fetchTable('Messages')->getSchema();

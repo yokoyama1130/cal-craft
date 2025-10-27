@@ -43,7 +43,11 @@ class UsersController extends AppController
     {
         parent::beforeFilter($event);
         if ($this->components()->has('Authentication')) {
-            $this->Authentication->allowUnauthenticated(['register','login','view','resendVerification','verifyEmail', 'search']);
+            $this->Authentication->allowUnauthenticated(
+                [
+                    'register','login','view','resendVerification','verifyEmail', 'search',
+                ]
+            );
         }
     }
 
@@ -119,7 +123,13 @@ class UsersController extends AppController
 
         if ($email === '' || $password === '') {
             $this->response = $this->response->withStatus(422);
-            $this->set(['success' => false, 'message' => 'email と password は必須です', '_serialize' => ['success', 'message']]);
+            $this->set(
+                [
+                    'success' => false,
+                    'message' => 'email と password は必須です',
+                    '_serialize' => ['success', 'message'],
+                ]
+            );
 
             return;
         }
@@ -131,13 +141,25 @@ class UsersController extends AppController
 
         if (!$user || !(new DefaultPasswordHasher())->check($password, (string)$user->password)) {
             $this->response = $this->response->withStatus(401);
-            $this->set(['success' => false, 'message' => 'メールアドレスまたはパスワードが不正です', '_serialize' => ['success', 'message']]);
+            $this->set(
+                [
+                    'success' => false,
+                    'message' => 'メールアドレスまたはパスワードが不正です',
+                    '_serialize' => ['success', 'message'],
+                ]
+            );
 
             return;
         }
         if (!(bool)$user->email_verified) {
             $this->response = $this->response->withStatus(403);
-            $this->set(['success' => false, 'message' => 'メール認証が未完了です。メール内リンクから認証してください。', '_serialize' => ['success','message']]);
+            $this->set(
+                [
+                    'success' => false,
+                    'message' => 'メール認証が未完了です。メール内リンクから認証してください。',
+                    '_serialize' => ['success','message'],
+                ]
+            );
 
             return;
         }
@@ -181,13 +203,28 @@ class UsersController extends AppController
                     ->setSubject('【OrcaFolio】メール認証のお願い')
                     ->deliver(
                         "以下のURLをクリックしてメール認証を完了してください：\n\n" .
-                        Router::url(['controller' => 'Users', 'action' => 'verifyEmail', $user->email_token, 'prefix' => false], true)
+                        Router::url(
+                            [
+                                'controller' => 'Users',
+                                'action' => 'verifyEmail',
+                                $user->email_token,
+                                'prefix' => false,
+                            ],
+                            true
+                        )
                     );
             } catch (\Throwable $e) {
                 \Cake\Log\Log::warning('Mail send failed: ' . $e->getMessage());
             }
 
-            $this->set(['success' => true, 'message' => '確認メールを送信しました。メールをご確認ください。' , 'user_id' => (int)$user->id, '_serialize' => ['success','message','user_id']]);
+            $this->set(
+                [
+                    'success' => true,
+                    'message' => '確認メールを送信しました。メールをご確認ください。' ,
+                    'user_id' => (int)$user->id,
+                    '_serialize' => ['success','message','user_id'],
+                ]
+            );
 
             return;
         }
@@ -236,7 +273,15 @@ class UsersController extends AppController
                     ->setSubject('【OrcaFolio】メール認証の再送')
                     ->deliver(
                         "以下のURLから認証を完了してください：\n\n" .
-                        Router::url(['controller' => 'Users', 'action' => 'verifyEmail', $user->email_token, 'prefix' => false], true)
+                        Router::url(
+                            [
+                                'controller' => 'Users',
+                                'action' => 'verifyEmail',
+                                $user->email_token,
+                                'prefix' => false,
+                            ],
+                            true
+                        )
                     );
             } catch (\Throwable $e) {
                 \Cake\Log\Log::warning('Mail send failed: ' . $e->getMessage());
@@ -680,6 +725,13 @@ class UsersController extends AppController
         }
 
         $this->response = $this->response->withStatus(422);
-        $this->set(['success' => false, 'message' => '更新に失敗しました', 'errors' => $user->getErrors(), '_serialize' => ['success','message','errors']]);
+        $this->set(
+            [
+                'success' => false,
+                'message' => '更新に失敗しました',
+                'errors' => $user->getErrors(),
+                '_serialize' => ['success','message','errors'],
+            ]
+        );
     }
 }

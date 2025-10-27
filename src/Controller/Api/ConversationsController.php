@@ -107,8 +107,9 @@ class ConversationsController extends AppController
     }
 
     /**
-     * GET /api/conversations/index.json
-     * 参加している会話一覧を返す
+     * 会話一覧取得API
+     *
+     * @return void JSONで会話一覧を返す（success, items）
      */
     public function index()
     {
