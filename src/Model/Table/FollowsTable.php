@@ -25,15 +25,18 @@ class FollowsTable extends Table
         $this->setTable('follows'); // DB上のテーブル名
         $this->setPrimaryKey('id');
 
-        $this->belongsTo('Users', [
+        $this->belongsTo('FollowerUsers', [
+            'className' => 'Users',
             'foreignKey' => 'follower_id',
             'joinType' => 'INNER',
+            'propertyName' => 'follower_user',
         ]);
 
         $this->belongsTo('FollowedUsers', [
             'className' => 'Users',
             'foreignKey' => 'followed_id',
             'joinType' => 'INNER',
+            'propertyName' => 'followed_user',
         ]);
     }
 }
