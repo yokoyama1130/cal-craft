@@ -16,11 +16,13 @@ use Cake\Log\Log;
 class LikesController extends AppController
 {
     /**
-     * コントローラ初期化
+     * コントローラーの初期化処理
      *
-     * - JSONを直接返すため View を使わない
-     * - 必要なテーブルをロード
-     * - Authentication が未ロードでも安全にロード
+     * - 親クラスの initialize() を呼び出し、共通初期化を継承。
+     * - Authentication コンポーネントをロードし、認証機能を有効化。
+     * - Likes テーブルを明示的にロードして、コントローラー内で利用可能にする。
+     *
+     * @return void
      */
     public function initialize(): void
     {
@@ -37,13 +39,16 @@ class LikesController extends AppController
         if (!$this->components()->has('Authentication')) {
             $this->loadComponent('Authentication');
         }
-
-        // ▼開発中に未ログインでも favorites を通したい場合だけ有効化
-        // $this->Authentication->allowUnauthenticated(['favorites']);
     }
 
     /**
-     * すべてのアクションを JSON で返す
+     * 各アクション実行前の共通処理。
+     *
+     * - レスポンスの Content-Type を JSON (`application/json; charset=utf-8`) に設定する。
+     * - 認証やアクセス制御などの前処理は parent::beforeFilter() に委譲。
+     *
+     * @param \Cake\Event\EventInterface $event イベントオブジェクト
+     * @return void
      */
     public function beforeFilter(EventInterface $event)
     {
@@ -52,8 +57,19 @@ class LikesController extends AppController
     }
 
     /**
-     * GET /api/likes/favorites.json
-     * 自分が「いいね」したポートフォリオ一覧（JWT必須）
+     * ログインユーザーのお気に入り（いいね）ポートフォリオ一覧を取得するAPI。
+     *
+     * 主な処理内容:
+     * - GETメソッドのみ許可。
+     * - ログイン済みのユーザーIDを取得（未ログイン時は401を返す）。
+     * - Likesテーブルから「自分がいいねした」ポートフォリオID一覧を取得。
+     * - Portfoliosテーブルから対象IDの公開中ポートフォリオを取得し、
+     *   投稿者(Users)情報を `contain()` で同時に取得。
+     * - 各ポートフォリオの like_count をまとめて算出（N+1問題を回避）。
+     * - サムネイル画像は複数カラム候補のうち、最初に存在するものを優先して採用。
+     *
+     * @return \Cake\Http\Response JSON形式のポートフォリオ一覧またはエラーレスポンス
+     * @throws \Cake\Http\Exception\MethodNotAllowedException GET以外で呼び出された場合
      */
     public function favorites()
     {
@@ -92,16 +108,46 @@ class LikesController extends AppController
                 ->order(['Portfolios.created' => 'DESC'])
                 ->all();
 
+            // まとめて like_count を取得（N+1回避：なくても動くが一応最適化）
+            $likeCounts = [];
+            $likeRows = $this->Likes->find()
+                ->select(['portfolio_id', 'cnt' => 'COUNT(*)'])
+                ->where(['portfolio_id IN' => $likedIds])
+                ->group('portfolio_id')
+                ->enableHydration(false)
+                ->all();
+            foreach ($likeRows as $r) {
+                $likeCounts[(int)$r['portfolio_id']] = (int)$r['cnt'];
+            }
+
             $items = [];
             foreach ($rows as $p) {
-                // 念のため Users が無いケースをガード
                 $u = $p->user ?? null;
+
+                // ▼ サムネ候補（存在するものを最初に拾う）
+                $thumb = null;
+                $candidates = [
+                    $p->thumbnail ?? null,
+                    $p->thumbnail_path ?? null,
+                    $p->cover_image_path ?? null,
+                    $p->image_path ?? null,
+                    $p->image_url ?? null,
+                    $p->imageUrl ?? null,
+                    $p->img ?? null,
+                ];
+                foreach ($candidates as $c) {
+                    if (!empty($c)) {
+                        $thumb = $this->absUrl((string)$c);
+                        break;
+                    }
+                }
 
                 $items[] = [
                     'id' => (int)$p->id,
                     'title' => (string)($p->title ?? ''),
-                    'like_count' => $this->Likes->find()->where(['portfolio_id' => $p->id])->count(),
+                    'like_count' => $likeCounts[(int)$p->id] ?? 0,
                     'liked_by_me' => true, // 自分の「お気に入り」なので常に true
+                    'thumbnail' => $thumb, // ★ Flutter側はまずここを見る
                     'user' => $u ? [
                         'id' => (int)$u->id,
                         'name' => (string)($u->name ?? ''),
@@ -123,8 +169,17 @@ class LikesController extends AppController
     }
 
     /**
-     * POST /api/likes/toggle.json
-     * いいねのON/OFF（JWT必須）
+     * ポートフォリオの「いいね」状態をトグル（ON/OFF）するAPI。
+     *
+     * 主な処理内容:
+     * - POSTメソッドのみ許可。
+     * - ログイン済みユーザーIDを取得（未ログイン時は401を返す）。
+     * - `portfolio_id` が指定されているか検証（不正時は400を返す）。
+     * - すでに「いいね」済みの場合は削除し、未「いいね」なら新規作成。
+     * - 最新の「いいね」数を集計して返却。
+     *
+     * @return \Cake\Http\Response JSON形式の結果レスポンス
+     * @throws \Cake\Http\Exception\MethodNotAllowedException POST以外で呼び出された場合
      */
     public function toggle()
     {
@@ -180,9 +235,10 @@ class LikesController extends AppController
     // ───────────────────────── helpers ─────────────────────────
 
     /**
-     * 相対パスを絶対URLへ補正
-     * - /icons/*   → /img/icons/* に寄せる
-     * - /img/uploads/* → /uploads/* に寄せる（互換）
+     * 相対パスを絶対URLに変換するユーティリティメソッド。
+     *
+     * @param string|null $path 相対または絶対パス
+     * @return string|null 絶対URL（または入力が空ならnull）
      */
     private function absUrl(?string $path): ?string
     {
@@ -196,7 +252,7 @@ class LikesController extends AppController
             return $raw;
         }
 
-        // 先頭スラッシュを付与
+        // 先頭スラッシュ付与
         $p = '/' . ltrim($raw, '/');
 
         // /icons/* を /img/icons/* に寄せる
@@ -221,7 +277,13 @@ class LikesController extends AppController
         return $base . $p;
     }
 
-    /** JSON 200 */
+    /**
+     * 成功レスポンス(JSON)を返す。
+     *
+     * @param array $data レスポンスデータ
+     * @param int $status HTTPステータスコード（デフォルト: 200）
+     * @return \Cake\Http\Response JSONレスポンス
+     */
     private function jsonOk(array $data, int $status = 200)
     {
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -232,10 +294,19 @@ class LikesController extends AppController
             ->withStringBody($json);
     }
 
-    /** JSON エラー */
+    /**
+     * エラーレスポンス(JSON)を返す。
+     *
+     * @param string $message エラーメッセージ
+     * @param int $status HTTPステータスコード（デフォルト: 400）
+     * @return \Cake\Http\Response JSONレスポンス
+     */
     private function jsonError(string $message, int $status = 400)
     {
-        $json = json_encode(['error' => $message, 'status' => $status], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $json = json_encode(
+            ['error' => $message, 'status' => $status],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
 
         return $this->response
             ->withType('application/json; charset=utf-8')
