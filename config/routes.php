@@ -103,6 +103,9 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/follows/followers/:id', ['controller' => 'Follows', 'action' => 'followers'])
             ->setPass(['id'])->setPatterns(['id' => '\d+'])->setMethods(['GET']);
 
+        $routes->connect('/likes/favorites', ['controller' => 'Likes', 'action' => 'favorites', '_method' => 'GET']);
+        $routes->connect('/likes/toggle', ['controller' => 'Likes', 'action' => 'toggle', '_method' => 'POST']);
+
         $routes->fallbacks(DashedRoute::class);
     });
 
