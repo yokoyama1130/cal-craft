@@ -290,6 +290,71 @@ class FollowsController extends AppController
     }
 
     /**
+     * フォロートグル（Ajax用）
+     *
+     * @return \Cake\Http\Response JSON レスポンス
+     */
+    public function toggle()
+    {
+        try {
+            $this->request->allowMethod(['post']);
+
+            // 認証必須
+            $identity = $this->request->getAttribute('identity');
+            if (!$identity) {
+                return $this->jsonError('ログインが必要です', 401);
+            }
+            $meId = (int)$identity->get('id');
+            if ($meId <= 0) {
+                return $this->jsonError('ログインが必要です', 401);
+            }
+
+            // フォロー対象（ユーザーID）
+            $targetUserId = (int)$this->request->getData('target_user_id');
+            if ($targetUserId <= 0) {
+                return $this->jsonError('target_user_id が不正です', 400);
+            }
+            if ($targetUserId === $meId) {
+                return $this->jsonError('自分自身はフォローできません', 400);
+            }
+
+            // 既存チェック
+            $existing = $this->Follows->find()
+                ->where(['follower_id' => $meId, 'followed_id' => $targetUserId])
+                ->first();
+
+            $followed = false;
+            if ($existing) {
+                // アンフォロー
+                $this->Follows->delete($existing);
+            } else {
+                // フォロー
+                $entity = $this->Follows->newEntity([
+                    'follower_id' => $meId,
+                    'followed_id' => $targetUserId,
+                ]);
+                if (!$this->Follows->save($entity)) {
+                    return $this->jsonError('保存に失敗しました', 422);
+                }
+                $followed = true;
+            }
+
+            // 任意で現在のフォロー数を返すなら:
+            $count = $this->Follows->find()->where(['followed_id' => $targetUserId])->count();
+
+            return $this->jsonOk([
+                'success' => true,
+                'followed' => $followed, // true = フォローになった / false = アンフォロー
+                'followerCount' => $count,
+            ]);
+        } catch (\Throwable $e) {
+            $this->log('[api.follows.toggle] ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'error');
+
+            return $this->jsonError('internal_error', 500);
+        }
+    }
+
+    /**
      * absUrl
      *
      * 処理内容:

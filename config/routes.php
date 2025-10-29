@@ -109,6 +109,10 @@ return function (RouteBuilder $routes): void {
         $routes->fallbacks(DashedRoute::class);
     });
 
+    $routes->scope('/api/follows', function (RouteBuilder $r) {
+        $r->connect('/toggle', ['controller' => 'Follows', 'action' => 'toggle', 'prefix' => 'Api', '_ext' => 'json']);
+    });
+
     // Employer prefix
     $routes->prefix('Employer', function (RouteBuilder $routes) {
         $routes->connect('/login', ['controller' => 'Auth', 'action' => 'login']);
