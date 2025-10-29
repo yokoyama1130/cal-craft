@@ -31,6 +31,7 @@ class TopController extends AppController
         $this->Portfolios = $this->fetchTable('Portfolios');
         $this->Likes = $this->fetchTable('Likes');
         $this->Users = $this->fetchTable('Users');
+        $this->Follows = $this->fetchTable('Follows');
 
         $this->viewBuilder()->setClassName('Json');
 
@@ -103,6 +104,12 @@ class TopController extends AppController
 
             // 2) 一括集計用にIDを抽出
             $portfolioIds = array_map(fn($p) => (int)$p->id, $rows);
+            $authorUserIds = [];
+            foreach ($rows as $p) {
+                if (!empty($p->user_id)) {
+                    $authorUserIds[(int)$p->user_id] = true;
+                }
+            }
 
             // 3) like_count をまとめて取得
             $fn = $this->Likes->find()->func();
@@ -118,15 +125,17 @@ class TopController extends AppController
                 ->combine('portfolio_id', 'cnt')
                 ->toArray();
 
-            // 4) liked_by_me をまとめて取得（※現状 Likes は user_id のみを使用している仕様に合わせる）
-            $likedMap = [];
+            // 4) liked_by_me / is_followed_by_me の下ごしらえ
             $identity = $this->request->getAttribute('identity');
             $meId = $identity ? (int)$identity->get('id') : 0;
+
+            // liked_by_me（一括）: 自分が「いいね」した portfolio_id をマップ化
+            $likedMap = [];
             if ($meId > 0) {
                 $likedMap = $this->Likes->find()
                     ->select(['portfolio_id'])
                     ->where([
-                        'user_id' => $meId, // 会社アカウント対応が必要ならここを拡張
+                        'user_id' => $meId, // 会社アカウントも扱うならここを拡張
                         'portfolio_id IN' => $portfolioIds,
                     ])
                     ->enableHydration(false)
@@ -135,13 +144,32 @@ class TopController extends AppController
                     ->toArray();
             }
 
+            // is_followed_by_me（一括）: 自分(meId)→投稿者(author_user_id) のフォロー有無
+            $followMap = [];
+            if ($meId > 0 && $authorUserIds) {
+                $q = $this->Follows->find()
+                    ->select(['followed_id'])
+                    ->where([
+                        'follower_id' => $meId,
+                        'followed_id IN' => array_keys($authorUserIds),
+                    ])
+                    ->enableHydration(false)
+                    ->all();
+                foreach ($q as $r) {
+                    $followMap[(int)$r['followed_id']] = true;
+                }
+            }
+
             // 5) レスポンス整形（サムネ/アイコンを絶対URL化）
             $out = [];
             foreach ($rows as $p) {
+                // サムネ補正 → 絶対URL
                 $thumb = (string)($p->thumbnail ?? '');
                 $thumb = $this->normalizePublicPath($thumb);
                 $thumbAbs = $this->absUrl($thumb);
 
+                // 投稿者
+                $authorId = (int)$p->user_id;
                 $userArr = null;
                 if ($p->user) {
                     $icon = (string)($p->user->icon_path ?? '');
@@ -152,6 +180,7 @@ class TopController extends AppController
                         'id' => (int)$p->user->id,
                         'name' => (string)($p->user->name ?? 'User'),
                         'icon_path' => $iconAbs,
+                        'is_followed_by_me' => (bool)($followMap[(int)$p->user->id] ?? false), // ★ 追加
                     ];
                 }
 
@@ -159,9 +188,11 @@ class TopController extends AppController
                     'id' => (int)$p->id,
                     'title' => (string)($p->title ?? ''),
                     'description' => (string)($p->description ?? ''),
-                    'thumbnail' => $thumbAbs, // ← フロントで __thumb__ に詰め替え済でもそのまま使える
+                    'thumbnail' => $thumbAbs,
                     'like_count' => (int)($likeCounts[(int)$p->id] ?? 0),
                     'liked_by_me' => (bool)($likedMap[(int)$p->id] ?? false),
+                    'author_user_id' => $authorId, // ★ 追加（クライアントで follow API を叩くため）
+                    'is_followed_by_me' => (bool)($followMap[$authorId] ?? false), // ★ トップ直下にも置いておく
                     'user' => $userArr,
                 ];
             }
