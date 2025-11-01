@@ -207,7 +207,7 @@ class ConversationsController extends AppController
                     $partnerName = (string)($u->name ?? '');
                     $iconPath = (string)($u->icon_path ?? '');
                     if ($iconPath !== '') {
-                        $partnerIcon = Router::url('/img/' . ltrim($iconPath, '/'), true); // 絶対URL
+                        $partnerIcon = Router::url('/img/' . ltrim($iconPath, '/'), true);
                     }
                 }
             } elseif ($partnerType === 'company') {
@@ -222,14 +222,49 @@ class ConversationsController extends AppController
             }
 
             $latest = $latestMap[(int)$c->id] ?? null;
-            $lastMessageText = $latest ? (string)($latest->body ?? '') : '';
+
+            // ←←← 修正ポイント：本文を多段フォールバック
+            $lastMessageText = '';
             $lastTimeStr = '';
-            if ($latest && $latest->created) {
-                $t = $latest->created;
-                if ($t instanceof FrozenTime) {
-                    $lastTimeStr = $t->i18nFormat('yyyy-MM-dd HH:mm');
-                } else {
-                    $lastTimeStr = (string)$t;
+            $fromMe = false;
+
+            if ($latest) {
+                // 本文の候補（あなたのMessagesテーブルに合わせて必要なら候補を足してください）
+                $candidates = [
+                    $latest->body ?? null,
+                    $latest->content ?? null,
+                    $latest->message ?? null,
+                    $latest->text ?? null,
+                ];
+                foreach ($candidates as $cand) {
+                    if (is_string($cand) && trim($cand) !== '') {
+                        $lastMessageText = (string)$cand;
+                        break;
+                    }
+                }
+
+                // 添付があるなら簡易ラベル（カラム名はプロジェクトに合わせて）
+                if ($lastMessageText === '') {
+                    if (!empty($latest->image_path) || !empty($latest->image_url)) {
+                        $lastMessageText = '[画像]';
+                    } elseif (!empty($latest->file_path) || !empty($latest->file_url)) {
+                        $lastMessageText = '[ファイル]';
+                    } elseif (!empty($latest->stamp_code)) {
+                        $lastMessageText = '[スタンプ]';
+                    }
+                }
+
+                // 送信者が自分か（任意：使わないなら削ってOK）
+                $fromMe = (
+                    ($latest->sender_type ?? null) === $actorType &&
+                    (int)($latest->sender_id ?? 0) === $actorId
+                );
+
+                if ($latest->created) {
+                    $t = $latest->created;
+                    $lastTimeStr = $t instanceof FrozenTime
+                        ? $t->i18nFormat('yyyy-MM-dd HH:mm')
+                        : (string)$t;
                 }
             }
 
@@ -239,8 +274,9 @@ class ConversationsController extends AppController
                 'partner_id' => $partnerId,
                 'partner_name' => $partnerName,
                 'partner_icon_url' => $partnerIcon,
-                'last_message' => $lastMessageText,
+                'last_message' => $lastMessageText, // ← ここは文字列として返す
                 'last_time' => $lastTimeStr,
+                'from_me' => $fromMe, // ← 任意
             ];
         }
 
