@@ -88,6 +88,8 @@ class UsersController extends AppController
      * 新規ユーザー登録処理。
      * 入力情報を保存し、確認メールを送信する。
      *
+     * トランザクションを追加：ユーザー保存処理が確実にコミットされるようにする。
+     *
      * @return \Cake\Http\Response|null
      */
     public function register()
@@ -109,27 +111,40 @@ class UsersController extends AppController
             $user->email_verified = false;
             $user->email_token = Text::uuid(); // ランダムトークン
 
-            if ($this->Users->save($user)) {
-                $mailer = new Mailer('default');
+            // ここでトランザクションを使う（ユーザー保存処理を原子化）
+            $conn = $this->Users->getConnection();
+            $conn->begin();
+            try {
+                if ($this->Users->save($user)) {
+                    $conn->commit();
 
-                // ここはコメントアウトして大丈夫らしい（それでも認証メールが届く）
-                // $mailer->setTo('nunouvlog@gmail.com')
-                //     ->setSubject('テスト送信')
-                //     ->deliver('CakePHPから送ったテストメールです。');
+                    // メール送信（メール送信自体はDBトランザクション外）
+                    $mailer = new Mailer('default');
 
-                // 認証メール送信
-                $mailer = new Mailer('default');
-                $mailer->setTo($user->email)
-                    ->setSubject('【OrcaFolio】メール認証のお願い')
-                    ->deliver("以下のURLをクリックしてメール認証を完了してください：\n\n" .
-                        Router::url(['controller' => 'Users', 'action' => 'verifyEmail', $user->email_token], true));
+                    // コメントアウト済みのサンプルコードを残すが、実際に送信するのは下の処理
+                    // $mailer->setTo('nunouvlog@gmail.com')
+                    //     ->setSubject('テスト送信')
+                    //     ->deliver('CakePHPから送ったテストメールです。');
 
-                $this->Flash->success('確認メールを送信しました。メールをご確認ください。');
+                    // 認証メール送信
+                    $mailer = new Mailer('default');
+                    $mailer->setTo($user->email)
+                        ->setSubject('【OrcaFolio】メール認証のお願い')
+                        ->deliver("以下のURLをクリックしてメール認証を完了してください：\n\n" .
+                            Router::url(['controller' => 'Users', 'action' => 'verifyEmail', $user->email_token], true));
 
-                return $this->redirect(['action' => 'login']);
+                    $this->Flash->success('確認メールを送信しました。メールをご確認ください。');
+
+                    return $this->redirect(['action' => 'login']);
+                } else {
+                    $conn->rollback();
+                    $this->Flash->error('登録に失敗しました。');
+                }
+            } catch (\Throwable $e) {
+                $conn->rollback();
+                // ログ出力や例外再送出しはプロジェクトの方針に合わせて行ってください
+                $this->Flash->error('登録中にエラーが発生しました。時間をおいてお試しください。');
             }
-
-            $this->Flash->error('登録に失敗しました。');
         }
         $this->set(compact('user'));
     }
@@ -231,6 +246,8 @@ class UsersController extends AppController
      * 管理用ユーザー追加処理。
      * フォーム入力を保存し、一覧へリダイレクト。
      *
+     * トランザクションを追加：管理画面等からの作成操作は確実にコミットされるようにする。
+     *
      * @return \Cake\Http\Response|null
      */
     public function add()
@@ -238,12 +255,23 @@ class UsersController extends AppController
         $user = $this->Users->newEmptyEntity();
         if ($this->request->is('post')) {
             $user = $this->Users->patchEntity($user, $this->request->getData());
-            if ($this->Users->save($user)) {
-                $this->Flash->success(__('The user has been saved.'));
 
-                return $this->redirect(['action' => 'index']);
+            $conn = $this->Users->getConnection();
+            $conn->begin();
+            try {
+                if ($this->Users->save($user)) {
+                    $conn->commit();
+                    $this->Flash->success(__('The user has been saved.'));
+
+                    return $this->redirect(['action' => 'index']);
+                } else {
+                    $conn->rollback();
+                    $this->Flash->error(__('The user could not be saved. Please, try again.'));
+                }
+            } catch (\Throwable $e) {
+                $conn->rollback();
+                $this->Flash->error(__('An error occurred while saving the user. Please try again later.'));
             }
-            $this->Flash->error(__('The user could not be saved. Please, try again.'));
         }
         $this->set(compact('user'));
     }
@@ -253,6 +281,8 @@ class UsersController extends AppController
      *
      * ログイン中ユーザーのプロフィール編集処理。
      * アイコン画像アップロード、SNSリンク更新に対応。
+     *
+     * トランザクションを追加：ファイルの移動とDB保存を整合させるため。
      *
      * @return \Cake\Http\Response|null
      */
@@ -265,37 +295,49 @@ class UsersController extends AppController
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
 
-            if (!empty($data['icon']) && $data['icon']->getError() === UPLOAD_ERR_OK) {
-                $filename = time() . '_' . $data['icon']->getClientFilename();
-                $targetPath = WWW_ROOT . 'img' . DS . 'icons' . DS . $filename;
+            $conn = $this->Users->getConnection();
+            $conn->begin();
+            try {
+                if (!empty($data['icon']) && $data['icon']->getError() === UPLOAD_ERR_OK) {
+                    $filename = time() . '_' . $data['icon']->getClientFilename();
+                    $targetPath = WWW_ROOT . 'img' . DS . 'icons' . DS . $filename;
 
-                // ディレクトリがなければ作成
-                if (!file_exists(WWW_ROOT . 'img' . DS . 'icons')) {
-                    mkdir(WWW_ROOT . 'img' . DS . 'icons', 0775, true);
+                    // ディレクトリがなければ作成
+                    if (!file_exists(WWW_ROOT . 'img' . DS . 'icons')) {
+                        mkdir(WWW_ROOT . 'img' . DS . 'icons', 0775, true);
+                    }
+
+                    // moveTo が失敗したら例外を投げてトランザクションでロールバックする
+                    $data['icon']->moveTo($targetPath);
+
+                    // DBに保存するパス
+                    $data['icon_path'] = 'icons/' . $filename;
                 }
 
-                $data['icon']->moveTo($targetPath);
+                // SNSリンクをJSONに変換
+                $sns = [
+                    'twitter' => $data['twitter'] ?? '',
+                    'github' => $data['github'] ?? '',
+                    'youtube' => $data['youtube'] ?? '',
+                    'instagram' => $data['instagram'] ?? '',
+                ];
+                $data['sns_links'] = json_encode($sns);
 
-                // DBに保存するパス
-                $data['icon_path'] = 'icons/' . $filename;
+                $user = $this->Users->patchEntity($user, $data);
+                if ($this->Users->save($user)) {
+                    $conn->commit();
+                    $this->Flash->success(__('プロフィールを更新しました。'));
+
+                    return $this->redirect(['action' => 'profile', $user->id]);
+                } else {
+                    $conn->rollback();
+                    $this->Flash->error(__('更新に失敗しました。'));
+                }
+            } catch (\Throwable $e) {
+                $conn->rollback();
+                // 必要ならアップロード済みファイルの削除処理を追加
+                $this->Flash->error(__('更新中にエラーが発生しました。再度お試しください。'));
             }
-
-            // SNSリンクをJSONに変換
-            $sns = [
-                'twitter' => $data['twitter'] ?? '',
-                'github' => $data['github'] ?? '',
-                'youtube' => $data['youtube'] ?? '',
-                'instagram' => $data['instagram'] ?? '',
-            ];
-            $data['sns_links'] = json_encode($sns);
-
-            $user = $this->Users->patchEntity($user, $data);
-            if ($this->Users->save($user)) {
-                $this->Flash->success(__('プロフィールを更新しました。'));
-
-                return $this->redirect(['action' => 'profile', $user->id]);
-            }
-            $this->Flash->error(__('更新に失敗しました。'));
         } else {
             // JSONを配列に変換してViewへ渡す
             $snsLinks = json_decode($user->sns_links, true) ?? [];
@@ -314,6 +356,8 @@ class UsersController extends AppController
      * 指定されたユーザーを削除する。
      * 削除成功/失敗のメッセージを表示し、一覧にリダイレクト。
      *
+     * トランザクションを追加：削除処理を確実に行うため。
+     *
      * @param int|null $id ユーザーID
      * @return \Cake\Http\Response
      */
@@ -321,10 +365,20 @@ class UsersController extends AppController
     {
         $this->request->allowMethod(['post', 'delete']);
         $user = $this->Users->get($id);
-        if ($this->Users->delete($user)) {
-            $this->Flash->success(__('The user has been deleted.'));
-        } else {
-            $this->Flash->error(__('The user could not be deleted. Please, try again.'));
+
+        $conn = $this->Users->getConnection();
+        $conn->begin();
+        try {
+            if ($this->Users->delete($user)) {
+                $conn->commit();
+                $this->Flash->success(__('The user has been deleted.'));
+            } else {
+                $conn->rollback();
+                $this->Flash->error(__('The user could not be deleted. Please, try again.'));
+            }
+        } catch (\Throwable $e) {
+            $conn->rollback();
+            $this->Flash->error(__('An error occurred while deleting the user. Please try again later.'));
         }
 
         return $this->redirect(['action' => 'index']);
@@ -400,6 +454,8 @@ class UsersController extends AppController
      *
      * メール認証リンクを処理し、ユーザーのメールを有効化する。
      *
+     * トランザクションを追加：認証フラグとトークンクリアの両方を確実に保存する。
+     *
      * @param string|null $token 認証トークン
      * @return \Cake\Http\Response|null
      */
@@ -416,11 +472,20 @@ class UsersController extends AppController
         $user->email_verified = true;
         $user->email_token = null;
 
-        if ($this->Users->save($user)) {
-            $this->Flash->success('メールアドレスの認証が完了しました。ログインできます。');
+        $conn = $this->Users->getConnection();
+        $conn->begin();
+        try {
+            if ($this->Users->save($user)) {
+                $conn->commit();
+                $this->Flash->success('メールアドレスの認証が完了しました。ログインできます。');
 
-            return $this->redirect(['action' => 'login']);
-        } else {
+                return $this->redirect(['action' => 'login']);
+            } else {
+                $conn->rollback();
+                $this->Flash->error('認証処理中にエラーが発生しました。');
+            }
+        } catch (\Throwable $e) {
+            $conn->rollback();
             $this->Flash->error('認証処理中にエラーが発生しました。');
         }
     }
@@ -429,6 +494,8 @@ class UsersController extends AppController
      * resendVerification
      *
      * 未認証ユーザーにメール認証用リンクを再送信する。
+     *
+     * トランザクションを追加：トークン更新と保存を原子化する。
      *
      * @return \Cake\Http\Response|null
      */
@@ -450,28 +517,39 @@ class UsersController extends AppController
             }
 
             $user->email_token = \Cake\Utility\Text::uuid();
-            if ($this->Users->save($user)) {
-                $mailer = new \Cake\Mailer\Mailer('default');
-                $mailer->setTo($user->email)
-                    ->setSubject('【OrcaFolio】メール認証の再送')
-                    ->deliver(
-                        "以下のURLから認証を完了してください：\n\n" .
-                        \Cake\Routing\Router::url(
-                            [
-                                'controller' => 'Users',
-                                'action' => 'verifyEmail',
-                                $user->email_token,
-                            ],
-                            true
-                        )
-                    );
 
-                $this->Flash->success('認証メールを再送しました。メールをご確認ください。');
+            $conn = $this->Users->getConnection();
+            $conn->begin();
+            try {
+                if ($this->Users->save($user)) {
+                    $conn->commit();
 
-                return $this->redirect(['action' => 'login']);
+                    $mailer = new \Cake\Mailer\Mailer('default');
+                    $mailer->setTo($user->email)
+                        ->setSubject('【OrcaFolio】メール認証の再送')
+                        ->deliver(
+                            "以下のURLから認証を完了してください：\n\n" .
+                            \Cake\Routing\Router::url(
+                                [
+                                    'controller' => 'Users',
+                                    'action' => 'verifyEmail',
+                                    $user->email_token,
+                                ],
+                                true
+                            )
+                        );
+
+                    $this->Flash->success('認証メールを再送しました。メールをご確認ください。');
+
+                    return $this->redirect(['action' => 'login']);
+                } else {
+                    $conn->rollback();
+                    $this->Flash->error('再送に失敗しました。時間をおいてお試しください。');
+                }
+            } catch (\Throwable $e) {
+                $conn->rollback();
+                $this->Flash->error('再送処理中にエラーが発生しました。時間をおいて再度お試しください。');
             }
-
-            $this->Flash->error('再送に失敗しました。時間をおいてお試しください。');
         }
     }
 }
