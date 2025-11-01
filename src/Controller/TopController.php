@@ -5,7 +5,6 @@ namespace App\Controller;
 
 use Cake\Datasource\ConnectionManager;
 use Cake\Event\EventInterface;
-use Psr\Log\LoggerInterface;
 
 /**
  * TopController
@@ -34,31 +33,29 @@ class TopController extends AppController
      * index
      *
      * 公開されている最新のポートフォリオを最大10件まで取得して表示する。
-     * いいね数と自分がいいね済みかを付与する。
-     *
-     * トランザクション内で一貫したスナップショットを取得し、N+1 を回避するために
-     * いいね関連はバッチで集計します。
      *
      * @return void
      */
     public function index(): void
     {
-        // 必要なテーブルを事前に取得
-        $this->Portfolios = $this->fetchTable('Portfolios');
-        $this->Likes = $this->fetchTable('Likes');
-        $this->Users = $this->fetchTable('Users');
-        $this->Companies = $this->fetchTable('Companies');
+        // テーブルはローカル変数で取得（IDE 警告を減らすため）
+        $Portfolios = $this->fetchTable('Portfolios');
+        $Likes = $this->fetchTable('Likes');
+        $Users = $this->fetchTable('Users');
+        $Companies = $this->fetchTable('Companies');
 
-        // 現在の identity を簡単に解決（null / ['user_id' => x] / ['company_id' => x']）
-        $actor = $this->resolveActorFromIdentity();
+        // actor 条件を解決（user_id または company_id を返す）
+        $actor = $this->resolveActorFromIdentity($Users, $Companies);
 
-        // DB 接続を取得してトランザクションで読み取りを囲む（読み取り一貫性確保）
         $connection = ConnectionManager::get('default');
 
+        // デフォルト結果（例外などで未定義にならないように）
+        $result = [];
+
         try {
-            $result = $connection->transactional(function () use ($actor) {
-                // まずポートフォリオを取得（最新10件）
-                $portfolios = $this->Portfolios->find()
+            $result = $connection->transactional(function () use ($actor, $Portfolios, $Likes) {
+                // 最新の公開ポートフォリオを取得
+                $portfolios = $Portfolios->find()
                     ->contain(['Users'])
                     ->where(['is_public' => true])
                     ->order(['created' => 'DESC'])
@@ -69,13 +66,19 @@ class TopController extends AppController
                     return [];
                 }
 
-                // ポートフォリオID群を抜き出す
-                $portfolioIds = array_map(static function ($p) {
-                    return (int)$p->id;
-                }, $portfolios);
+                // ID 列を抽出してユニーク化
+                $portfolioIds = [];
+                foreach ($portfolios as $p) {
+                    $portfolioIds[] = (int)$p->id;
+                }
+                $portfolioIds = array_values(array_unique($portfolioIds));
 
-                // いいね数を一括で取得
-                $likesCounts = $this->Likes->find()
+                if (empty($portfolioIds)) {
+                    return $portfolios;
+                }
+
+                // いいね数を一括取得
+                $likesCounts = $Likes->find()
                     ->select(['portfolio_id', 'cnt' => 'COUNT(*)'])
                     ->where(['portfolio_id IN' => $portfolioIds])
                     ->group('portfolio_id')
@@ -83,25 +86,21 @@ class TopController extends AppController
                     ->indexBy('portfolio_id')
                     ->toArray();
 
-                // actor が存在すれば「自分がいいね済みか」を一括取得
+                // actor があれば自分がいいね済みかを一括取得
                 $likedByMe = [];
                 if (!empty($actor)) {
-                    $conditions = ['portfolio_id IN' => $portfolioIds];
-                    // マージして user_id または company_id の条件を追加
-                    $conditions = array_merge($conditions, $actor);
-
-                    $rows = $this->Likes->find()
+                    $conditions = ['portfolio_id IN' => $portfolioIds] + $actor;
+                    $rows = $Likes->find()
                         ->select(['portfolio_id'])
                         ->where($conditions)
                         ->enableHydration(false)
                         ->toArray();
-
                     foreach ($rows as $r) {
                         $likedByMe[(int)$r['portfolio_id']] = true;
                     }
                 }
 
-                // ポートフォリオごとにプロパティを付与
+                // 各ポートフォリオに付加情報をセット
                 foreach ($portfolios as $p) {
                     $pid = (int)$p->id;
                     $p->like_count = isset($likesCounts[$pid]) ? (int)$likesCounts[$pid]['cnt'] : 0;
@@ -111,14 +110,22 @@ class TopController extends AppController
                 return $portfolios;
             });
         } catch (\Throwable $e) {
-            // 例外発生時はログ出力してユーザ向けにメッセージ表示（詳細はログ）
-            $this->getLogger()->error('Failed loading portfolios for top page: ' . $e->getMessage(), [
-                'exception' => $e,
-            ]);
+            // 詳細はログに残す（安全のため詳細はユーザに表示しない）
+            \Cake\Log\Log::error('TopController::index failed: ' . $e->getMessage(), ['exception' => $e]);
             $this->Flash->error(__('トップページの読み込みに失敗しました。時間をおいて再度お試しください。'));
-
-            // 空配列でビューに渡して安全にフォールバック
             $result = [];
+        }
+
+        // ビューに渡す前に最低限のサニタイズ（例: ユーザの機密を除去）
+        foreach ($result as $p) {
+            if (isset($p->user) && is_object($p->user)) {
+                if (isset($p->user->password)) {
+                    unset($p->user->password);
+                }
+                if (isset($p->user->auth_token)) {
+                    unset($p->user->auth_token);
+                }
+            }
         }
 
         $this->set('portfolios', $result);
@@ -127,48 +134,61 @@ class TopController extends AppController
     /**
      * Identity から actor 条件を解決する
      *
-     * - Users テーブルに存在すれば ['user_id' => id]
-     * - Companies テーブルに存在すれば ['company_id' => id]
-     * - それ以外は空配列
+     * - Users/Companies テーブルを引数で受け取りテスト可能にする
      *
-     * @return array
+     * @param \App\Model\Table\UsersTable $Users UsersTable インスタンス
+     * @param \App\Model\Table\CompaniesTable $Companies CompaniesTable インスタンス
+     * @return array ['user_id' => int] | ['company_id' => int] | []
      */
-    private function resolveActorFromIdentity(): array
+    private function resolveActorFromIdentity(\App\Model\Table\UsersTable $Users, \App\Model\Table\CompaniesTable $Companies): array
     {
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
             return [];
         }
 
-        $id = (int)$identity->get('id');
-
-        // Users に存在するかチェック
-        if ($this->Users->exists(['id' => $id])) {
-            return ['user_id' => $id];
+        // Identity の識別子を安全に取得
+        $identifier = null;
+        if (method_exists($identity, 'getIdentifier')) {
+            $identifier = $identity->getIdentifier();
+        } elseif ($identity->get('id') !== null) {
+            $identifier = $identity->get('id');
         }
 
-        // Companies に存在するかチェック
-        if ($this->Companies->exists(['id' => $id])) {
+        if ($identifier === null) {
+            return [];
+        }
+
+        $id = (int)$identifier;
+
+        // identity に type/role 情報があればそれを優先（DB 問い合わせを避ける）
+        $type = null;
+        if (method_exists($identity, 'get')) {
+            $type = $identity->get('type');
+            if ($type === null) {
+                $type = $identity->get('role');
+            }
+        }
+
+        if ($type === 'user') {
+            return ['user_id' => $id];
+        }
+        if ($type === 'company' || $type === 'employer') {
             return ['company_id' => $id];
         }
 
-        return [];
-    }
-
-    /**
-     * ログ出力用のロガーを返す
-     *
-     * @return \Psr\Log\LoggerInterface
-     */
-    private function getLogger(): LoggerInterface
-    {
-        // まずコントローラに $this->log がセットされている場合はそれを使う
-        if (property_exists($this, 'log') && $this->log instanceof LoggerInterface) {
-            return $this->log;
+        // フォールバック：DB に存在するかを確認（失敗しても安全にフォールバック）
+        try {
+            if ($Users->exists(['id' => $id])) {
+                return ['user_id' => $id];
+            }
+            if ($Companies->exists(['id' => $id])) {
+                return ['company_id' => $id];
+            }
+        } catch (\Throwable $e) {
+            \Cake\Log\Log::warning('resolveActorFromIdentity DB check failed: ' . $e->getMessage(), ['exception' => $e]);
         }
 
-        // CakePHP の Log ファサードからデフォルトエンジンを取得して返す
-        // Log::engine() は通常 LoggerInterface 相当のインスタンスを返します
-        return \Cake\Log\Log::engine('default');
+        return [];
     }
 }
