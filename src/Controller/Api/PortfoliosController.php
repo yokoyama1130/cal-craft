@@ -230,19 +230,21 @@ class PortfoliosController extends AppController
         $this->request->allowMethod(['get']);
 
         try {
+            // 認証主体（未ログインでも null）
+            $identity = $this->request->getAttribute('identity');
+            $authId = $identity ? (int)$identity->get('id') : null;
+
             // ★ 列を絞らない contain（icon_url が無くても落ちない）
             $p = $this->Portfolios->get($id, [
                 'contain' => ['Users', 'Categories'],
             ]);
 
-            // 公開チェック（必要なら）
+            // 公開チェック：非公開は本人のみ閲覧可
             if ($p->is_public === false) {
-                $identity = $this->request->getAttribute('identity');
-                $authId = $identity ? (int)$identity->get('id') : null;
                 if ($authId === null || (int)$p->user_id !== $authId) {
                     $this->response = $this->response->withStatus(403);
                     $this->set(['success' => false, 'message' => 'Forbidden']);
-                    $this->viewBuilder()->setOption('serialize', ['success','message']);
+                    $this->viewBuilder()->setOption('serialize', ['success', 'message']);
 
                     return;
                 }
@@ -254,7 +256,7 @@ class PortfoliosController extends AppController
                 $this->Likes = $this->fetchTable('Likes');
                 $likeCount = $this->Likes->find()->where(['portfolio_id' => $p->id])->count();
             } catch (\Throwable $e) {
-                Log::warning('Likes lookup skipped: ' . $e->getMessage());
+                \Cake\Log\Log::warning('Likes lookup skipped: ' . $e->getMessage());
             }
 
             // サムネパスを /uploads/ に正規化（昔の /img/uploads を救済）
@@ -292,8 +294,12 @@ class PortfoliosController extends AppController
                 ];
             }
 
+            // ★ 追加：編集可能フラグ（本人なら true）
+            $editable = ($authId !== null && (int)$p->user_id === $authId);
+
             $portfolio = [
                 'id' => (int)$p->id,
+                'user_id' => (int)$p->user_id, // ← フォールバック用に明示
                 'title' => (string)($p->title ?? ''),
                 'description' => (string)($p->description ?? ''),
                 'thumbnail' => $thumb,
@@ -328,15 +334,18 @@ class PortfoliosController extends AppController
                     'name' => (string)($p->category->name ?? ''),
                     'slug' => (string)($p->category->slug ?? ''),
                 ] : null,
+
+                // ★ 追加
+                'editable' => $editable,
             ];
 
             $this->set(['success' => true, 'portfolio' => $portfolio]);
-            $this->viewBuilder()->setOption('serialize', ['success','portfolio']);
+            $this->viewBuilder()->setOption('serialize', ['success', 'portfolio']);
         } catch (\Throwable $e) {
-            Log::error('API portfolios/view error: ' . $e->getMessage());
+            \Cake\Log\Log::error('API portfolios/view error: ' . $e->getMessage());
             $this->response = $this->response->withStatus(500);
             $this->set(['success' => false, 'message' => $e->getMessage()]);
-            $this->viewBuilder()->setOption('serialize', ['success','message']);
+            $this->viewBuilder()->setOption('serialize', ['success', 'message']);
         }
     }
 
@@ -428,5 +437,123 @@ class PortfoliosController extends AppController
         $file->moveTo($baseDir . $safeName);
 
         return $safeName;
+    }
+
+    /**
+     * PUT /api/portfolios/edit/{id}.json
+     * 本人所有のポートフォリオを更新する（最小：title/description）
+     *
+     * @param int|string|null $id
+     * @return void
+     */
+    public function edit($id = null)
+    {
+        $this->request->allowMethod(['put', 'patch']);
+
+        $identity = $this->request->getAttribute('identity');
+        if (!$identity) {
+            $this->response = $this->response->withStatus(401);
+            $this->set(['success' => false, 'message' => 'Unauthorized']);
+            $this->viewBuilder()->setOption('serialize', ['success','message']);
+
+            return;
+        }
+
+        try {
+            $p = $this->Portfolios->get($id);
+
+            // 所有者チェック
+            $authId = (int)$identity->get('id');
+            if ((int)$p->user_id !== $authId) {
+                $this->response = $this->response->withStatus(403);
+                $this->set(['success' => false, 'message' => 'Forbidden']);
+                $this->viewBuilder()->setOption('serialize', ['success','message']);
+
+                return;
+            }
+
+            $data = (array)json_decode((string)$this->request->getBody(), true);
+            // 許可するフィールドだけ抽出
+            $allowed = ['title','description'];
+            $patch = [];
+            foreach ($allowed as $f) {
+                if (array_key_exists($f, $data)) {
+                    $patch[$f] = $data[$f];
+                }
+            }
+
+            if (!$patch) {
+                $this->response = $this->response->withStatus(422);
+                $this->set(['success' => false, 'message' => '更新対象フィールドがありません']);
+                $this->viewBuilder()->setOption('serialize', ['success','message']);
+
+                return;
+            }
+
+            $p = $this->Portfolios->patchEntity($p, $patch);
+            if (!$this->Portfolios->save($p)) {
+                $this->response = $this->response->withStatus(422);
+                $this->set(['success' => false, 'message' => '保存に失敗しました', 'errors' => $p->getErrors()]);
+                $this->viewBuilder()->setOption('serialize', ['success','message','errors']);
+
+                return;
+            }
+
+            $this->set(['success' => true]);
+            $this->viewBuilder()->setOption('serialize', ['success']);
+        } catch (\Throwable $e) {
+            $this->response = $this->response->withStatus(500);
+            $this->set(['success' => false, 'message' => $e->getMessage()]);
+            $this->viewBuilder()->setOption('serialize', ['success','message']);
+        }
+    }
+
+    /**
+     * DELETE /api/portfolios/delete/{id}.json
+     * 本人所有のポートフォリオを削除する
+     *
+     * @param int|string|null $id
+     * @return void
+     */
+    public function delete($id = null)
+    {
+        $this->request->allowMethod(['delete']);
+
+        $identity = $this->request->getAttribute('identity');
+        if (!$identity) {
+            $this->response = $this->response->withStatus(401);
+            $this->set(['success' => false, 'message' => 'Unauthorized']);
+            $this->viewBuilder()->setOption('serialize', ['success','message']);
+
+            return;
+        }
+
+        try {
+            $p = $this->Portfolios->get($id);
+
+            $authId = (int)$identity->get('id');
+            if ((int)$p->user_id !== $authId) {
+                $this->response = $this->response->withStatus(403);
+                $this->set(['success' => false, 'message' => 'Forbidden']);
+                $this->viewBuilder()->setOption('serialize', ['success','message']);
+
+                return;
+            }
+
+            if (!$this->Portfolios->delete($p)) {
+                $this->response = $this->response->withStatus(422);
+                $this->set(['success' => false, 'message' => '削除に失敗しました']);
+                $this->viewBuilder()->setOption('serialize', ['success','message']);
+
+                return;
+            }
+
+            $this->set(['success' => true]);
+            $this->viewBuilder()->setOption('serialize', ['success']);
+        } catch (\Throwable $e) {
+            $this->response = $this->response->withStatus(500);
+            $this->set(['success' => false, 'message' => $e->getMessage()]);
+            $this->viewBuilder()->setOption('serialize', ['success','message']);
+        }
     }
 }

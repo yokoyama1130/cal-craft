@@ -106,6 +106,11 @@ return function (RouteBuilder $routes): void {
         $routes->connect('/likes/favorites', ['controller' => 'Likes', 'action' => 'favorites', '_method' => 'GET']);
         $routes->connect('/likes/toggle', ['controller' => 'Likes', 'action' => 'toggle', '_method' => 'POST']);
 
+        $routes->connect('/portfolios/edit/:id', ['controller' => 'Portfolios', 'action' => 'edit', 'prefix' => 'Api'])
+            ->setPass(['id'])->setMethods(['PUT','PATCH'])->setExtensions(['json']);
+        $routes->connect('/portfolios/delete/:id', ['controller' => 'Portfolios', 'action' => 'delete', 'prefix' => 'Api'])
+            ->setPass(['id'])->setMethods(['DELETE'])->setExtensions(['json']);
+
         $routes->fallbacks(DashedRoute::class);
     });
 
