@@ -443,8 +443,8 @@ class PortfoliosController extends AppController
      * PUT /api/portfolios/edit/{id}.json
      * 本人所有のポートフォリオを更新する（最小：title/description）
      *
-     * @param int|string|null $id
-     * @return void
+     * @param int|string|null $id ポートフォリオID（数値 or 文字列）。null の場合は不正リクエスト。
+     * @return \Cake\Http\Response|null|void JSONレスポンスを返す。処理内でHTTPステータスを設定。
      */
     public function edit($id = null)
     {
@@ -512,8 +512,8 @@ class PortfoliosController extends AppController
      * DELETE /api/portfolios/delete/{id}.json
      * 本人所有のポートフォリオを削除する
      *
-     * @param int|string|null $id
-     * @return void
+     * @param int|string|null $id ポートフォリオID（数値 or 文字列）。null の場合は不正リクエスト。
+     * @return \Cake\Http\Response|null|void JSONレスポンスを返す。処理内でHTTPステータスを設定。
      */
     public function delete($id = null)
     {
